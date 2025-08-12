@@ -1,5 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+// Import the meal messaging system (these will be external files)
+import { MealMessages } from './src/MealMessages/index.js';
+
+// Mock the messaging system for now since files aren't available in artifact
+const MealMessages = {
+  getTimeAwareMessage: (allMeals, currentMealType, currentMealTotals, currentMealItems, userProfile, calorieData, selectedTime, pieData) => {
+    // Mock implementation - replace with real import
+    if (currentMealTotals.calories < 50) return null;
+    
+    const proteinPercent = pieData[0]?.percentage || 0;
+    const carbPercent = pieData[1]?.percentage || 0;
+    
+    // Simple mock logic
+    if (proteinPercent >= 40) {
+      return `${userProfile.firstName}, excellent protein focus at ${proteinPercent}%! This supports your ${userProfile.goal} goals perfectly.`;
+    } else if (carbPercent > 60 && proteinPercent < 25) {
+      return `${userProfile.firstName}, whoa! ${carbPercent}% carbs for ${userProfile.goal}? Your muscles need more protein to build effectively!`;
+    } else {
+      return `Good nutrition choices, ${userProfile.firstName}! Keep building toward your ${userProfile.goal} goals.`;
+    }
+  }
+};
 
 // Mock the Week1Messages data since we can't import JSON directly
 const Week1Messages = {
