@@ -1,88 +1,70 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-// Import the meal messaging system (these will be external files)
-import { MealMessages } from './src/MealMessages/index.js';
 
-// Mock messaging system helper function for now since files aren't available in artifact
-const getMockMessage = (allMeals, currentMealType, currentMealTotals, currentMealItems, userProfile, calorieData, selectedTime, pieData) => {
-  // Mock implementation - replace with real import
-  if (currentMealTotals.calories < 50) return null;
-  
-  const proteinPercent = pieData[0]?.percentage || 0;
-  const carbPercent = pieData[1]?.percentage || 0;
-  
-  // Simple mock logic
-  if (proteinPercent >= 40) {
-    return `${userProfile.firstName}, excellent protein focus at ${proteinPercent}%! This supports your ${userProfile.goal} goals perfectly.`;
-  } else if (carbPercent > 60 && proteinPercent < 25) {
-    return `${userProfile.firstName}, whoa! ${carbPercent}% carbs for ${userProfile.goal}? Your muscles need more protein to build effectively!`;
-  } else {
-    return `Good nutrition choices, ${userProfile.firstName}! Keep building toward your ${userProfile.goal} goals.`;
+// Import the meal messaging system (uncomment when files are available)
+// import { MealMessages } from './src/MealMessages/index.js';
+
+// Mock the messaging system for now - remove when real import is used
+const MealMessages = {
+  getTimeAwareMessage: (allMeals, currentMealType, currentMealTotals, currentMealItems, userProfile, calorieData, selectedTime, pieData) => {
+    // Mock implementation - replace with real import
+    if (currentMealTotals.calories < 50) return null;
+    
+    const proteinPercent = pieData[0]?.percentage || 0;
+    const carbPercent = pieData[1]?.percentage || 0;
+    
+    // Simple mock logic
+    if (proteinPercent >= 40) {
+      return `${userProfile.firstName}, excellent protein focus at ${proteinPercent}%! This supports your ${userProfile.goal} goals perfectly.`;
+    } else if (carbPercent > 60 && proteinPercent < 25) {
+      return `${userProfile.firstName}, whoa! ${carbPercent}% carbs for ${userProfile.goal}? Your muscles need more protein to build effectively!`;
+    } else {
+      return `Good nutrition choices, ${userProfile.firstName}! Keep building toward your ${userProfile.goal} goals.`;
+    }
   }
 };
 
-// Mock the Week1Messages data since we can't import JSON directly
-const Week1Messages = {
-  week1: {
-    messages: [
-      "Preparation is your secret weapon, {name}. Sticking to your plan is the key to unlocking success, no matter your goal. Remember, consistency beats perfection every time.",
-      "Your focus today builds tomorrow's results. Keep your eyes on your {goal} goal and remember why you started. Every meal and choice is a step toward victory.",
-      "{name}, this journey is about more than food—it's about forging discipline and character. Lean into the process and watch how your {goal} progress unfolds.",
-      "Start strong, {name}. Nourishing your body with intention sets the tone for the entire day. Your {goal} goal is within reach when you honor your plan.",
-      "Don't let distractions knock you off course. Your {goal} journey requires a master plan and the will to stick with it. You're building habits that will last a lifetime.",
-      "Consistency in nutrition fuels your progress. {name}, keep pushing toward your {goal} with purpose and focus. You're stronger than any excuse.",
-      "Meal prep isn't just about food—it's about reclaiming control over your day. {name}, your commitment to your {goal} is your superpower."
-    ],
-    quotes: [
-      "'You must do what you have never done to get what you have never gotten.'",
-      "'Having a plan means one less thing to think about when life gets busy.'",
-      "'Discipline is not just a task; it's the foundation of your new identity.'",
-      "'The plan is your anchor when the waves of temptation come crashing.'",
-      "'Commitment to the process beats motivation every single time.'",
-      "'Glen says: Consistency is the true game changer in any transformation.'",
-      "'Glen says: Trust the process even when the results aren't immediate.'"
-    ]
-  }
-};
-
-function TipsSection({ name = "Champion", goal = "fitness" }) {
-  const [messages, setMessages] = useState([]);
+function MealMessageSection({ meal, profile, getMealMessage }) {
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    // Combine messages and quotes from the correct JSON structure
-    const allMessages = [
-      ...Week1Messages.week1.messages,
-      ...Week1Messages.week1.quotes,
-    ];
-
-    // Pick two random unique messages
-    function getRandomMessages(arr, num) {
-      const copy = [...arr];
-      const selected = [];
-      for (let i = 0; i < num && copy.length > 0; i++) {
-        const idx = Math.floor(Math.random() * copy.length);
-        selected.push(copy.splice(idx, 1)[0]);
-      }
-      return selected;
+    if (meal && meal.calories > 0) {
+      const mealMessage = getMealMessage(meal);
+      setMessage(mealMessage || '');
+    } else {
+      setMessage('');
     }
+  }, [meal, profile, getMealMessage]);
 
-    let randomMessages = getRandomMessages(allMessages, 2);
-
-    // Replace placeholders with actual name and goal
-    randomMessages = randomMessages.map(msg =>
-      msg.replace(/{name}/g, name).replace(/{goal}/g, goal)
-    );
-
-    setMessages(randomMessages);
-  }, [name, goal]);
+  if (!message) return null;
 
   return (
-    <div className="pt-4 space-y-3">
-      {messages.map((msg, i) => (
-        <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">{msg}</p>
+    <div className="pt-4">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="text-2xl">💡</div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-800 mb-2">Nutrition Insight</h4>
+            <p className="text-sm text-gray-700 leading-relaxed">{message}</p>
+          </div>
         </div>
-      ))}
+      </div>
+    </div>
+  );
+}
+
+function MealMessageDisplay({ meal, profile, getMealMessage }) {
+  if (!meal || meal.calories === 0) return null;
+  
+  const message = getMealMessage(meal);
+  if (!message) return null;
+  
+  return (
+    <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+      <div className="flex items-start gap-2">
+        <div className="text-lg">✨</div>
+        <p className="text-xs text-gray-700 leading-relaxed">{message}</p>
+      </div>
     </div>
   );
 }
@@ -92,16 +74,102 @@ const MealSwipeApp = () => {
     height: { feet: 5, inches: 8 },
     weight: 150,
     name: "Champion",
-    goal: "fitness"
+    goal: "gain-muscle"
   });
 
+  // Map meal names to messaging system types
+  const mealTypeMapping = {
+    'Breakfast': 'breakfast',
+    'FirstSnack': 'firstSnack', 
+    'SecondSnack': 'secondSnack',
+    'Lunch': 'lunch',
+    'MidAfternoon Snack': 'midAfternoon',
+    'Dinner': 'dinner',
+    'Late Snack': 'lateSnack',
+    'PostWorkout': 'postWorkout'
+  };
+
   const [meals, setMeals] = useState([
-    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, calories: 0 },
-    { id: 2, name: 'Morning Snack', protein: 0, carbs: 0, fat: 0, calories: 0 },
-    { id: 3, name: 'Lunch', protein: 0, carbs: 0, fat: 0, calories: 0 },
-    { id: 4, name: 'Afternoon Snack', protein: 0, carbs: 0, fat: 0, calories: 0 },
-    { id: 5, name: 'Dinner', protein: 0, carbs: 0, fat: 0, calories: 0 },
-    { id: 6, name: 'Evening Snack', protein: 0, carbs: 0, fat: 0, calories: 0 }
+    { 
+      id: 1, 
+      name: 'Breakfast', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '7:00 AM',
+      items: []
+    },
+    { 
+      id: 2, 
+      name: 'FirstSnack', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '9:30 AM',
+      items: []
+    },
+    { 
+      id: 3, 
+      name: 'SecondSnack', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '11:00 AM',
+      items: []
+    },
+    { 
+      id: 4, 
+      name: 'Lunch', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '12:30 PM',
+      items: []
+    },
+    { 
+      id: 5, 
+      name: 'MidAfternoon Snack', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '3:30 PM',
+      items: []
+    },
+    { 
+      id: 6, 
+      name: 'Dinner', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '6:30 PM',
+      items: []
+    },
+    { 
+      id: 7, 
+      name: 'Late Snack', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '8:30 PM',
+      items: []
+    },
+    { 
+      id: 8, 
+      name: 'PostWorkout', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0, 
+      calories: 0,
+      time: '5:00 PM',
+      items: []
+    }
   ]);
 
   const [currentCard, setCurrentCard] = useState(0);
@@ -123,6 +191,90 @@ const MealSwipeApp = () => {
       }
       return meal;
     }));
+  };
+
+  // Helper function to calculate pie data for a meal
+  const calculatePieData = (meal) => {
+    const proteinCals = meal.protein * 4;
+    const carbCals = meal.carbs * 4;
+    const fatCals = meal.fat * 9;
+    const totalCals = proteinCals + carbCals + fatCals;
+    
+    if (totalCals === 0) return [];
+    
+    return [
+      { name: 'Protein', value: proteinCals, percentage: Math.round((proteinCals / totalCals) * 100) },
+      { name: 'Carbs', value: carbCals, percentage: Math.round((carbCals / totalCals) * 100) },
+      { name: 'Fat', value: fatCals, percentage: Math.round((fatCals / totalCals) * 100) }
+    ];
+  };
+
+  // Convert meals to messaging system format
+  const formatMealsForMessaging = () => {
+    const allMeals = {};
+    meals.forEach(meal => {
+      const mealType = mealTypeMapping[meal.name];
+      if (mealType) {
+        allMeals[mealType] = {
+          time: meal.time,
+          totals: {
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat,
+            sugar: 0 // Can be added later
+          },
+          items: meal.items,
+          pieData: calculatePieData(meal)
+        };
+      }
+    });
+    return allMeals;
+  };
+
+  // Mock calorie data - replace with real TDEE calculation
+  const calorieData = {
+    targetCalories: profile.goal === 'dirty-bulk' ? 3200 : 
+                   profile.goal === 'gain-muscle' ? 2800 :
+                   profile.goal === 'lose' ? 2000 : 2500,
+    tdee: profile.weight ? Math.round(profile.weight * 15 + (profile.goal === 'dirty-bulk' ? 500 : 0)) : 2500
+  };
+
+  // Generate message for current meal
+  const getMealMessage = (meal) => {
+    if (!meal || meal.calories < 25) return null;
+    
+    const allMeals = formatMealsForMessaging();
+    const currentMealType = mealTypeMapping[meal.name];
+    
+    if (!currentMealType) return null;
+    
+    const currentMealTotals = {
+      calories: meal.calories,
+      protein: meal.protein,
+      carbs: meal.carbs,
+      fat: meal.fat,
+      sugar: 0
+    };
+    
+    const pieData = calculatePieData(meal);
+    
+    const userProfileForMessages = {
+      firstName: profile.name || 'Champion',
+      goal: profile.goal || 'gain-muscle',
+      weight: profile.weight
+    };
+    
+    return MealMessages.getTimeAwareMessage(
+      allMeals,
+      currentMealType,
+      currentMealTotals,
+      meal.items,
+      userProfileForMessages,
+      calorieData,
+      meal.time,
+      pieData
+    );
   };
 
   const enterSwipeMode = () => {
@@ -317,13 +469,16 @@ const MealSwipeApp = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Goal</label>
-                <input
-                  type="text"
+                <select
                   value={profile.goal}
                   onChange={(e) => setProfile(prev => ({ ...prev, goal: e.target.value }))}
                   className="w-full p-2 border rounded-lg text-center"
-                  placeholder="fitness"
-                />
+                >
+                  <option value="lose">Lose Fat</option>
+                  <option value="maintain">Maintain</option>
+                  <option value="gain-muscle">Gain Muscle</option>
+                  <option value="dirty-bulk">Dirty Bulk</option>
+                </select>
               </div>
             </div>
           </div>
@@ -488,99 +643,113 @@ const MealSwipeApp = () => {
                     <div className="flex items-center justify-center gap-3 mt-2">
                       <div className="text-3xl">
                         {meal.name === 'Breakfast' && '🍳'}
-                        {meal.name === 'Morning Snack' && '🍎'}
+                        {meal.name === 'FirstSnack' && '🍎'}
+                        {meal.name === 'SecondSnack' && '🥨'}
                         {meal.name === 'Lunch' && '🥗'}
-                        {meal.name === 'Afternoon Snack' && '🥜'}
+                        {meal.name === 'MidAfternoon Snack' && '🥜'}
                         {meal.name === 'Dinner' && '🍽️'}
-                        {meal.name === 'Evening Snack' && '🍓'}
+                        {meal.name === 'Late Snack' && '🍓'}
+                        {meal.name === 'PostWorkout' && '💪'}
                       </div>
                       <div className="text-2xl font-bold text-purple-600">{meal.calories} cal</div>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    {/* Breakfast - Protein only */}
+                    {/* Breakfast - All macros */}
                     {meal.name === 'Breakfast' && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-bold">P</span>
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold">P</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                            <input
+                              type="number"
+                              value={meal.protein}
+                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
-                          <input
-                            type="number"
-                            value={meal.protein}
-                            onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                            placeholder="0"
-                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                          />
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-bold">C</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                            <input
+                              type="number"
+                              value={meal.carbs}
+                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
                         </div>
-                      </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <span className="text-yellow-600 font-bold">F</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                            <input
+                              type="number"
+                              value={meal.fat}
+                              onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
 
-                    {/* Morning Snack - Carbs only */}
-                    {meal.name === 'Morning Snack' && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                          <span className="text-green-600 font-bold">C</span>
+                    {/* FirstSnack & SecondSnack - Protein & Carbs */}
+                    {(meal.name === 'FirstSnack' || meal.name === 'SecondSnack') && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold">P</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                            <input
+                              type="number"
+                              value={meal.protein}
+                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
-                          <input
-                            type="number"
-                            value={meal.carbs}
-                            onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                            placeholder="0"
-                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                          />
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-bold">C</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                            <input
+                              type="number"
+                              value={meal.carbs}
+                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      </>
                     )}
 
-                    {/* Lunch - Fat only */}
-                    {meal.name === 'Lunch' && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                          <span className="text-yellow-600 font-bold">F</span>
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
-                          <input
-                            type="number"
-                            value={meal.fat}
-                            onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                            placeholder="0"
-                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Afternoon Snack - Fat only */}
-                    {meal.name === 'Afternoon Snack' && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                          <span className="text-yellow-600 font-bold">F</span>
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
-                          <input
-                            type="number"
-                            value={meal.fat}
-                            onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                            placeholder="0"
-                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Dinner - All macros */}
-                    {meal.name === 'Dinner' && (
+                    {/* Lunch & Dinner - All macros */}
+                    {(meal.name === 'Lunch' || meal.name === 'Dinner') && (
                       <>
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -635,26 +804,87 @@ const MealSwipeApp = () => {
                       </>
                     )}
 
-                    {/* Evening Snack - Protein only */}
-                    {meal.name === 'Evening Snack' && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-bold">P</span>
+                    {/* MidAfternoon & Late Snack - Protein & Fat */}
+                    {(meal.name === 'MidAfternoon Snack' || meal.name === 'Late Snack') && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold">P</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                            <input
+                              type="number"
+                              value={meal.protein}
+                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
-                          <input
-                            type="number"
-                            value={meal.protein}
-                            onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                            placeholder="0"
-                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                          />
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <span className="text-yellow-600 font-bold">F</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                            <input
+                              type="number"
+                              value={meal.fat}
+                              onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      </>
+                    )}
+
+                    {/* PostWorkout - Protein & Carbs */}
+                    {meal.name === 'PostWorkout' && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold">P</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                            <input
+                              type="number"
+                              value={meal.protein}
+                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-bold">C</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                            <input
+                              type="number"
+                              value={meal.carbs}
+                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
+                  
+                  {/* Meal Message Display */}
+                  {isActive && (
+                    <MealMessageDisplay meal={meal} profile={profile} getMealMessage={getMealMessage} />
+                  )}
                 </div>
               </div>
             );
@@ -702,11 +932,13 @@ const MealSwipeApp = () => {
                     <h3 className="text-xl font-bold text-gray-800">{meal.name}</h3>
                     <div className="text-2xl mt-1">
                       {meal.name === 'Breakfast' && '🍳'}
-                      {meal.name === 'Morning Snack' && '🍎'}
+                      {meal.name === 'FirstSnack' && '🍎'}
+                      {meal.name === 'SecondSnack' && '🥨'}
                       {meal.name === 'Lunch' && '🥗'}
-                      {meal.name === 'Afternoon Snack' && '🥜'}
+                      {meal.name === 'MidAfternoon Snack' && '🥜'}
                       {meal.name === 'Dinner' && '🍽️'}
-                      {meal.name === 'Evening Snack' && '🍓'}
+                      {meal.name === 'Late Snack' && '🍓'}
+                      {meal.name === 'PostWorkout' && '💪'}
                     </div>
                     <div className="text-xl font-bold text-purple-600 mt-1">{meal.calories} cal</div>
                   </div>
@@ -832,11 +1064,13 @@ const MealSwipeApp = () => {
                           <div className="flex items-center justify-center gap-4 mt-3">
                             <div className="text-4xl">
                               {meal.name === 'Breakfast' && '🍳'}
-                              {meal.name === 'Morning Snack' && '🍎'}
+                              {meal.name === 'FirstSnack' && '🍎'}
+                              {meal.name === 'SecondSnack' && '🥨'}
                               {meal.name === 'Lunch' && '🥗'}
-                              {meal.name === 'Afternoon Snack' && '🥜'}
+                              {meal.name === 'MidAfternoon Snack' && '🥜'}
                               {meal.name === 'Dinner' && '🍽️'}
-                              {meal.name === 'Evening Snack' && '🍓'}
+                              {meal.name === 'Late Snack' && '🍓'}
+                              {meal.name === 'PostWorkout' && '💪'}
                             </div>
                             <div className="text-3xl font-bold text-purple-600">{meal.calories} cal</div>
                           </div>
@@ -846,6 +1080,60 @@ const MealSwipeApp = () => {
                       {/* Scrollable Content */}
                       <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
                         <div className="space-y-6">
+                          
+                          {/* Meal Time Selector */}
+                          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">🕐</div>
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Meal Time</label>
+                                <input
+                                  type="time"
+                                  value={meal.time ? meal.time.split(' ')[0] : '07:00'}
+                                  onChange={(e) => {
+                                    const timeValue = e.target.value;
+                                    const hour = parseInt(timeValue.split(':')[0]);
+                                    const minute = timeValue.split(':')[1];
+                                    const period = hour >= 12 ? 'PM' : 'AM';
+                                    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                                    const formattedTime = `${displayHour}:${minute} ${period}`;
+                                    
+                                    setMeals(prev => prev.map(m => 
+                                      m.id === meal.id ? { ...m, time: formattedTime } : m
+                                    ));
+                                  }}
+                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quick Food Item Input for Testing */}
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">🍎</div>
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Quick Food (for testing messaging)</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g., 'chicken breast' or 'oatmeal'"
+                                  onChange={(e) => {
+                                    const foodItem = e.target.value;
+                                    if (foodItem) {
+                                      setMeals(prev => prev.map(m => 
+                                        m.id === meal.id ? { 
+                                          ...m, 
+                                          items: [{ food: foodItem, serving: 1 }] 
+                                        } : m
+                                      ));
+                                    }
+                                  }}
+                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
                             <div className="flex items-center gap-4">
                               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
@@ -900,8 +1188,8 @@ const MealSwipeApp = () => {
                             </div>
                           </div>
 
-                          {/* Tips Section */}
-                          <TipsSection name={profile.name} goal={profile.goal} />
+                          {/* Meal Message Section */}
+                          <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
                         </div>
                       </div>
                     </div>
