@@ -1,21 +1,44 @@
-import React, { useState, useRef } from 'react';
-import Week1Messages from './MealMessages/Week1Messages.json';
+import React, { useState, useRef, useEffect } from 'react';
 
-function TipsSection({ name, goal }) {
+// Mock the Week1Messages data since we can't import JSON directly
+const Week1Messages = {
+  week1: {
+    messages: [
+      "Preparation is your secret weapon, {name}. Sticking to your plan is the key to unlocking success, no matter your goal. Remember, consistency beats perfection every time.",
+      "Your focus today builds tomorrow's results. Keep your eyes on your {goal} goal and remember why you started. Every meal and choice is a step toward victory.",
+      "{name}, this journey is about more than food—it's about forging discipline and character. Lean into the process and watch how your {goal} progress unfolds.",
+      "Start strong, {name}. Nourishing your body with intention sets the tone for the entire day. Your {goal} goal is within reach when you honor your plan.",
+      "Don't let distractions knock you off course. Your {goal} journey requires a master plan and the will to stick with it. You're building habits that will last a lifetime.",
+      "Consistency in nutrition fuels your progress. {name}, keep pushing toward your {goal} with purpose and focus. You're stronger than any excuse.",
+      "Meal prep isn't just about food—it's about reclaiming control over your day. {name}, your commitment to your {goal} is your superpower."
+    ],
+    quotes: [
+      "'You must do what you have never done to get what you have never gotten.'",
+      "'Having a plan means one less thing to think about when life gets busy.'",
+      "'Discipline is not just a task; it's the foundation of your new identity.'",
+      "'The plan is your anchor when the waves of temptation come crashing.'",
+      "'Commitment to the process beats motivation every single time.'",
+      "'Glen says: Consistency is the true game changer in any transformation.'",
+      "'Glen says: Trust the process even when the results aren't immediate.'"
+    ]
+  }
+};
+
+function TipsSection({ name = "Champion", goal = "fitness" }) {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    // Combine daily and motivational messages (optional)
+    // Combine messages and quotes from the correct JSON structure
     const allMessages = [
-      ...Week1Messages.dailyMessages,
-      ...Week1Messages.motivationalMessages,
+      ...Week1Messages.week1.messages,
+      ...Week1Messages.week1.quotes,
     ];
 
     // Pick two random unique messages
     function getRandomMessages(arr, num) {
       const copy = [...arr];
       const selected = [];
-      for (let i = 0; i < num; i++) {
+      for (let i = 0; i < num && copy.length > 0; i++) {
         const idx = Math.floor(Math.random() * copy.length);
         selected.push(copy.splice(idx, 1)[0]);
       }
@@ -46,7 +69,9 @@ function TipsSection({ name, goal }) {
 const MealSwipeApp = () => {
   const [profile, setProfile] = useState({
     height: { feet: 5, inches: 8 },
-    weight: 150
+    weight: 150,
+    name: "Champion",
+    goal: "fitness"
   });
 
   const [meals, setMeals] = useState([
@@ -254,6 +279,30 @@ const MealSwipeApp = () => {
                   />
                   <span className="self-center text-gray-600">lbs</span>
                 </div>
+              </div>
+            </div>
+            
+            {/* Name and Goal inputs */}
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <input
+                  type="text"
+                  value={profile.name}
+                  onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full p-2 border rounded-lg text-center"
+                  placeholder="Your name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Goal</label>
+                <input
+                  type="text"
+                  value={profile.goal}
+                  onChange={(e) => setProfile(prev => ({ ...prev, goal: e.target.value }))}
+                  className="w-full p-2 border rounded-lg text-center"
+                  placeholder="fitness"
+                />
               </div>
             </div>
           </div>
@@ -728,7 +777,7 @@ const MealSwipeApp = () => {
                       </div>
 
                       {/* Scrollable Content */}
-                      <div className="flex-1 overflow-y-auto px-6 pb-6">
+                      <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
                         <div className="space-y-6">
                           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
                             <div className="flex items-center gap-4">
@@ -785,18 +834,7 @@ const MealSwipeApp = () => {
                           </div>
 
                           {/* Tips Section */}
-                          <div className="pt-4 space-y-3">
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">
-                                {dailyTip}
-                              </p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">
-                                {motivationalTip}
-                              </p>
-                            </div>
-                          </div>
+                          <TipsSection name={profile.name} goal={profile.goal} />
                         </div>
                       </div>
                     </div>
