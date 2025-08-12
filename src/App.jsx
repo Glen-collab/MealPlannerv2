@@ -1,4 +1,47 @@
 import React, { useState, useRef } from 'react';
+import Week1Messages from './MealMessages/Week1Messages.json';
+
+function TipsSection({ name, goal }) {
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    // Combine daily and motivational messages (optional)
+    const allMessages = [
+      ...Week1Messages.dailyMessages,
+      ...Week1Messages.motivationalMessages,
+    ];
+
+    // Pick two random unique messages
+    function getRandomMessages(arr, num) {
+      const copy = [...arr];
+      const selected = [];
+      for (let i = 0; i < num; i++) {
+        const idx = Math.floor(Math.random() * copy.length);
+        selected.push(copy.splice(idx, 1)[0]);
+      }
+      return selected;
+    }
+
+    let randomMessages = getRandomMessages(allMessages, 2);
+
+    // Replace placeholders with actual name and goal
+    randomMessages = randomMessages.map(msg =>
+      msg.replace(/{name}/g, name).replace(/{goal}/g, goal)
+    );
+
+    setMessages(randomMessages);
+  }, [name, goal]);
+
+  return (
+    <div className="pt-4 space-y-3">
+      {messages.map((msg, i) => (
+        <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+          <p className="text-sm text-gray-600">{msg}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const MealSwipeApp = () => {
   const [profile, setProfile] = useState({
@@ -744,34 +787,14 @@ const MealSwipeApp = () => {
                           {/* Tips Section */}
                           <div className="pt-4 space-y-3">
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">💡 Tip: Track your meals accurately for better results</p>
+                              <p className="text-sm text-gray-600">
+                                {dailyTip}
+                              </p>
                             </div>
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">🥗 Remember to include cooking oils and sauces</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">⚖️ Use a food scale for precise measurements</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">📱 Log meals as you eat them</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">🎯 Stay consistent with your tracking</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">💧 Don't forget to track beverages too</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">🍽️ Consider meal timing for better results</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">📊 Review your daily totals regularly</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">🏃‍♂️ Balance nutrition with physical activity</p>
-                            </div>
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                              <p className="text-sm text-gray-600">😴 Good sleep supports healthy eating habits</p>
+                              <p className="text-sm text-gray-600">
+                                {motivationalTip}
+                              </p>
                             </div>
                           </div>
                         </div>
