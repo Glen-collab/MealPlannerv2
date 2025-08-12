@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { FoodDatabase, getFoodsInCategory } from './src/FoodDatabase.js';
 
 // Import the meal messaging system (uncomment when files are available)
 // import { MealMessages } from './src/MealMessages/index.js';
@@ -69,6 +70,159 @@ function MealMessageDisplay({ meal, profile, getMealMessage }) {
   );
 }
 
+function FoodCategoryGrid({ mealId, onSelectCategory }) {
+  const categories = [
+    [
+      { name: 'Protein', icon: '🍗', color: 'bg-blue-500' },
+      { name: 'Carbs', icon: '🍞', color: 'bg-green-500' }
+    ],
+    [
+      { name: 'Healthy Fats', icon: '🥑', color: 'bg-yellow-500' },
+      { name: 'Supplements', icon: '💊', color: 'bg-purple-500' }
+    ],
+    [
+      { name: 'Fruit', icon: '🍎', color: 'bg-red-500' },
+      { name: 'Vegetables', icon: '🥬', color: 'bg-green-600' }
+    ],
+    [
+      { name: 'Condiments', icon: '🧂', color: 'bg-gray-500' },
+      { name: 'Junk Food', icon: '🍪', color: 'bg-orange-500' }
+    ]
+  ];
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Add Foods</h3>
+      {categories.map((row, rowIndex) => (
+        <div key={rowIndex} className="grid grid-cols-2 gap-3">
+          {row.map((category) => (
+            <button
+              key={category.name}
+              onClick={() => onSelectCategory(category.name, mealId)}
+              className={`${category.color} text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2`}
+            >
+              <span className="text-xl">{category.icon}</span>
+              <span className="text-sm font-semibold">{category.name}</span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
+  const [selectedFood, setSelectedFood] = useState('');
+  const [servings, setServings] = useState(1);
+  
+  // Map UI food categories to database categories
+  const foodCategoryMapping = {
+    'Protein': 'protein',
+    'Carbs': 'carbohydrate',
+    'Healthy Fats': 'fat',
+    'Supplements': 'supplements',
+    'Fruit': 'fruits',
+    'Vegetables': 'vegetables',
+    'Condiments': 'condiments',
+    'Junk Food': 'snacks'
+  };
+  
+  const dbCategory = foodCategoryMapping[category];
+  const foods = getFoodsInCategory(dbCategory);
+  
+  const handleAddFood = () => {
+    if (selectedFood && servings > 0) {
+      onAddFood(mealId, dbCategory, selectedFood, servings);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl w-full max-w-md max-h-96 flex flex-col">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800">{category}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-3">
+            {foods.map((food) => (
+              <button
+                key={food}
+                onClick={() => setSelectedFood(food)}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-colors ${
+                  selectedFood === food 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-medium text-gray-800">{food}</div>
+                <div className="text-sm text-gray-600">
+                  {FoodDatabase[dbCategory][food].calories} cal per serving
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {selectedFood && (
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center gap-3 mb-3">
+              <label className="text-sm font-medium text-gray-700">Servings:</label>
+              <input
+                type="number"
+                value={servings}
+                onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                step="0.1"
+                min="0.1"
+                className="w-20 p-2 border border-gray-300 rounded-lg text-center"
+              />
+            </div>
+            <button
+              onClick={handleAddFood}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+            >
+              Add {selectedFood}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MealFoodList({ meal, onRemoveFood }) {
+  if (!meal.items || meal.items.length === 0) return null;
+
+  return (
+    <div className="mt-4 space-y-2">
+      <h4 className="font-semibold text-gray-800 text-sm">Added Foods:</h4>
+      {meal.items.map((item, index) => (
+        <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
+          <div className="flex-1">
+            <div className="font-medium text-sm text-gray-800">{item.food}</div>
+            <div className="text-xs text-gray-600">
+              {item.servings}x serving • {Math.round(item.calories)} cal
+            </div>
+          </div>
+          <button
+            onClick={() => onRemoveFood(meal.id, index)}
+            className="text-red-500 hover:text-red-700 text-sm ml-2"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const MealSwipeApp = () => {
   const [profile, setProfile] = useState({
     height: { feet: 5, inches: 8 },
@@ -87,6 +241,18 @@ const MealSwipeApp = () => {
     'Dinner': 'dinner',
     'Late Snack': 'lateSnack',
     'PostWorkout': 'postWorkout'
+  };
+
+  // Map UI food categories to database categories
+  const foodCategoryMapping = {
+    'Protein': 'protein',
+    'Carbs': 'carbohydrate',
+    'Healthy Fats': 'fat',
+    'Supplements': 'supplements',
+    'Fruit': 'fruits',
+    'Vegetables': 'vegetables',
+    'Condiments': 'condiments',
+    'Junk Food': 'snacks'
   };
 
   const [meals, setMeals] = useState([
@@ -179,6 +345,8 @@ const MealSwipeApp = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isScrollModal, setIsScrollModal] = useState(false);
   const [isFullScreenSwipe, setIsFullScreenSwipe] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedMealForFood, setSelectedMealForFood] = useState(null);
   const dragRef = useRef({ startX: 0, startY: 0 });
 
   const updateMeal = (mealId, field, value) => {
@@ -188,6 +356,65 @@ const MealSwipeApp = () => {
         // Calculate calories: protein*4 + carbs*4 + fat*9
         updated.calories = (updated.protein * 4) + (updated.carbs * 4) + (updated.fat * 9);
         return updated;
+      }
+      return meal;
+    }));
+  };
+
+  const addFoodToMeal = (mealId, category, foodName, servings = 1) => {
+    const foodData = FoodDatabase[category]?.[foodName];
+    if (!foodData) return;
+
+    setMeals(prev => prev.map(meal => {
+      if (meal.id === mealId) {
+        const newItem = {
+          food: foodName,
+          category: category,
+          servings: servings,
+          protein: foodData.protein * servings,
+          carbs: foodData.carbs * servings,
+          fat: foodData.fat * servings,
+          calories: foodData.calories * servings
+        };
+
+        const updatedItems = [...(meal.items || []), newItem];
+        const newProtein = meal.protein + (foodData.protein * servings);
+        const newCarbs = meal.carbs + (foodData.carbs * servings);
+        const newFat = meal.fat + (foodData.fat * servings);
+        const newCalories = meal.calories + (foodData.calories * servings);
+
+        return {
+          ...meal,
+          items: updatedItems,
+          protein: Math.round(newProtein * 10) / 10,
+          carbs: Math.round(newCarbs * 10) / 10,
+          fat: Math.round(newFat * 10) / 10,
+          calories: Math.round(newCalories)
+        };
+      }
+      return meal;
+    }));
+  };
+
+  const removeFoodFromMeal = (mealId, itemIndex) => {
+    setMeals(prev => prev.map(meal => {
+      if (meal.id === mealId) {
+        const itemToRemove = meal.items[itemIndex];
+        const updatedItems = meal.items.filter((_, index) => index !== itemIndex);
+        
+        const newProtein = meal.protein - itemToRemove.protein;
+        const newCarbs = meal.carbs - itemToRemove.carbs;
+        const newFat = meal.fat - itemToRemove.fat;
+        const newCalories = meal.calories - itemToRemove.calories;
+
+        return {
+          ...meal,
+          items: updatedItems,
+          protein: Math.max(0, Math.round(newProtein * 10) / 10),
+          carbs: Math.max(0, Math.round(newCarbs * 10) / 10),
+          fat: Math.max(0, Math.round(newFat * 10) / 10),
+          calories: Math.max(0, Math.round(newCalories))
+        };
       }
       return meal;
     }));
@@ -275,6 +502,16 @@ const MealSwipeApp = () => {
       meal.time,
       pieData
     );
+  };
+
+  const openFoodSelection = (category, mealId) => {
+    setSelectedCategory(category);
+    setSelectedMealForFood(mealId);
+  };
+
+  const closeFoodSelection = () => {
+    setSelectedCategory(null);
+    setSelectedMealForFood(null);
   };
 
   const enterSwipeMode = () => {
@@ -656,228 +893,55 @@ const MealSwipeApp = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {/* Breakfast - All macros */}
-                    {meal.name === 'Breakfast' && (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-bold">P</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                    {/* Food Selection Grid */}
+                    <FoodCategoryGrid 
+                      mealId={meal.id} 
+                      onSelectCategory={openFoodSelection} 
+                    />
+                    
+                    {/* Added Foods List */}
+                    <MealFoodList 
+                      meal={meal} 
+                      onRemoveFood={removeFoodFromMeal} 
+                    />
+                    
+                    {/* Manual Macro Entry (Optional) */}
+                    {isEditMode && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Manual Entry</h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-xs text-gray-600">Protein</label>
                             <input
                               type="number"
                               value={meal.protein}
                               onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
                               placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
                             />
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-green-600 font-bold">C</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                          <div>
+                            <label className="block text-xs text-gray-600">Carbs</label>
                             <input
                               type="number"
                               value={meal.carbs}
                               onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
                               placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
                             />
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                            <span className="text-yellow-600 font-bold">F</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                          <div>
+                            <label className="block text-xs text-gray-600">Fat</label>
                             <input
                               type="number"
                               value={meal.fat}
                               onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
                               placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
                             />
                           </div>
                         </div>
-                      </>
-                    )}
-
-                    {/* FirstSnack & SecondSnack - Protein & Carbs */}
-                    {(meal.name === 'FirstSnack' || meal.name === 'SecondSnack') && (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-bold">P</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
-                            <input
-                              type="number"
-                              value={meal.protein}
-                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-green-600 font-bold">C</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
-                            <input
-                              type="number"
-                              value={meal.carbs}
-                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Lunch & Dinner - All macros */}
-                    {(meal.name === 'Lunch' || meal.name === 'Dinner') && (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-bold">P</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
-                            <input
-                              type="number"
-                              value={meal.protein}
-                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-green-600 font-bold">C</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
-                            <input
-                              type="number"
-                              value={meal.carbs}
-                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                            <span className="text-yellow-600 font-bold">F</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
-                            <input
-                              type="number"
-                              value={meal.fat}
-                              onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* MidAfternoon & Late Snack - Protein & Fat */}
-                    {(meal.name === 'MidAfternoon Snack' || meal.name === 'Late Snack') && (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-bold">P</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
-                            <input
-                              type="number"
-                              value={meal.protein}
-                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                            <span className="text-yellow-600 font-bold">F</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
-                            <input
-                              type="number"
-                              value={meal.fat}
-                              onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* PostWorkout - Protein & Carbs */}
-                    {meal.name === 'PostWorkout' && (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-bold">P</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
-                            <input
-                              type="number"
-                              value={meal.protein}
-                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-green-600 font-bold">C</span>
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
-                            <input
-                              type="number"
-                              value={meal.carbs}
-                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-                              placeholder="0"
-                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
-                            />
-                          </div>
-                        </div>
-                      </>
+                      </div>
                     )}
                   </div>
                   
@@ -943,50 +1007,49 @@ const MealSwipeApp = () => {
                     <div className="text-xl font-bold text-purple-600 mt-1">{meal.calories} cal</div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-bold text-sm">P</span>
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                  {/* Food Selection Grid for Scroll Modal */}
+                  <FoodCategoryGrid 
+                    mealId={meal.id} 
+                    onSelectCategory={openFoodSelection} 
+                  />
+                  
+                  {/* Added Foods List */}
+                  <MealFoodList 
+                    meal={meal} 
+                    onRemoveFood={removeFoodFromMeal} 
+                  />
+
+                  {/* Manual Entry Section */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Manual Entry (Optional)</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-xs text-gray-600">Protein</label>
                         <input
                           type="number"
                           value={meal.protein}
                           onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg"
+                          className="w-full p-2 border border-gray-300 rounded text-sm"
                           placeholder="0"
                         />
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 font-bold text-sm">C</span>
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                      <div>
+                        <label className="block text-xs text-gray-600">Carbs</label>
                         <input
                           type="number"
                           value={meal.carbs}
                           onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg"
+                          className="w-full p-2 border border-gray-300 rounded text-sm"
                           placeholder="0"
                         />
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <span className="text-yellow-600 font-bold text-sm">F</span>
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                      <div>
+                        <label className="block text-xs text-gray-600">Fat</label>
                         <input
                           type="number"
                           value={meal.fat}
                           onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg"
+                          className="w-full p-2 border border-gray-300 rounded text-sm"
                           placeholder="0"
                         />
                       </div>
@@ -1108,82 +1171,75 @@ const MealSwipeApp = () => {
                             </div>
                           </div>
 
-                          {/* Quick Food Item Input for Testing */}
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
-                            <div className="flex items-center gap-3">
-                              <div className="text-2xl">🍎</div>
-                              <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Quick Food (for testing messaging)</label>
-                                <input
-                                  type="text"
-                                  placeholder="e.g., 'chicken breast' or 'oatmeal'"
-                                  onChange={(e) => {
-                                    const foodItem = e.target.value;
-                                    if (foodItem) {
-                                      setMeals(prev => prev.map(m => 
-                                        m.id === meal.id ? { 
-                                          ...m, 
-                                          items: [{ food: foodItem, serving: 1 }] 
-                                        } : m
-                                      ));
-                                    }
-                                  }}
-                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                                />
-                              </div>
-                            </div>
-                          </div>
+                          {/* Food Selection Grid */}
+                          <FoodCategoryGrid 
+                            mealId={meal.id} 
+                            onSelectCategory={openFoodSelection} 
+                          />
+                          
+                          {/* Added Foods List */}
+                          <MealFoodList 
+                            meal={meal} 
+                            onRemoveFood={removeFoodFromMeal} 
+                          />
 
-                          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
-                            <div className="flex items-center gap-4">
-                              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-blue-600 font-bold text-xl">P</span>
+                          {/* Manual Macro Entry Section */}
+                          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
+                            <h4 className="text-lg font-semibold text-gray-800 mb-4">Manual Entry (Optional)</h4>
+                            
+                            <div className="space-y-4">
+                              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span className="text-blue-600 font-bold text-lg">P</span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Protein (g)</label>
+                                    <input
+                                      type="number"
+                                      value={meal.protein}
+                                      onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                                      className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <label className="block text-lg font-medium text-gray-700 mb-2">Protein (g)</label>
-                                <input
-                                  type="number"
-                                  value={meal.protein}
-                                  onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                                  className="w-full p-4 border border-gray-300 rounded-xl text-xl bg-white shadow-sm"
-                                  placeholder="0"
-                                />
-                              </div>
-                            </div>
-                          </div>
 
-                          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
-                            <div className="flex items-center gap-4">
-                              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                                <span className="text-green-600 font-bold text-xl">C</span>
+                              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <span className="text-green-600 font-bold text-lg">C</span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Carbs (g)</label>
+                                    <input
+                                      type="number"
+                                      value={meal.carbs}
+                                      onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                                      className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <label className="block text-lg font-medium text-gray-700 mb-2">Carbs (g)</label>
-                                <input
-                                  type="number"
-                                  value={meal.carbs}
-                                  onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                                  className="w-full p-4 border border-gray-300 rounded-xl text-xl bg-white shadow-sm"
-                                  placeholder="0"
-                                />
-                              </div>
-                            </div>
-                          </div>
 
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 shadow-sm">
-                            <div className="flex items-center gap-4">
-                              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <span className="text-yellow-600 font-bold text-xl">F</span>
-                              </div>
-                              <div className="flex-1">
-                                <label className="block text-lg font-medium text-gray-700 mb-2">Fat (g)</label>
-                                <input
-                                  type="number"
-                                  value={meal.fat}
-                                  onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                                  className="w-full p-4 border border-gray-300 rounded-xl text-xl bg-white shadow-sm"
-                                  placeholder="0"
-                                />
+                              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <span className="text-yellow-600 font-bold text-lg">F</span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Fat (g)</label>
+                                    <input
+                                      type="number"
+                                      value={meal.fat}
+                                      onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                                      className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1199,6 +1255,16 @@ const MealSwipeApp = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Food Selection Modal */}
+      {selectedCategory && selectedMealForFood && (
+        <FoodSelectionModal
+          category={selectedCategory}
+          mealId={selectedMealForFood}
+          onAddFood={addFoodToMeal}
+          onClose={closeFoodSelection}
+        />
       )}
     </div>
   );
