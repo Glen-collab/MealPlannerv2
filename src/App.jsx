@@ -19,6 +19,7 @@ const MealSwipeApp = () => {
   const [cardPositions, setCardPositions] = useState(meals.map(() => ({ x: 0, y: 0, rotation: 0 })));
   const [isDragging, setIsDragging] = useState(false);
   const [isSwipeMode, setIsSwipeMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isScrollModal, setIsScrollModal] = useState(false);
   const [isFullScreenSwipe, setIsFullScreenSwipe] = useState(false);
   const dragRef = useRef({ startX: 0, startY: 0 });
@@ -43,6 +44,7 @@ const MealSwipeApp = () => {
 
   const exitSwipeMode = () => {
     setIsSwipeMode(false);
+    setIsEditMode(false);
     setIsDragging(false);
     document.body.style.overflow = '';
     document.body.style.touchAction = '';
@@ -77,6 +79,9 @@ const MealSwipeApp = () => {
   const handleMouseDown = (e) => {
     if (!isSwipeMode && !isFullScreenSwipe) return;
     
+    // Don't allow swiping in edit mode during quick swipe
+    if (isSwipeMode && isEditMode) return;
+    
     // Only allow swiping on specific areas, not the scrollable content
     if (e.target.closest('.no-swipe-zone')) return;
     
@@ -89,6 +94,9 @@ const MealSwipeApp = () => {
 
   const handleMouseMove = (e) => {
     if (!isDragging || (!isSwipeMode && !isFullScreenSwipe)) return;
+    
+    // Don't allow swiping in edit mode during quick swipe
+    if (isSwipeMode && isEditMode) return;
     
     const currentX = e.clientX || e.touches?.[0]?.clientX || 0;
     const currentY = e.clientY || e.touches?.[0]?.clientY || 0;
@@ -111,6 +119,9 @@ const MealSwipeApp = () => {
 
   const handleMouseUp = (e) => {
     if (!isDragging || (!isSwipeMode && !isFullScreenSwipe)) return;
+    
+    // Don't allow swiping in edit mode during quick swipe
+    if (isSwipeMode && isEditMode) return;
     
     e?.preventDefault?.();
     e?.stopPropagation?.();
@@ -253,12 +264,22 @@ const MealSwipeApp = () => {
             </button>
           </div>
         ) : (
-          <div className="text-center mb-4">
+          <div className="text-center mb-4 space-y-3">
             <button
               onClick={exitSwipeMode}
               className="bg-red-500 text-white px-8 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
             >
               ✨ Finish Swiping
+            </button>
+            <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`px-6 py-2 rounded-xl font-bold shadow-lg transition-all ${
+                isEditMode 
+                  ? 'bg-green-500 text-white hover:bg-green-600' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {isEditMode ? '🔒 Lock & Swipe' : '✏️ Edit Mode'}
             </button>
           </div>
         )}
@@ -267,7 +288,9 @@ const MealSwipeApp = () => {
         <div className="relative h-96 mb-6">
           {isSwipeMode && (
             <div className="text-center text-white mb-4">
-              <p className="text-sm opacity-80">Swipe left or right to navigate meals</p>
+              <p className="text-sm opacity-80">
+                {isEditMode ? 'Edit mode - tap inputs to enter values' : 'Swipe left or right to navigate meals'}
+              </p>
               <p className="text-lg font-semibold">Meal {currentCard + 1} of {meals.length}</p>
             </div>
           )}
@@ -282,7 +305,11 @@ const MealSwipeApp = () => {
             return (
               <div
                 key={meal.id}
-                className={`absolute inset-0 ${isSwipeMode || isFullScreenSwipe ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+                className={`absolute inset-0 ${
+                  (isSwipeMode && !isEditMode) || isFullScreenSwipe 
+                    ? 'cursor-grab active:cursor-grabbing' 
+                    : 'cursor-default'
+                }`}
                 style={{
                   transform: `translateX(${position.x}px) translateY(${position.y}px) rotate(${position.rotation}deg) scale(${scale})`,
                   zIndex,
@@ -300,68 +327,175 @@ const MealSwipeApp = () => {
                 <div className="bg-white rounded-2xl p-6 shadow-2xl h-full">
                   <div className="text-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-800">{meal.name}</h2>
-                    <div className="text-3xl mt-2">
-                      {meal.name === 'Breakfast' && '🍳'}
-                      {meal.name === 'Morning Snack' && '🍎'}
-                      {meal.name === 'Lunch' && '🥗'}
-                      {meal.name === 'Afternoon Snack' && '🥜'}
-                      {meal.name === 'Dinner' && '🍽️'}
-                      {meal.name === 'Evening Snack' && '🍓'}
+                    <div className="flex items-center justify-center gap-3 mt-2">
+                      <div className="text-3xl">
+                        {meal.name === 'Breakfast' && '🍳'}
+                        {meal.name === 'Morning Snack' && '🍎'}
+                        {meal.name === 'Lunch' && '🥗'}
+                        {meal.name === 'Afternoon Snack' && '🥜'}
+                        {meal.name === 'Dinner' && '🍽️'}
+                        {meal.name === 'Evening Snack' && '🍓'}
+                      </div>
+                      <div className="text-2xl font-bold text-purple-600">{meal.calories} cal</div>
                     </div>
-                    <div className="text-2xl font-bold text-purple-600 mt-2">{meal.calories} cal</div>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-bold">P</span>
+                    {/* Breakfast - Protein only */}
+                    {meal.name === 'Breakfast' && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 font-bold">P</span>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                          <input
+                            type="number"
+                            value={meal.protein}
+                            onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                            placeholder="0"
+                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                          />
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
-                        <input
-                          type="number"
-                          value={meal.protein}
-                          onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg"
-                          placeholder="0"
-                          disabled={isSwipeMode || isFullScreenSwipe}
-                        />
-                      </div>
-                    </div>
+                    )}
 
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 font-bold">C</span>
+                    {/* Morning Snack - Carbs only */}
+                    {meal.name === 'Morning Snack' && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                          <span className="text-green-600 font-bold">C</span>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                          <input
+                            type="number"
+                            value={meal.carbs}
+                            onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                            placeholder="0"
+                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                          />
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
-                        <input
-                          type="number"
-                          value={meal.carbs}
-                          onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg"
-                          placeholder="0"
-                          disabled={isSwipeMode || isFullScreenSwipe}
-                        />
-                      </div>
-                    </div>
+                    )}
 
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <span className="text-yellow-600 font-bold">F</span>
+                    {/* Lunch - Fat only */}
+                    {meal.name === 'Lunch' && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <span className="text-yellow-600 font-bold">F</span>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                          <input
+                            type="number"
+                            value={meal.fat}
+                            onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                            placeholder="0"
+                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                          />
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
-                        <input
-                          type="number"
-                          value={meal.fat}
-                          onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg"
-                          placeholder="0"
-                          disabled={isSwipeMode || isFullScreenSwipe}
-                        />
+                    )}
+
+                    {/* Afternoon Snack - Fat only */}
+                    {meal.name === 'Afternoon Snack' && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <span className="text-yellow-600 font-bold">F</span>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                          <input
+                            type="number"
+                            value={meal.fat}
+                            onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                            placeholder="0"
+                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Dinner - All macros */}
+                    {meal.name === 'Dinner' && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold">P</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                            <input
+                              type="number"
+                              value={meal.protein}
+                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-bold">C</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Carbs (g)</label>
+                            <input
+                              type="number"
+                              value={meal.carbs}
+                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <span className="text-yellow-600 font-bold">F</span>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">Fat (g)</label>
+                            <input
+                              type="number"
+                              value={meal.fat}
+                              onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded-lg"
+                              placeholder="0"
+                              disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Evening Snack - Protein only */}
+                    {meal.name === 'Evening Snack' && (
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 font-bold">P</span>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700">Protein (g)</label>
+                          <input
+                            type="number"
+                            value={meal.protein}
+                            onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+                            placeholder="0"
+                            disabled={isFullScreenSwipe || (isSwipeMode && !isEditMode)}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -536,20 +670,22 @@ const MealSwipeApp = () => {
                       <div className="p-6 flex-shrink-0">
                         <div className="text-center">
                           <h2 className="text-3xl font-bold text-gray-800">{meal.name}</h2>
-                          <div className="text-4xl mt-3">
-                            {meal.name === 'Breakfast' && '🍳'}
-                            {meal.name === 'Morning Snack' && '🍎'}
-                            {meal.name === 'Lunch' && '🥗'}
-                            {meal.name === 'Afternoon Snack' && '🥜'}
-                            {meal.name === 'Dinner' && '🍽️'}
-                            {meal.name === 'Evening Snack' && '🍓'}
+                          <div className="flex items-center justify-center gap-4 mt-3">
+                            <div className="text-4xl">
+                              {meal.name === 'Breakfast' && '🍳'}
+                              {meal.name === 'Morning Snack' && '🍎'}
+                              {meal.name === 'Lunch' && '🥗'}
+                              {meal.name === 'Afternoon Snack' && '🥜'}
+                              {meal.name === 'Dinner' && '🍽️'}
+                              {meal.name === 'Evening Snack' && '🍓'}
+                            </div>
+                            <div className="text-3xl font-bold text-purple-600">{meal.calories} cal</div>
                           </div>
-                          <div className="text-3xl font-bold text-purple-600 mt-3">{meal.calories} cal</div>
                         </div>
                       </div>
 
                       {/* Scrollable Content */}
-                      <div className="flex-1 overflow-y-auto px-6">
+                      <div className="flex-1 overflow-y-auto px-6 pb-6">
                         <div className="space-y-6">
                           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
                             <div className="flex items-center gap-4">
@@ -625,18 +761,20 @@ const MealSwipeApp = () => {
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                               <p className="text-sm text-gray-600">💧 Don't forget to track beverages too</p>
                             </div>
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                              <p className="text-sm text-gray-600">🍽️ Consider meal timing for better results</p>
+                            </div>
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                              <p className="text-sm text-gray-600">📊 Review your daily totals regularly</p>
+                            </div>
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                              <p className="text-sm text-gray-600">🏃‍♂️ Balance nutrition with physical activity</p>
+                            </div>
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                              <p className="text-sm text-gray-600">😴 Good sleep supports healthy eating habits</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Bottom Finish Button */}
-                      <div className="p-6 border-t border-gray-200">
-                        <button
-                          onClick={exitFullScreenSwipe}
-                          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-2xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
-                        >
-                          ✨ Finish Tracking
-                        </button>
                       </div>
                     </div>
                   </div>
