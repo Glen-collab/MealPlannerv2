@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { FoodDatabase, getFoodsInCategory } from './src/FoodDatabase.js';
+import { FoodDatabase, getFoodsInCategory } from './FoodDatabase.js';
 
 // Import the meal messaging system (uncomment when files are available)
 // import { MealMessages } from './src/MealMessages/index.js';
