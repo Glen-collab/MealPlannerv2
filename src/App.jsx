@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 // Mock the Week1Messages data since we can't import JSON directly
 const Week1Messages = {
@@ -331,6 +332,52 @@ const MealSwipeApp = () => {
           </div>
         </div>
 
+        {/* Welcome Message & Pie Chart - Only on main screen */}
+        {!isSwipeMode && (
+          <div className="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome {profile.name}!</h2>
+              <p className="text-gray-600">Ready to track your {profile.goal} journey? Let's get started!</p>
+            </div>
+            
+            {/* Macro Pie Chart */}
+            <div className="h-64 mb-4">
+              {totalMacros.calories > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Protein', value: totalMacros.protein * 4, color: '#3B82F6' },
+                        { name: 'Carbs', value: totalMacros.carbs * 4, color: '#10B981' },
+                        { name: 'Fat', value: totalMacros.fat * 9, color: '#F59E0B' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value} cal`}
+                    >
+                      <Cell fill="#3B82F6" />
+                      <Cell fill="#10B981" />
+                      <Cell fill="#F59E0B" />
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${value} calories`, '']} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">📊</div>
+                    <p className="text-gray-500 font-medium">Your macro breakdown will appear here</p>
+                    <p className="text-gray-400 text-sm">Start adding meals to see your progress!</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Mode Toggle Buttons */}
         {!isSwipeMode ? (
           <div className="text-center mb-6 space-y-3">
@@ -339,7 +386,7 @@ const MealSwipeApp = () => {
                 onClick={enterSwipeMode}
                 className="bg-white text-purple-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
               >
-                🔄 Quick Swipe
+                🍽️ Meals!
               </button>
               <button
                 onClick={enterScrollModal}
@@ -376,16 +423,15 @@ const MealSwipeApp = () => {
           </div>
         )}
 
-        {/* Card Stack */}
-        <div className="relative h-96 mb-6">
-          {isSwipeMode && (
+        {/* Card Stack - Only visible in swipe mode */}
+        {isSwipeMode && (
+          <div className="relative h-96 mb-6">
             <div className="text-center text-white mb-4">
               <p className="text-sm opacity-80">
                 {isEditMode ? 'Edit mode - tap inputs to enter values' : 'Swipe left or right to navigate meals'}
               </p>
               <p className="text-lg font-semibold">Meal {currentCard + 1} of {meals.length}</p>
             </div>
-          )}
           
           {meals.map((meal, index) => {
             const isActive = index === currentCard;
@@ -593,10 +639,11 @@ const MealSwipeApp = () => {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
 
-        {/* Navigation Dots - Only visible when not in swipe mode */}
-        {!isSwipeMode && (
+        {/* Navigation Dots - Only visible in swipe mode */}
+        {isSwipeMode && (
           <div className="flex justify-center gap-2">
             {meals.map((_, index) => (
               <button
