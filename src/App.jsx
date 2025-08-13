@@ -348,6 +348,7 @@ function CreateMealModal({ onClose }) {
       </div>
     </div>
   );
+}
 
 function MealMessageDisplay({ meal, profile, getMealMessage }) {
   if (!meal || meal.calories === 0) return null;
