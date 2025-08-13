@@ -473,7 +473,13 @@ function FullScreenSwipeInterface({
                         </div>
                         <div className="text-3xl font-bold text-purple-600">{meal.calories} cal</div>
                         <button
-                          onClick={() => openTimePicker(meal.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openTimePicker(meal.id);
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onTouchStart={(e) => e.stopPropagation()}
                           className="bg-blue-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-600 transition-colors flex items-center gap-2"
                         >
                           🕐 {meal.time}
