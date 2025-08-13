@@ -607,6 +607,13 @@ function FullScreenSwipeInterface({
                           {isUSDAOwned && <span className="text-xs">🔒</span>}
                         </button>
                       </div>
+
+                      {/* Macro Nutrients Display */}
+                      <div className="mt-2 text-center">
+                        <div className="text-xs font-bold text-red-600">
+                          P: {meal.protein}g • C: {meal.carbs}g • F: {meal.fat}g
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -629,68 +636,7 @@ function FullScreenSwipeInterface({
                         mealSources={mealSources}
                       />
 
-                      {/* Manual Macro Entry Section - Hidden for USDA meals */}
-                      {!isUSDAOwned && (
-                        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
-                          <h4 className="text-lg font-semibold text-gray-800 mb-4">Manual Entry (Optional)</h4>
-                          
-                          <div className="space-y-4">
-                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <span className="text-blue-600 font-bold text-lg">P</span>
-                                </div>
-                                <div className="flex-1">
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Protein (g)</label>
-                                  <input
-                                    type="number"
-                                    value={meal.protein}
-                                    onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                                    placeholder="0"
-                                  />
-                                </div>
-                              </div>
-                            </div>
 
-                            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                  <span className="text-green-600 font-bold text-lg">C</span>
-                                </div>
-                                <div className="flex-1">
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Carbs (g)</label>
-                                  <input
-                                    type="number"
-                                    value={meal.carbs}
-                                    onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                                    placeholder="0"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                  <span className="text-yellow-600 font-bold text-lg">F</span>
-                                </div>
-                                <div className="flex-1">
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Fat (g)</label>
-                                  <input
-                                    type="number"
-                                    value={meal.fat}
-                                    onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                                    placeholder="0"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
 
                       {/* Meal Message Section */}
                       <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
