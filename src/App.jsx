@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { FoodDatabase, getFoodsInCategory } from './FoodDatabase.js';
+import { FoodDatabase, getFoodsInCategory, getServingInfo } from './FoodDatabase.js';
 import { USDAMealCreator } from './USDAMealCreator.jsx';
 
 // Import the meal messaging system (uncomment when files are available)
@@ -215,22 +215,46 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
   const source = mealSources[mealName];
   const isUSDAOwned = source === 'usda';
   
+  // Get representative serving references from the database
+  const getServingReferenceForCategory = (categoryName) => {
+    const categoryMapping = {
+      'Protein': 'protein',
+      'Carbs': 'carbohydrate',
+      'Healthy Fats': 'fat',
+      'Supplements': 'supplements',
+      'Fruit': 'fruits',
+      'Vegetables': 'vegetables',
+      'Condiments': 'condiments',
+      'Junk/Drink': 'snacks'
+    };
+    
+    const dbCategory = categoryMapping[categoryName];
+    if (!dbCategory) return '1 serving';
+    
+    // Get first food from category as representative
+    const foods = getFoodsInCategory(dbCategory);
+    if (foods.length === 0) return '1 serving';
+    
+    const servingInfo = getServingInfo(dbCategory, foods[0]);
+    return servingInfo.palm;
+  };
+  
   const categories = [
     [
-      { name: 'Protein', icon: '🍗', color: 'bg-blue-500', reference: '🖐️ Palm size' },
-      { name: 'Carbs', icon: '🍞', color: 'bg-green-500', reference: '🤲 Cupped hand' }
+      { name: 'Protein', icon: '🍗', color: 'bg-blue-500' },
+      { name: 'Carbs', icon: '🍞', color: 'bg-green-500' }
     ],
     [
-      { name: 'Healthy Fats', icon: '🥑', color: 'bg-yellow-500', reference: '👍 Thumb size' },
-      { name: 'Supplements', icon: '💊', color: 'bg-purple-500', reference: '💊 As directed' }
+      { name: 'Healthy Fats', icon: '🥑', color: 'bg-yellow-500' },
+      { name: 'Supplements', icon: '💊', color: 'bg-purple-500' }
     ],
     [
-      { name: 'Fruit', icon: '🍎', color: 'bg-red-500', reference: '✊ Fist size' },
-      { name: 'Vegetables', icon: '🥬', color: 'bg-green-600', reference: '✊ Fist size' }
+      { name: 'Fruit', icon: '🍎', color: 'bg-red-500' },
+      { name: 'Vegetables', icon: '🥬', color: 'bg-green-600' }
     ],
     [
-      { name: 'Condiments', icon: '🧂', color: 'bg-gray-500', reference: '🤏 Pinch' },
-      { name: 'Junk/Drink', icon: '🍺', color: 'bg-orange-500', reference: '🤲 Small handful' }
+      { name: 'Condiments', icon: '🧂', color: 'bg-gray-500' },
+      { name: 'Junk/Drink', icon: '🍺', color: 'bg-orange-500' }
     ]
   ];
 
@@ -265,7 +289,7 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
                 <span className="text-xl">{category.icon}</span>
                 <span className="text-sm font-semibold">{category.name}</span>
               </div>
-              <div className="text-xs opacity-80">{category.reference}</div>
+              <div className="text-xs opacity-80">{getServingReferenceForCategory(category.name)}</div>
             </button>
           ))}
         </div>
@@ -300,21 +324,6 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
     'Junk/Drink': 'snacks'
   };
   
-  // Hand-based serving size references
-  const getServingReference = (category, foodName) => {
-    const references = {
-      'protein': '🖐️ Palm size',
-      'carbohydrate': '🤲 Cupped hand',
-      'fat': '👍 Thumb size',
-      'fruits': '✊ Fist size',
-      'vegetables': '✊ Fist size',
-      'condiments': '🤏 Pinch',
-      'snacks': '🤲 Small handful',
-      'supplements': '💊 As directed'
-    };
-    return references[category] || '🥄 1 serving';
-  };
-  
   const dbCategory = foodCategoryMapping[category];
   const foods = getFoodsInCategory(dbCategory);
   
@@ -340,25 +349,28 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
         
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-3">
-            {foods.map((food) => (
-              <button
-                key={food}
-                onClick={() => setSelectedFood(food)}
-                className={`w-full p-3 rounded-lg border-2 text-left transition-colors ${
-                  selectedFood === food 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-medium text-gray-800">{food}</div>
-                <div className="text-sm text-gray-600">
-                  {FoodDatabase[dbCategory][food].calories} cal per serving
-                </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  {getServingReference(dbCategory, food)}
-                </div>
-              </button>
-            ))}
+            {foods.map((food) => {
+              const servingInfo = getServingInfo(dbCategory, food);
+              return (
+                <button
+                  key={food}
+                  onClick={() => setSelectedFood(food)}
+                  className={`w-full p-3 rounded-lg border-2 text-left transition-colors ${
+                    selectedFood === food 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium text-gray-800">{food}</div>
+                  <div className="text-sm text-gray-600">
+                    {FoodDatabase[dbCategory][food].calories} cal per serving
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    {servingInfo.palm}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
         
@@ -366,7 +378,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
           <div className="p-4 border-t border-gray-200">
             <div className="mb-3">
               <div className="text-sm text-gray-600 mb-2">
-                Reference: {getServingReference(dbCategory, selectedFood)}
+                Reference: {getServingInfo(dbCategory, selectedFood).palm}
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-gray-700">Servings:</label>
@@ -399,56 +411,46 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   const source = mealSources[meal.name];
   const isUSDAOwned = source === 'usda';
 
-  // Hand-based serving size references for quick-view foods
-  const getServingReference = (category) => {
-    const references = {
-      'protein': '🖐️ Palm',
-      'carbohydrate': '🤲 Cupped hand',
-      'fat': '👍 Thumb',
-      'fruits': '✊ Fist',
-      'vegetables': '✊ Fist',
-      'condiments': '🤏 Pinch',
-      'snacks': '🤲 Handful',
-      'supplements': '💊 Directed'
-    };
-    return references[category] || '';
-  };
-
   return (
     <div className="mt-4 space-y-2">
       <h4 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
         Added Foods:
         {isUSDAOwned && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">USDA</span>}
       </h4>
-      {meal.items.map((item, index) => (
-        <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
-          <div className="flex-1">
-            <div className="font-medium text-sm text-gray-800">{item.food}</div>
-            {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
-            <div className="text-xs text-gray-600">
-              {item.servings}x serving • {Math.round(item.calories)} cal
-              {item.source === 'usda' && item.servingInfo && (
-                <div className="text-xs text-gray-500 mt-1">{item.servingInfo.description}</div>
-              )}
-              {item.source !== 'usda' && item.category && getServingReference(item.category) && (
-                <div className="text-xs text-blue-500 mt-1">{getServingReference(item.category)} size</div>
-              )}
-              {item.source === 'usda' && <span className="ml-2 text-blue-500">USDA</span>}
+      {meal.items.map((item, index) => {
+        // Get serving info from database for quick-view items
+        const servingInfo = item.category ? getServingInfo(item.category, item.food) : null;
+        
+        return (
+          <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
+            <div className="flex-1">
+              <div className="font-medium text-sm text-gray-800">{item.food}</div>
+              {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
+              <div className="text-xs text-gray-600">
+                {item.servings}x serving • {Math.round(item.calories)} cal
+                {item.source === 'usda' && item.servingInfo && (
+                  <div className="text-xs text-gray-500 mt-1">{item.servingInfo.description}</div>
+                )}
+                {item.source !== 'usda' && servingInfo && (
+                  <div className="text-xs text-blue-500 mt-1">{servingInfo.palm}</div>
+                )}
+                {item.source === 'usda' && <span className="ml-2 text-blue-500">USDA</span>}
+              </div>
             </div>
+            {!readOnly && !isUSDAOwned && (
+              <button
+                onClick={() => onRemoveFood(meal.id, index)}
+                className="text-red-500 hover:text-red-700 text-sm ml-2"
+              >
+                ✕
+              </button>
+            )}
+            {isUSDAOwned && (
+              <div className="text-gray-400 text-sm ml-2">🔒</div>
+            )}
           </div>
-          {!readOnly && !isUSDAOwned && (
-            <button
-              onClick={() => onRemoveFood(meal.id, index)}
-              className="text-red-500 hover:text-red-700 text-sm ml-2"
-            >
-              ✕
-            </button>
-          )}
-          {isUSDAOwned && (
-            <div className="text-gray-400 text-sm ml-2">🔒</div>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
