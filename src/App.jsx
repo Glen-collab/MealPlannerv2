@@ -1260,7 +1260,6 @@ const MealSwipeApp = () => {
             profile={profile}
             totalMacros={totalMacros}
             meals={meals}
-            calorieData={calorieData}
           />
         )}
 
