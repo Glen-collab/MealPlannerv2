@@ -322,6 +322,8 @@ function CreateMealModal({ onClose }) {
     </div>
   );
 }
+
+function MealMessageSection({ meal, profile, getMealMessage }) {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
