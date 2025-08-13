@@ -161,7 +161,167 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   );
 }
 
-function MealMessageSection({ meal, profile, getMealMessage }) {
+// Create Meal Modal Component (USDA API Integration placeholder)
+function CreateMealModal({ onClose }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [customMealName, setCustomMealName] = useState('');
+  const [customMealTime, setCustomMealTime] = useState('12:00 PM');
+
+  // Placeholder for USDA API integration
+  // This is where you'd implement the USDA search functionality
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-5/6 flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800">Create Custom Meal</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {/* Meal Details */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Meal Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Meal Name</label>
+                  <input
+                    type="text"
+                    value={customMealName}
+                    onChange={(e) => setCustomMealName(e.target.value)}
+                    placeholder="e.g., Custom Breakfast"
+                    className="w-full p-3 border border-gray-300 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Meal Time</label>
+                  <input
+                    type="time"
+                    value={customMealTime.split(' ')[0]}
+                    onChange={(e) => {
+                      const timeValue = e.target.value;
+                      const hour = parseInt(timeValue.split(':')[0]);
+                      const minute = timeValue.split(':')[1];
+                      const period = hour >= 12 ? 'PM' : 'AM';
+                      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                      setCustomMealTime(`${displayHour}:${minute} ${period}`);
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* USDA Search Section */}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Search USDA Database</h3>
+              <div className="flex gap-3 mb-4">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for any food... (e.g., 'McDonald's Big Mac', 'chicken breast')"
+                  className="flex-1 p-3 border border-gray-300 rounded-xl"
+                />
+                <button
+                  onClick={() => {/* TODO: Implement USDA search */}}
+                  className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors"
+                >
+                  Search
+                </button>
+              </div>
+              
+              {/* Placeholder for search results */}
+              <div className="text-center py-8 border-2 border-dashed border-green-300 rounded-xl">
+                <div className="text-4xl mb-4">🔍</div>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">USDA API Integration</h4>
+                <p className="text-gray-600 mb-4">Search 300,000+ foods with accurate nutrition data</p>
+                <div className="text-sm text-gray-500 space-y-1">
+                  <p>• Brand name foods (McDonald's, Starbucks, etc.)</p>
+                  <p>• Generic foods (chicken breast, banana, etc.)</p>
+                  <p>• Restaurant items and packaged foods</p>
+                </div>
+                
+                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-medium">🔑 API Key Required</p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Get your free USDA API key at: 
+                    <br />
+                    <span className="font-mono">https://fdc.nal.usda.gov/api-guide.html</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Category Searches */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Searches</h3>
+              <div className="grid grid-cols-4 gap-3">
+                <button
+                  onClick={() => setSearchQuery('chicken breast')}
+                  className="bg-blue-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">🍗</span>
+                  <span className="text-sm">Protein</span>
+                </button>
+                <button
+                  onClick={() => setSearchQuery('bread')}
+                  className="bg-green-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">🍞</span>
+                  <span className="text-sm">Carbs</span>
+                </button>
+                <button
+                  onClick={() => setSearchQuery('avocado')}
+                  className="bg-yellow-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">🥑</span>
+                  <span className="text-sm">Fats</span>
+                </button>
+                <button
+                  onClick={() => setSearchQuery('McDonald\'s')}
+                  className="bg-red-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
+                >
+                  <span className="text-2xl">🍟</span>
+                  <span className="text-sm">Fast Food</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-200">
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                // TODO: Save custom meal
+                onClose();
+              }}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+            >
+              Save Custom Meal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -708,6 +868,7 @@ const MealSwipeApp = () => {
   const [isSwipeMode, setIsSwipeMode] = useState(false);
   const [isScrollModal, setIsScrollModal] = useState(false);
   const [isFullScreenSwipe, setIsFullScreenSwipe] = useState(false);
+  const [showCreateMeal, setShowCreateMeal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
   const dragRef = useRef({ startX: 0, startY: 0 });
@@ -997,7 +1158,7 @@ const MealSwipeApp = () => {
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-blue-500 to-red-600 p-4">
       <div className="max-w-md mx-auto">
         {/* Profile Section - Hidden in swipe modes */}
-        {!isSwipeMode && !isFullScreenSwipe && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
           <div className="bg-white rounded-2xl p-6 mb-6 shadow-xl">
             <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">Your Profile</h1>
             <div className="grid grid-cols-2 gap-4">
@@ -1073,7 +1234,7 @@ const MealSwipeApp = () => {
         )}
 
         {/* Daily Totals - Always visible but smaller in swipe modes */}
-        {!isSwipeMode && !isFullScreenSwipe && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
           <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
             <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Totals</h2>
             <div className="grid grid-cols-4 gap-3 text-center">
@@ -1098,7 +1259,7 @@ const MealSwipeApp = () => {
         )}
 
         {/* Welcome Message & Pie Chart - Only on main screen */}
-        {!isSwipeMode && !isFullScreenSwipe && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
           <div className="bg-white rounded-2xl p-6 mb-6 shadow-xl">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome {profile.name}!</h2>
@@ -1144,28 +1305,34 @@ const MealSwipeApp = () => {
         )}
 
         {/* Mode Toggle Buttons */}
-        {!isSwipeMode && !isFullScreenSwipe && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
           <div className="text-center mb-6 space-y-3">
-            <div className="flex gap-3 justify-center">
+            <div className="grid grid-cols-2 gap-3 justify-center">
               <button
                 onClick={enterSwipeMode}
-                className="bg-white text-purple-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+                className="bg-white text-purple-600 px-4 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
               >
-                🍽️ Meals!
+                🍽️ Quick View
               </button>
               <button
                 onClick={enterScrollModal}
-                className="bg-white text-blue-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+                className="bg-white text-blue-600 px-4 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
               >
                 📋 Scroll View
               </button>
+              <button
+                onClick={enterFullScreenSwipe}
+                className="bg-white text-orange-600 px-4 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+              >
+                🌟 Full Screen
+              </button>
+              <button
+                onClick={() => setShowCreateMeal(true)}
+                className="bg-white text-green-600 px-4 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+              >
+                🔍 Create Meal
+              </button>
             </div>
-            <button
-              onClick={enterFullScreenSwipe}
-              className="bg-white text-orange-600 px-8 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
-            >
-              🌟 Full Screen Swipe
-            </button>
           </div>
         )}
 
@@ -1294,6 +1461,13 @@ const MealSwipeApp = () => {
           mealId={selectedMealForFood}
           onAddFood={addFoodToMeal}
           onClose={closeFoodSelection}
+        />
+      )}
+
+      {/* Create Meal Modal */}
+      {showCreateMeal && (
+        <CreateMealModal
+          onClose={() => setShowCreateMeal(false)}
         />
       )}
     </div>
