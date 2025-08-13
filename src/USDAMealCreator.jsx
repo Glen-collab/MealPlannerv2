@@ -254,14 +254,16 @@ export function USDAMealCreator({
         description: food.description,
         brandName: food.brandName || '',
         dataType: food.dataType,
-        nutrition: extractNutrition(food.foodNutrients)
+        servingInfo: extractServingInfo(food),
+        nutrition: extractNutritionPerServing(food.foodNutrients, food)
       }));
       
       setSearchResults(processedResults);
       
+      // Initialize servings to 1 serving instead of 100g
       const initialServings = {};
       processedResults.forEach(food => {
-        initialServings[food.fdcId] = 100;
+        initialServings[food.fdcId] = 1;
       });
       setFoodServings(prev => ({ ...prev, ...initialServings }));
     } catch (err) {
@@ -272,8 +274,41 @@ export function USDAMealCreator({
     }
   };
 
-  // Extract nutrition from USDA nutrient array
-  const extractNutrition = (nutrients) => {
+  // Extract serving size information from USDA data
+  const extractServingInfo = (food) => {
+    // Try to get serving size from different sources
+    let servingSize = 100; // Default to 100g if no serving info
+    let servingUnit = 'g';
+    let servingDescription = '1 serving (100g)';
+
+    // Check food portions for serving size
+    if (food.foodPortions && food.foodPortions.length > 0) {
+      const portion = food.foodPortions[0]; // Use first portion as default serving
+      if (portion.gramWeight) {
+        servingSize = portion.gramWeight;
+        servingDescription = portion.portionDescription || `1 serving (${servingSize}g)`;
+      }
+    }
+    
+    // Check for serving size in food attributes
+    if (food.servingSize && food.servingSizeUnit) {
+      servingDescription = `1 serving (${food.servingSize}${food.servingSizeUnit})`;
+    }
+
+    // For branded foods, often have better serving info
+    if (food.brandName && food.servingSize) {
+      servingDescription = `1 serving (${food.servingSize}${food.servingSizeUnit || 'g'})`;
+    }
+
+    return {
+      size: servingSize,
+      unit: servingUnit,
+      description: servingDescription
+    };
+  };
+
+  // Extract nutrition per serving instead of per 100g
+  const extractNutritionPerServing = (nutrients, food) => {
     const nutritionMap = {
       protein: 0,
       carbs: 0, 
@@ -282,6 +317,7 @@ export function USDAMealCreator({
       sugar: 0
     };
 
+    // Extract nutrition values (these are typically per 100g from USDA)
     nutrients.forEach(nutrient => {
       const name = nutrient.nutrientName?.toLowerCase() || '';
       const value = nutrient.value || 0;
@@ -293,25 +329,36 @@ export function USDAMealCreator({
       else if (name.includes('sugars, total')) nutritionMap.sugar = value;
     });
 
-    return nutritionMap;
+    // Convert from per 100g to per serving
+    const servingInfo = extractServingInfo(food);
+    const servingMultiplier = servingInfo.size / 100; // Convert from 100g to actual serving size
+    
+    return {
+      protein: Math.round(nutritionMap.protein * servingMultiplier * 10) / 10,
+      carbs: Math.round(nutritionMap.carbs * servingMultiplier * 10) / 10,
+      fat: Math.round(nutritionMap.fat * servingMultiplier * 10) / 10,
+      calories: Math.round(nutritionMap.calories * servingMultiplier),
+      sugar: Math.round(nutritionMap.sugar * servingMultiplier * 10) / 10
+    };
   };
 
   // Add food to selected meal
-  const addFoodToSelectedMeal = (food, servings = 100) => {
+  const addFoodToSelectedMeal = (food, servings = 1) => {
     const nutrition = food.nutrition;
     const adjustedNutrition = {
-      protein: (nutrition.protein * servings / 100).toFixed(1),
-      carbs: (nutrition.carbs * servings / 100).toFixed(1),
-      fat: (nutrition.fat * servings / 100).toFixed(1),
-      calories: Math.round(nutrition.calories * servings / 100),
-      sugar: (nutrition.sugar * servings / 100).toFixed(1)
+      protein: (nutrition.protein * servings).toFixed(1),
+      carbs: (nutrition.carbs * servings).toFixed(1),
+      fat: (nutrition.fat * servings).toFixed(1),
+      calories: Math.round(nutrition.calories * servings),
+      sugar: (nutrition.sugar * servings).toFixed(1)
     };
 
     const foodItem = {
       food: food.description,
       brand: food.brandName,
       fdcId: food.fdcId,
-      servings: servings / 100,
+      servings: servings,
+      servingInfo: food.servingInfo,
       source: 'usda',
       ...adjustedNutrition
     };
@@ -451,7 +498,7 @@ export function USDAMealCreator({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Search foods... (e.g., 'chicken breast')"
+                      placeholder="Search foods... (nutrition shown per serving)"
                       className="flex-1 p-4 border border-gray-300 rounded-xl text-lg"
                     />
                     <button
@@ -484,35 +531,38 @@ export function USDAMealCreator({
                                 <div className="text-sm text-blue-600 font-medium">{food.brandName}</div>
                               )}
                               <div className="text-sm text-gray-600 mt-1">
-                                {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
+                                {food.nutrition.calories} cal • {food.nutrition.protein}g protein per serving
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {food.servingInfo.description}
                               </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2">
-                              <label className="text-sm font-medium text-gray-700">Grams:</label>
+                              <label className="text-sm font-medium text-gray-700">Servings:</label>
                               <input
                                 type="number"
-                                value={foodServings[food.fdcId] || 100}
+                                value={foodServings[food.fdcId] || 1}
                                 onChange={(e) => setFoodServings(prev => ({
                                   ...prev,
-                                  [food.fdcId]: Math.max(1, parseInt(e.target.value) || 1)
+                                  [food.fdcId]: Math.max(0.1, parseFloat(e.target.value) || 0.1)
                                 }))}
                                 className="w-20 p-2 border border-gray-300 rounded-lg text-center"
-                                min="1"
-                                step="1"
+                                min="0.1"
+                                step="0.1"
                               />
-                              <span className="text-sm text-gray-600">g</span>
+                              <span className="text-sm text-gray-600">servings</span>
                             </div>
                             
                             <div className="flex-1 text-xs text-gray-600">
-                              {Math.round((food.nutrition.calories * (foodServings[food.fdcId] || 100)) / 100)} cal •{' '}
-                              {Math.round((food.nutrition.protein * (foodServings[food.fdcId] || 100)) / 100)}g protein
+                              {Math.round(food.nutrition.calories * (foodServings[food.fdcId] || 1))} cal •{' '}
+                              {Math.round(food.nutrition.protein * (foodServings[food.fdcId] || 1) * 10) / 10}g protein
                             </div>
                             
                             <button
-                              onClick={() => addFoodToSelectedMeal(food, foodServings[food.fdcId] || 100)}
+                              onClick={() => addFoodToSelectedMeal(food, foodServings[food.fdcId] || 1)}
                               className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors"
                             >
                               Add
