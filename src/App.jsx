@@ -59,7 +59,7 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-sm">
+      <div className="bg-white rounded-2xl w-full max-w-lg">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
           <button
@@ -71,19 +71,19 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
         </div>
         
         <div className="p-6">
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-6 mb-6">
             {/* Hours Column */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Hour</h4>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
+              <div className="grid grid-cols-2 gap-2">
                 {hours.map((hour) => (
                   <button
                     key={hour}
                     onClick={() => setSelectedHour(hour)}
-                    className={`w-full p-2 rounded-lg border-2 text-center transition-colors ${
+                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
                       selectedHour === hour
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                     }`}
                   >
                     {hour}
@@ -94,19 +94,19 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
 
             {/* Minutes Column */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Min</h4>
-              <div className="space-y-2">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
+              <div className="space-y-3">
                 {minutes.map((minute) => (
                   <button
                     key={minute}
                     onClick={() => setSelectedMinute(minute)}
-                    className={`w-full p-2 rounded-lg border-2 text-center transition-colors ${
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
                       selectedMinute === minute
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                     }`}
                   >
-                    {minute}
+                    :{minute}
                   </button>
                 ))}
               </div>
@@ -114,16 +114,16 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
 
             {/* AM/PM Column */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Period</h4>
-              <div className="space-y-2">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
+              <div className="space-y-3">
                 {periods.map((period) => (
                   <button
                     key={period}
                     onClick={() => setSelectedPeriod(period)}
-                    className={`w-full p-2 rounded-lg border-2 text-center transition-colors ${
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
                       selectedPeriod === period
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                     }`}
                   >
                     {period}
@@ -134,10 +134,11 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
           </div>
 
           {/* Preview and Confirm */}
-          <div className="text-center mb-4">
-            <div className="text-lg font-bold text-gray-800 mb-2">
-              Selected: {selectedHour}:{selectedMinute} {selectedPeriod}
+          <div className="text-center mb-6">
+            <div className="text-2xl font-bold text-gray-800 mb-2">
+              {selectedHour}:{selectedMinute} {selectedPeriod}
             </div>
+            <p className="text-gray-600">Selected Time</p>
           </div>
 
           <div className="flex gap-3">
@@ -151,7 +152,7 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
               onClick={handleConfirm}
               className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
             >
-              Confirm
+              Confirm Time
             </button>
           </div>
         </div>
