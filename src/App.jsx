@@ -217,20 +217,20 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
   
   const categories = [
     [
-      { name: 'Protein', icon: '🍗', color: 'bg-blue-500' },
-      { name: 'Carbs', icon: '🍞', color: 'bg-green-500' }
+      { name: 'Protein', icon: '🍗', color: 'bg-blue-500', reference: '🖐️ Palm size' },
+      { name: 'Carbs', icon: '🍞', color: 'bg-green-500', reference: '🤲 Cupped hand' }
     ],
     [
-      { name: 'Healthy Fats', icon: '🥑', color: 'bg-yellow-500' },
-      { name: 'Supplements', icon: '💊', color: 'bg-purple-500' }
+      { name: 'Healthy Fats', icon: '🥑', color: 'bg-yellow-500', reference: '👍 Thumb size' },
+      { name: 'Supplements', icon: '💊', color: 'bg-purple-500', reference: '💊 As directed' }
     ],
     [
-      { name: 'Fruit', icon: '🍎', color: 'bg-red-500' },
-      { name: 'Vegetables', icon: '🥬', color: 'bg-green-600' }
+      { name: 'Fruit', icon: '🍎', color: 'bg-red-500', reference: '✊ Fist size' },
+      { name: 'Vegetables', icon: '🥬', color: 'bg-green-600', reference: '✊ Fist size' }
     ],
     [
-      { name: 'Condiments', icon: '🧂', color: 'bg-gray-500' },
-      { name: 'Junk/Drink', icon: '🍺', color: 'bg-orange-500' }
+      { name: 'Condiments', icon: '🧂', color: 'bg-gray-500', reference: '🤏 Pinch' },
+      { name: 'Junk/Drink', icon: '🍺', color: 'bg-orange-500', reference: '🤲 Small handful' }
     ]
   ];
 
@@ -259,14 +259,27 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
             <button
               key={category.name}
               onClick={() => onSelectCategory(category.name, mealId)}
-              className={`${category.color} text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2`}
+              className={`${category.color} text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center justify-center gap-1`}
             >
-              <span className="text-xl">{category.icon}</span>
-              <span className="text-sm font-semibold">{category.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{category.icon}</span>
+                <span className="text-sm font-semibold">{category.name}</span>
+              </div>
+              <div className="text-xs opacity-80">{category.reference}</div>
             </button>
           ))}
         </div>
       ))}
+      
+      {/* Quick Reference Guide */}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mt-4">
+        <div className="text-xs text-gray-600 text-center">
+          <div className="font-semibold mb-1">👋 Hand-Based Serving Guide</div>
+          <div className="text-xs text-gray-500">
+            Use your hand as a visual reference for portion sizes
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -285,6 +298,21 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
     'Vegetables': 'vegetables',
     'Condiments': 'condiments',
     'Junk/Drink': 'snacks'
+  };
+  
+  // Hand-based serving size references
+  const getServingReference = (category, foodName) => {
+    const references = {
+      'protein': '🖐️ Palm size',
+      'carbohydrate': '🤲 Cupped hand',
+      'fat': '👍 Thumb size',
+      'fruits': '✊ Fist size',
+      'vegetables': '✊ Fist size',
+      'condiments': '🤏 Pinch',
+      'snacks': '🤲 Small handful',
+      'supplements': '💊 As directed'
+    };
+    return references[category] || '🥄 1 serving';
   };
   
   const dbCategory = foodCategoryMapping[category];
@@ -326,6 +354,9 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
                 <div className="text-sm text-gray-600">
                   {FoodDatabase[dbCategory][food].calories} cal per serving
                 </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  {getServingReference(dbCategory, food)}
+                </div>
               </button>
             ))}
           </div>
@@ -333,16 +364,21 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
         
         {selectedFood && (
           <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 mb-3">
-              <label className="text-sm font-medium text-gray-700">Servings:</label>
-              <input
-                type="number"
-                value={servings}
-                onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
-                step="0.1"
-                min="0.1"
-                className="w-20 p-2 border border-gray-300 rounded-lg text-center"
-              />
+            <div className="mb-3">
+              <div className="text-sm text-gray-600 mb-2">
+                Reference: {getServingReference(dbCategory, selectedFood)}
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-700">Servings:</label>
+                <input
+                  type="number"
+                  value={servings}
+                  onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                  step="0.1"
+                  min="0.1"
+                  className="w-20 p-2 border border-gray-300 rounded-lg text-center"
+                />
+              </div>
             </div>
             <button
               onClick={handleAddFood}
@@ -363,6 +399,21 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   const source = mealSources[meal.name];
   const isUSDAOwned = source === 'usda';
 
+  // Hand-based serving size references for quick-view foods
+  const getServingReference = (category) => {
+    const references = {
+      'protein': '🖐️ Palm',
+      'carbohydrate': '🤲 Cupped hand',
+      'fat': '👍 Thumb',
+      'fruits': '✊ Fist',
+      'vegetables': '✊ Fist',
+      'condiments': '🤏 Pinch',
+      'snacks': '🤲 Handful',
+      'supplements': '💊 Directed'
+    };
+    return references[category] || '';
+  };
+
   return (
     <div className="mt-4 space-y-2">
       <h4 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
@@ -376,6 +427,12 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
             {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
             <div className="text-xs text-gray-600">
               {item.servings}x serving • {Math.round(item.calories)} cal
+              {item.source === 'usda' && item.servingInfo && (
+                <div className="text-xs text-gray-500 mt-1">{item.servingInfo.description}</div>
+              )}
+              {item.source !== 'usda' && item.category && getServingReference(item.category) && (
+                <div className="text-xs text-blue-500 mt-1">{getServingReference(item.category)} size</div>
+              )}
               {item.source === 'usda' && <span className="ml-2 text-blue-500">USDA</span>}
             </div>
           </div>
