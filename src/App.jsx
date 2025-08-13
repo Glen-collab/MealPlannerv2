@@ -729,6 +729,7 @@ const MealSwipeApp = () => {
     const [error, setError] = useState('');
     const [showMealPicker, setShowMealPicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [pendingMealType, setPendingMealType] = useState(null);
 
     // Available meal types
     const mealTypes = [
@@ -742,11 +743,20 @@ const MealSwipeApp = () => {
       { name: 'Post-Workout', emoji: '💪', defaultTime: '5:00 PM' }
     ];
 
-    // Select meal type and set default time
-    const selectMealType = (mealType) => {
-      setSelectedMealType(mealType.name);
+    // Handle meal selection - goes straight to time picker
+    const handleMealSelection = (mealType) => {
+      setPendingMealType(mealType);
       setSelectedMealTime(mealType.defaultTime);
       setShowMealPicker(false);
+      setShowTimePicker(true);
+    };
+
+    // Handle time confirmation - finalizes meal selection
+    const handleTimeConfirm = (time) => {
+      setSelectedMealType(pendingMealType.name);
+      setSelectedMealTime(time);
+      setShowTimePicker(false);
+      setPendingMealType(null);
     };
 
     // Custom Time Picker Modal
@@ -771,7 +781,6 @@ const MealSwipeApp = () => {
       const handleConfirm = () => {
         const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
         onSelectTime(formattedTime);
-        onClose();
       };
 
       if (!isOpen) return null;
@@ -784,8 +793,11 @@ const MealSwipeApp = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
           <div className="bg-white rounded-2xl w-full max-w-lg">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
-              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
+                <p className="text-sm text-gray-600">{pendingMealType?.name}</p>
+              </div>
+              <button onClick={() => { onClose(); setShowMealPicker(true); }} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
             </div>
             
             <div className="p-6">
@@ -852,14 +864,12 @@ const MealSwipeApp = () => {
                 <p className="text-gray-600">Selected Time</p>
               </div>
 
-              <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
-                  Cancel
-                </button>
-                <button onClick={handleConfirm} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
-                  Confirm Time
-                </button>
-              </div>
+              <button 
+                onClick={handleConfirm} 
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              >
+                Confirm {pendingMealType?.name} at {selectedHour}:{selectedMinute} {selectedPeriod}
+              </button>
             </div>
           </div>
         </div>
@@ -934,11 +944,11 @@ const MealSwipeApp = () => {
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl w-full max-w-md h-5/6 flex flex-col">
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
+        <div className="h-full flex flex-col">
           
           {/* Sticky Daily Totals Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-t-2xl">
+          <div className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-4">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xl font-bold">Create Meal</h2>
               <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">×</button>
@@ -966,180 +976,172 @@ const MealSwipeApp = () => {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            
-            {/* Meal Type Selector */}
-            <div className="space-y-3">
-              <label className="block text-lg font-semibold text-gray-800">Select Meal Type</label>
-              <button
-                onClick={() => setShowMealPicker(true)}
-                className="w-full bg-blue-50 border border-blue-200 rounded-xl p-4 text-left hover:bg-blue-100 transition-colors"
-              >
-                {selectedMealType ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">
-                      {mealTypes.find(m => m.name === selectedMealType)?.emoji}
-                    </span>
-                    <div>
-                      <div className="font-medium text-gray-800">{selectedMealType}</div>
-                      <div className="text-sm text-gray-600">Click to change</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-gray-500 font-medium">Choose meal type...</div>
-                )}
-              </button>
-            </div>
-
-            {/* Time Selector */}
-            {selectedMealType && (
+          <div className="flex-1 overflow-y-auto p-4 bg-white">
+            <div className="space-y-6">
+              
+              {/* Select Meal Button */}
               <div className="space-y-3">
-                <label className="block text-lg font-semibold text-gray-800">Meal Time</label>
                 <button
-                  onClick={() => setShowTimePicker(true)}
-                  className="w-full bg-green-50 border border-green-200 rounded-xl p-4 text-left hover:bg-green-100 transition-colors"
+                  onClick={() => setShowMealPicker(true)}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">🕐</span>
-                    <div>
-                      <div className="font-medium text-gray-800">{selectedMealTime}</div>
-                      <div className="text-sm text-gray-600">Click to change</div>
+                  {selectedMealType ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className="text-3xl">
+                          {mealTypes.find(m => m.name === selectedMealType)?.emoji}
+                        </span>
+                        <div>
+                          <div className="text-xl font-bold">{selectedMealType}</div>
+                          <div className="text-sm opacity-80">{selectedMealTime}</div>
+                        </div>
+                      </div>
+                      <div className="text-sm opacity-70">Tap to change</div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-2xl font-bold mb-1">Select Meal</div>
+                      <div className="text-sm opacity-80">Choose meal type and time</div>
+                    </div>
+                  )}
                 </button>
               </div>
-            )}
 
-            {/* Food Search */}
-            {selectedMealType && (
-              <div className="space-y-4">
-                <label className="block text-lg font-semibold text-gray-800">Search Foods</label>
-                
-                {/* Search Input */}
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Search foods... (e.g., 'chicken breast')"
-                    className="flex-1 p-3 border border-gray-300 rounded-xl"
-                  />
-                  <button
-                    onClick={() => searchFoods(searchQuery)}
-                    disabled={isLoading}
-                    className="bg-green-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
-                  >
-                    {isLoading ? '...' : 'Search'}
-                  </button>
-                </div>
-                
-                {/* Quick Category Searches */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => { setSearchQuery('chicken breast'); searchFoods('chicken breast'); }}
-                    className="bg-blue-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>🍗</span> Protein
-                  </button>
-                  <button
-                    onClick={() => { setSearchQuery('rice'); searchFoods('rice'); }}
-                    className="bg-green-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>🍞</span> Carbs
-                  </button>
-                  <button
-                    onClick={() => { setSearchQuery('avocado'); searchFoods('avocado'); }}
-                    className="bg-yellow-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>🥑</span> Fats
-                  </button>
-                  <button
-                    onClick={() => { setSearchQuery('McDonald\'s'); searchFoods('McDonald\'s'); }}
-                    className="bg-red-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>🍟</span> Fast Food
-                  </button>
-                </div>
-
-                {error && (
-                  <p className="text-red-500 text-sm">{error}</p>
-                )}
-                
-                {/* Search Results */}
-                <div className="space-y-2">
-                  {isLoading && (
-                    <div className="text-center py-8">
-                      <div className="text-2xl mb-2">🔍</div>
-                      <p className="text-gray-600">Searching USDA database...</p>
+              {/* Food Search - Only show if meal is selected */}
+              {selectedMealType && (
+                <div className="space-y-4">
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">Search Foods</h3>
+                    
+                    {/* Search Input */}
+                    <div className="flex gap-3 mb-4">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Search foods... (e.g., 'chicken breast')"
+                        className="flex-1 p-4 border border-gray-300 rounded-xl text-lg"
+                      />
+                      <button
+                        onClick={() => searchFoods(searchQuery)}
+                        disabled={isLoading}
+                        className="bg-green-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                      >
+                        {isLoading ? '...' : 'Search'}
+                      </button>
                     </div>
-                  )}
-                  
-                  {searchResults.map((food) => (
-                    <div
-                      key={food.fdcId}
-                      className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-800 text-sm">
-                            {food.description}
-                          </div>
-                          {food.brandName && (
-                            <div className="text-xs text-blue-600 font-medium">
-                              {food.brandName}
+                    
+                    {/* Quick Category Searches */}
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                      <button
+                        onClick={() => { setSearchQuery('chicken breast'); searchFoods('chicken breast'); }}
+                        className="bg-blue-500 text-white p-4 rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-3"
+                      >
+                        <span className="text-2xl">🍗</span> 
+                        <span>Protein</span>
+                      </button>
+                      <button
+                        onClick={() => { setSearchQuery('rice'); searchFoods('rice'); }}
+                        className="bg-green-500 text-white p-4 rounded-xl font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-3"
+                      >
+                        <span className="text-2xl">🍞</span> 
+                        <span>Carbs</span>
+                      </button>
+                      <button
+                        onClick={() => { setSearchQuery('avocado'); searchFoods('avocado'); }}
+                        className="bg-yellow-500 text-white p-4 rounded-xl font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center gap-3"
+                      >
+                        <span className="text-2xl">🥑</span> 
+                        <span>Fats</span>
+                      </button>
+                      <button
+                        onClick={() => { setSearchQuery('McDonald\'s'); searchFoods('McDonald\'s'); }}
+                        className="bg-red-500 text-white p-4 rounded-xl font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-3"
+                      >
+                        <span className="text-2xl">🍟</span> 
+                        <span>Fast Food</span>
+                      </button>
+                    </div>
+
+                    {error && (
+                      <p className="text-red-500 text-sm mb-4">{error}</p>
+                    )}
+                    
+                    {/* Search Results */}
+                    <div className="space-y-3">
+                      {isLoading && (
+                        <div className="text-center py-8">
+                          <div className="text-2xl mb-2">🔍</div>
+                          <p className="text-gray-600">Searching USDA database...</p>
+                        </div>
+                      )}
+                      
+                      {searchResults.map((food) => (
+                        <div
+                          key={food.fdcId}
+                          className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-800">
+                                {food.description}
+                              </div>
+                              {food.brandName && (
+                                <div className="text-sm text-blue-600 font-medium">
+                                  {food.brandName}
+                                </div>
+                              )}
+                              <div className="text-sm text-gray-600 mt-1">
+                                {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
+                              </div>
                             </div>
-                          )}
-                          <div className="text-xs text-gray-600 mt-1">
-                            {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
+                            <button
+                              onClick={() => {/* TODO: Add food functionality */}}
+                              className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors ml-3"
+                            >
+                              Add
+                            </button>
                           </div>
                         </div>
-                        <button
-                          onClick={() => {/* TODO: Add food functionality */}}
-                          className="bg-blue-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors ml-2"
-                        >
-                          Add
-                        </button>
-                      </div>
+                      ))}
+                      
+                      {searchResults.length === 0 && searchQuery && !isLoading && (
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="text-2xl mb-2">🍽️</div>
+                          <p>No foods found. Try a different search term.</p>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                  
-                  {searchResults.length === 0 && searchQuery && !isLoading && (
-                    <div className="text-center py-8 text-gray-500">
-                      <div className="text-2xl mb-2">🍽️</div>
-                      <p>No foods found. Try a different search term.</p>
-                    </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Meal Type Picker Modal */}
           {showMealPicker && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
-              <div className="bg-white rounded-2xl w-full max-w-sm">
+              <div className="bg-white rounded-2xl w-full max-w-md max-h-5/6 flex flex-col">
                 <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-800">Select Meal</h3>
                   <button onClick={() => setShowMealPicker(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
                 </div>
                 
-                <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
-                  {mealTypes.map((mealType) => (
-                    <button
-                      key={mealType.name}
-                      onClick={() => selectMealType(mealType)}
-                      className="w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-4 text-left transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{mealType.emoji}</span>
-                        <div>
-                          <div className="font-medium text-gray-800">{mealType.name}</div>
-                          <div className="text-sm text-gray-600">{mealType.defaultTime}</div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                <div className="flex-1 overflow-y-auto p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    {mealTypes.map((mealType) => (
+                      <button
+                        key={mealType.name}
+                        onClick={() => handleMealSelection(mealType)}
+                        className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-4 text-center transition-colors hover:shadow-lg"
+                      >
+                        <div className="text-3xl mb-2">{mealType.emoji}</div>
+                        <div className="font-medium text-gray-800 text-sm">{mealType.name}</div>
+                        <div className="text-xs text-gray-600 mt-1">{mealType.defaultTime}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1149,13 +1151,13 @@ const MealSwipeApp = () => {
           <TimePickerModal
             isOpen={showTimePicker}
             currentTime={selectedMealTime}
-            onSelectTime={setSelectedMealTime}
+            onSelectTime={handleTimeConfirm}
             onClose={() => setShowTimePicker(false)}
           />
         </div>
       </div>
     );
-  }
+  } // End of CreateMealModalWithUSDA function
 
   const updateMeal = (mealId, field, value) => {
     setMeals(prev => prev.map(meal => {
