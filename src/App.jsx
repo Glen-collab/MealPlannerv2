@@ -363,7 +363,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
                 >
                   <div className="font-medium text-gray-800">{food}</div>
                   <div className="text-sm text-gray-600">
-                    {FoodDatabase[dbCategory][food].calories} cal per serving
+                    {Math.round(FoodDatabase[dbCategory][food].calories)} cal per serving
                   </div>
                   <div className="text-xs text-blue-600 mt-1">
                     {servingInfo.palm}
@@ -385,7 +385,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
                 <input
                   type="number"
                   value={servings}
-                  onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                  onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 1))}
                   step="0.1"
                   min="0.1"
                   className="w-20 p-2 border border-gray-300 rounded-lg text-center"
@@ -427,7 +427,7 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
               <div className="font-medium text-sm text-gray-800">{item.food}</div>
               {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
               <div className="text-xs text-gray-600">
-                {item.servings}x serving • {Math.round(item.calories)} cal
+                {Math.round(item.servings * 10) / 10}x serving • {Math.round(item.calories)} cal
                 {item.source === 'usda' && item.servingInfo && (
                   <div className="text-xs text-gray-500 mt-1">{item.servingInfo.description}</div>
                 )}
@@ -587,7 +587,7 @@ function FullScreenSwipeInterface({
                           {meal.name === 'PostWorkout' && '💪'}
                           {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
                         </div>
-                        <div className="text-3xl font-bold text-purple-600">{meal.calories} cal</div>
+                        <div className="text-3xl font-bold text-purple-600">{Math.round(meal.calories)} cal</div>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -611,7 +611,7 @@ function FullScreenSwipeInterface({
                       {/* Macro Nutrients Display */}
                       <div className="mt-2 text-center">
                         <div className="text-xs font-bold text-red-600">
-                          P: {meal.protein}g • C: {meal.carbs}g • F: {meal.fat}g
+                          P: {Math.round(meal.protein)}g • C: {Math.round(meal.carbs)}g • F: {Math.round(meal.fat)}g
                         </div>
                       </div>
                     </div>
@@ -840,10 +840,10 @@ const MealSwipeApp = () => {
           if (updateData.addItem) {
             const item = updateData.addItem;
             updated.items = [...(updated.items || []), item];
-            updated.protein = updated.protein + parseFloat(item.protein);
-            updated.carbs = updated.carbs + parseFloat(item.carbs);
-            updated.fat = updated.fat + parseFloat(item.fat);
-            updated.calories = updated.calories + parseInt(item.calories);
+            updated.protein = updated.protein + Math.round(parseFloat(item.protein));
+            updated.carbs = updated.carbs + Math.round(parseFloat(item.carbs));
+            updated.fat = updated.fat + Math.round(parseFloat(item.fat));
+            updated.calories = updated.calories + Math.round(parseInt(item.calories));
           }
           
           return updated;
@@ -886,25 +886,25 @@ const MealSwipeApp = () => {
           food: foodName,
           category: category,
           servings: servings,
-          protein: foodData.protein * servings,
-          carbs: foodData.carbs * servings,
-          fat: foodData.fat * servings,
-          calories: foodData.calories * servings,
+          protein: Math.round(foodData.protein * servings),
+          carbs: Math.round(foodData.carbs * servings),
+          fat: Math.round(foodData.fat * servings),
+          calories: Math.round(foodData.calories * servings),
           source: 'quickview'
         };
 
         const updatedItems = [...(meal.items || []), newItem];
-        const newProtein = meal.protein + (foodData.protein * servings);
-        const newCarbs = meal.carbs + (foodData.carbs * servings);
-        const newFat = meal.fat + (foodData.fat * servings);
-        const newCalories = meal.calories + (foodData.calories * servings);
+        const newProtein = meal.protein + Math.round(foodData.protein * servings);
+        const newCarbs = meal.carbs + Math.round(foodData.carbs * servings);
+        const newFat = meal.fat + Math.round(foodData.fat * servings);
+        const newCalories = meal.calories + Math.round(foodData.calories * servings);
 
         return {
           ...meal,
           items: updatedItems,
-          protein: Math.round(newProtein * 10) / 10,
-          carbs: Math.round(newCarbs * 10) / 10,
-          fat: Math.round(newFat * 10) / 10,
+          protein: Math.round(newProtein),
+          carbs: Math.round(newCarbs),
+          fat: Math.round(newFat),
           calories: Math.round(newCalories)
         };
       }
@@ -926,9 +926,9 @@ const MealSwipeApp = () => {
         return {
           ...meal,
           items: updatedItems,
-          protein: Math.max(0, Math.round(newProtein * 10) / 10),
-          carbs: Math.max(0, Math.round(newCarbs * 10) / 10),
-          fat: Math.max(0, Math.round(newFat * 10) / 10),
+          protein: Math.max(0, Math.round(newProtein)),
+          carbs: Math.max(0, Math.round(newCarbs)),
+          fat: Math.max(0, Math.round(newFat)),
           calories: Math.max(0, Math.round(newCalories))
         };
       }
@@ -1146,10 +1146,10 @@ const MealSwipeApp = () => {
   };
 
   const totalMacros = meals.reduce((total, meal) => ({
-    protein: total.protein + meal.protein,
-    carbs: total.carbs + meal.carbs,
-    fat: total.fat + meal.fat,
-    calories: total.calories + meal.calories
+    protein: Math.round(total.protein + meal.protein),
+    carbs: Math.round(total.carbs + meal.carbs),
+    fat: Math.round(total.fat + meal.fat),
+    calories: Math.round(total.calories + meal.calories)
   }), { protein: 0, carbs: 0, fat: 0, calories: 0 });
 
   return (
@@ -1238,19 +1238,19 @@ const MealSwipeApp = () => {
             <div className="grid grid-cols-4 gap-3 text-center">
               <div className="bg-blue-100 rounded-lg p-2">
                 <div className="text-xs text-blue-600 font-medium">Protein</div>
-                <div className="text-lg font-bold text-blue-800">{totalMacros.protein}g</div>
+                <div className="text-lg font-bold text-blue-800">{Math.round(totalMacros.protein)}g</div>
               </div>
               <div className="bg-green-100 rounded-lg p-2">
                 <div className="text-xs text-green-600 font-medium">Carbs</div>
-                <div className="text-lg font-bold text-green-800">{totalMacros.carbs}g</div>
+                <div className="text-lg font-bold text-green-800">{Math.round(totalMacros.carbs)}g</div>
               </div>
               <div className="bg-yellow-100 rounded-lg p-2">
                 <div className="text-xs text-yellow-600 font-medium">Fat</div>
-                <div className="text-lg font-bold text-yellow-800">{totalMacros.fat}g</div>
+                <div className="text-lg font-bold text-yellow-800">{Math.round(totalMacros.fat)}g</div>
               </div>
               <div className="bg-purple-100 rounded-lg p-2">
                 <div className="text-xs text-purple-600 font-medium">Calories</div>
-                <div className="text-lg font-bold text-purple-800">{totalMacros.calories}</div>
+                <div className="text-lg font-bold text-purple-800">{Math.round(totalMacros.calories)}</div>
               </div>
             </div>
           </div>
@@ -1399,7 +1399,7 @@ const MealSwipeApp = () => {
                         {meal.name === 'PostWorkout' && '💪'}
                         {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
                       </div>
-                      <div className="text-xl font-bold text-purple-600 mt-1">{meal.calories} cal</div>
+                      <div className="text-xl font-bold text-purple-600 mt-1">{Math.round(meal.calories)} cal</div>
                     </div>
 
                     {/* Food Selection Grid for Scroll Modal */}
@@ -1417,44 +1417,7 @@ const MealSwipeApp = () => {
                       mealSources={mealSources}
                     />
 
-                    {/* Manual Entry Section - Hidden for USDA meals */}
-                    {!isUSDAOwned && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Manual Entry (Optional)</h4>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <label className="block text-xs text-gray-600">Protein</label>
-                            <input
-                              type="number"
-                              value={meal.protein}
-                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded text-sm"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-600">Carbs</label>
-                            <input
-                              type="number"
-                              value={meal.carbs}
-                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded text-sm"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-600">Fat</label>
-                            <input
-                              type="number"
-                              value={meal.fat}
-                              onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded text-sm"
-                              placeholder="0"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
+
                   </div>
                 );
               })}
