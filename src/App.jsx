@@ -161,168 +161,6 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   );
 }
 
-// Create Meal Modal Component (USDA API Integration placeholder)
-function CreateMealModal({ onClose }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [customMealName, setCustomMealName] = useState('');
-  const [customMealTime, setCustomMealTime] = useState('12:00 PM');
-
-  // Placeholder for USDA API integration
-  // This is where you'd implement the USDA search functionality
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-5/6 flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800">Create Custom Meal</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
-        </div>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-6">
-            {/* Meal Details */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Meal Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Meal Name</label>
-                  <input
-                    type="text"
-                    value={customMealName}
-                    onChange={(e) => setCustomMealName(e.target.value)}
-                    placeholder="e.g., Custom Breakfast"
-                    className="w-full p-3 border border-gray-300 rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Meal Time</label>
-                  <input
-                    type="time"
-                    value={customMealTime.split(' ')[0]}
-                    onChange={(e) => {
-                      const timeValue = e.target.value;
-                      const hour = parseInt(timeValue.split(':')[0]);
-                      const minute = timeValue.split(':')[1];
-                      const period = hour >= 12 ? 'PM' : 'AM';
-                      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                      setCustomMealTime(`${displayHour}:${minute} ${period}`);
-                    }}
-                    className="w-full p-3 border border-gray-300 rounded-xl"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* USDA Search Section */}
-            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Search USDA Database</h3>
-              <div className="flex gap-3 mb-4">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for any food... (e.g., 'McDonald's Big Mac', 'chicken breast')"
-                  className="flex-1 p-3 border border-gray-300 rounded-xl"
-                />
-                <button
-                  onClick={() => {/* TODO: Implement USDA search */}}
-                  className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors"
-                >
-                  Search
-                </button>
-              </div>
-              
-              {/* Placeholder for search results */}
-              <div className="text-center py-8 border-2 border-dashed border-green-300 rounded-xl">
-                <div className="text-4xl mb-4">🔍</div>
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">USDA API Integration</h4>
-                <p className="text-gray-600 mb-4">Search 300,000+ foods with accurate nutrition data</p>
-                <div className="text-sm text-gray-500 space-y-1">
-                  <p>• Brand name foods (McDonald's, Starbucks, etc.)</p>
-                  <p>• Generic foods (chicken breast, banana, etc.)</p>
-                  <p>• Restaurant items and packaged foods</p>
-                </div>
-                
-                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800 font-medium">🔑 API Key Required</p>
-                  <p className="text-xs text-yellow-700 mt-1">
-                    Get your free USDA API key at: 
-                    <br />
-                    <span className="font-mono">https://fdc.nal.usda.gov/api-guide.html</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Category Searches */}
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Searches</h3>
-              <div className="grid grid-cols-4 gap-3">
-                <button
-                  onClick={() => setSearchQuery('chicken breast')}
-                  className="bg-blue-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
-                >
-                  <span className="text-2xl">🍗</span>
-                  <span className="text-sm">Protein</span>
-                </button>
-                <button
-                  onClick={() => setSearchQuery('bread')}
-                  className="bg-green-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
-                >
-                  <span className="text-2xl">🍞</span>
-                  <span className="text-sm">Carbs</span>
-                </button>
-                <button
-                  onClick={() => setSearchQuery('avocado')}
-                  className="bg-yellow-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
-                >
-                  <span className="text-2xl">🥑</span>
-                  <span className="text-sm">Fats</span>
-                </button>
-                <button
-                  onClick={() => setSearchQuery('McDonald\'s')}
-                  className="bg-red-500 text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center gap-2"
-                >
-                  <span className="text-2xl">🍟</span>
-                  <span className="text-sm">Fast Food</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200">
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                // TODO: Save custom meal
-                onClose();
-              }}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
-            >
-              Save Custom Meal
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function MealMessageSection({ meal, profile, getMealMessage }) {
   const [message, setMessage] = useState('');
 
@@ -632,6 +470,7 @@ function FullScreenSwipeInterface({
                           {meal.name === 'Dinner' && '🍽️'}
                           {meal.name === 'Late Snack' && '🍓'}
                           {meal.name === 'PostWorkout' && '💪'}
+                          {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
                         </div>
                         <div className="text-3xl font-bold text-purple-600">{meal.calories} cal</div>
                         <button
@@ -874,6 +713,390 @@ const MealSwipeApp = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
   const dragRef = useRef({ startX: 0, startY: 0 });
+
+  // USDA API Configuration
+  const USDA_API_KEY = 'tdlBSP5YGMzEbAkkehT6VFCctFwrVwmg2nYsrgjx';
+  const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
+
+  // Enhanced Create Meal Modal with USDA Search
+  function CreateMealModalWithUSDA({ onClose }) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [customMealName, setCustomMealName] = useState('');
+    const [customMealTime, setCustomMealTime] = useState('12:00 PM');
+    const [searchResults, setSearchResults] = useState([]);
+    const [selectedFoods, setSelectedFoods] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    // Search USDA database
+    const searchFoods = async (query) => {
+      if (!query.trim()) return;
+      
+      setIsLoading(true);
+      setError('');
+      
+      try {
+        const response = await fetch(
+          `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=20&api_key=${USDA_API_KEY}`
+        );
+        
+        if (!response.ok) throw new Error('Search failed');
+        
+        const data = await response.json();
+        
+        // Process results to extract key nutrition info
+        const processedResults = data.foods.map(food => ({
+          fdcId: food.fdcId,
+          description: food.description,
+          brandName: food.brandName || '',
+          dataType: food.dataType,
+          // Extract key nutrients (per 100g)
+          nutrition: extractNutrition(food.foodNutrients)
+        }));
+        
+        setSearchResults(processedResults);
+      } catch (err) {
+        setError('Failed to search foods. Please try again.');
+        console.error('USDA API Error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Extract nutrition from USDA nutrient array
+    const extractNutrition = (nutrients) => {
+      const nutritionMap = {
+        protein: 0,
+        carbs: 0, 
+        fat: 0,
+        calories: 0,
+        sugar: 0
+      };
+
+      nutrients.forEach(nutrient => {
+        const name = nutrient.nutrientName?.toLowerCase() || '';
+        const value = nutrient.value || 0;
+
+        // Map USDA nutrient names to our format
+        if (name.includes('protein')) nutritionMap.protein = value;
+        else if (name.includes('carbohydrate')) nutritionMap.carbs = value;
+        else if (name.includes('total lipid') || name.includes('fat')) nutritionMap.fat = value;
+        else if (name.includes('energy') && nutrient.unitName === 'KCAL') nutritionMap.calories = value;
+        else if (name.includes('sugars, total')) nutritionMap.sugar = value;
+      });
+
+      return nutritionMap;
+    };
+
+    // Add food to selected foods list
+    const addFoodToMeal = (food, servings = 100) => {
+      const nutrition = food.nutrition;
+      const adjustedNutrition = {
+        protein: (nutrition.protein * servings / 100).toFixed(1), // Convert from per 100g to actual serving
+        carbs: (nutrition.carbs * servings / 100).toFixed(1),
+        fat: (nutrition.fat * servings / 100).toFixed(1),
+        calories: Math.round(nutrition.calories * servings / 100),
+        sugar: (nutrition.sugar * servings / 100).toFixed(1)
+      };
+
+      const foodItem = {
+        food: food.description,
+        brand: food.brandName,
+        fdcId: food.fdcId,
+        servings: servings / 100, // Convert back to serving ratio
+        ...adjustedNutrition
+      };
+
+      setSelectedFoods(prev => [...prev, foodItem]);
+    };
+
+    // Remove food from selected list
+    const removeFoodFromMeal = (index) => {
+      setSelectedFoods(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Calculate total nutrition
+    const getTotalNutrition = () => {
+      return selectedFoods.reduce((total, food) => ({
+        protein: total.protein + parseFloat(food.protein),
+        carbs: total.carbs + parseFloat(food.carbs),
+        fat: total.fat + parseFloat(food.fat),
+        calories: total.calories + parseInt(food.calories)
+      }), { protein: 0, carbs: 0, fat: 0, calories: 0 });
+    };
+
+    // Save custom meal
+    const handleSaveMeal = () => {
+      if (!customMealName.trim()) {
+        setError('Please enter a meal name');
+        return;
+      }
+
+      if (selectedFoods.length === 0) {
+        setError('Please add at least one food item');
+        return;
+      }
+
+      const totalNutrition = getTotalNutrition();
+      
+      const customMeal = {
+        id: Date.now(), // Simple ID generation
+        name: customMealName,
+        time: customMealTime,
+        items: selectedFoods,
+        protein: Math.round(totalNutrition.protein * 10) / 10,
+        carbs: Math.round(totalNutrition.carbs * 10) / 10,
+        fat: Math.round(totalNutrition.fat * 10) / 10,
+        calories: totalNutrition.calories
+      };
+
+      // Add custom meal to the meals list
+      setMeals(prev => [...prev, customMeal]);
+      onClose();
+    };
+
+    // Search on Enter key
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter') {
+        searchFoods(searchQuery);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-5/6 flex flex-col">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-800">Create Custom Meal</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-6 p-6">
+              {/* Left Column - Search & Results */}
+              <div className="space-y-6">
+                {/* Meal Details */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Meal Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meal Name</label>
+                      <input
+                        type="text"
+                        value={customMealName}
+                        onChange={(e) => setCustomMealName(e.target.value)}
+                        placeholder="e.g., Post-Workout Meal"
+                        className="w-full p-3 border border-gray-300 rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meal Time</label>
+                      <input
+                        type="time"
+                        value={customMealTime.split(' ')[0]}
+                        onChange={(e) => {
+                          const timeValue = e.target.value;
+                          const hour = parseInt(timeValue.split(':')[0]);
+                          const minute = timeValue.split(':')[1];
+                          const period = hour >= 12 ? 'PM' : 'AM';
+                          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                          setCustomMealTime(`${displayHour}:${minute} ${period}`);
+                        }}
+                        className="w-full p-3 border border-gray-300 rounded-xl"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* USDA Search */}
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Search Foods</h3>
+                  <div className="flex gap-3 mb-4">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Search foods... (e.g., 'chicken breast', 'McDonald's Big Mac')"
+                      className="flex-1 p-3 border border-gray-300 rounded-xl"
+                    />
+                    <button
+                      onClick={() => searchFoods(searchQuery)}
+                      disabled={isLoading}
+                      className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                    >
+                      {isLoading ? '...' : 'Search'}
+                    </button>
+                  </div>
+                  
+                  {/* Quick Category Searches */}
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    <button
+                      onClick={() => { setSearchQuery('chicken breast'); searchFoods('chicken breast'); }}
+                      className="bg-blue-500 text-white p-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                    >
+                      🍗 Protein
+                    </button>
+                    <button
+                      onClick={() => { setSearchQuery('rice'); searchFoods('rice'); }}
+                      className="bg-green-500 text-white p-2 rounded-lg text-sm hover:bg-green-600 transition-colors"
+                    >
+                      🍞 Carbs
+                    </button>
+                    <button
+                      onClick={() => { setSearchQuery('avocado'); searchFoods('avocado'); }}
+                      className="bg-yellow-500 text-white p-2 rounded-lg text-sm hover:bg-yellow-600 transition-colors"
+                    >
+                      🥑 Fats
+                    </button>
+                    <button
+                      onClick={() => { setSearchQuery('McDonald\'s'); searchFoods('McDonald\'s'); }}
+                      className="bg-red-500 text-white p-2 rounded-lg text-sm hover:bg-red-600 transition-colors"
+                    >
+                      🍟 Fast Food
+                    </button>
+                  </div>
+
+                  {error && (
+                    <p className="text-red-500 text-sm mb-4">{error}</p>
+                  )}
+                  
+                  {/* Search Results */}
+                  <div className="max-h-80 overflow-y-auto space-y-2">
+                    {isLoading && (
+                      <div className="text-center py-4">
+                        <div className="text-2xl mb-2">🔍</div>
+                        <p className="text-gray-600">Searching USDA database...</p>
+                      </div>
+                    )}
+                    
+                    {searchResults.map((food) => (
+                      <div
+                        key={food.fdcId}
+                        className="bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800 text-sm">
+                              {food.description}
+                            </div>
+                            {food.brandName && (
+                              <div className="text-xs text-blue-600 font-medium">
+                                {food.brandName}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-600 mt-1">
+                              {food.nutrition.calories} cal • {food.nutrition.protein}g protein • {food.nutrition.carbs}g carbs • {food.nutrition.fat}g fat (per 100g)
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => addFoodToMeal(food, 100)} // Default 100g serving
+                            className="bg-blue-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors ml-2"
+                          >
+                            Add 100g
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Selected Foods & Summary */}
+              <div className="space-y-6">
+                {/* Selected Foods */}
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Selected Foods</h3>
+                  
+                  {selectedFoods.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-4xl mb-2">🍽️</div>
+                      <p>No foods selected yet</p>
+                      <p className="text-sm">Search and add foods from the left</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {selectedFoods.map((food, index) => (
+                        <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-sm text-gray-800">{food.food}</div>
+                              {food.brand && (
+                                <div className="text-xs text-blue-600">{food.brand}</div>
+                              )}
+                              <div className="text-xs text-gray-600 mt-1">
+                                {(food.servings * 100).toFixed(0)}g • {food.calories} cal • {food.protein}g protein
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeFoodFromMeal(index)}
+                              className="text-red-500 hover:text-red-700 text-sm ml-2"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Nutrition Summary */}
+                {selectedFoods.length > 0 && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Nutrition Summary</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-blue-100 rounded-lg p-3 text-center">
+                        <div className="text-xs text-blue-600 font-medium">Protein</div>
+                        <div className="text-lg font-bold text-blue-800">{getTotalNutrition().protein.toFixed(1)}g</div>
+                      </div>
+                      <div className="bg-green-100 rounded-lg p-3 text-center">
+                        <div className="text-xs text-green-600 font-medium">Carbs</div>
+                        <div className="text-lg font-bold text-green-800">{getTotalNutrition().carbs.toFixed(1)}g</div>
+                      </div>
+                      <div className="bg-yellow-100 rounded-lg p-3 text-center">
+                        <div className="text-xs text-yellow-600 font-medium">Fat</div>
+                        <div className="text-lg font-bold text-yellow-800">{getTotalNutrition().fat.toFixed(1)}g</div>
+                      </div>
+                      <div className="bg-purple-100 rounded-lg p-3 text-center">
+                        <div className="text-xs text-purple-600 font-medium">Calories</div>
+                        <div className="text-lg font-bold text-purple-800">{getTotalNutrition().calories}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Footer */}
+          <div className="p-6 border-t border-gray-200">
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveMeal}
+                disabled={selectedFoods.length === 0 || !customMealName.trim()}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+              >
+                Save Custom Meal
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const updateMeal = (mealId, field, value) => {
     setMeals(prev => prev.map(meal => {
@@ -1388,6 +1611,7 @@ const MealSwipeApp = () => {
                       {meal.name === 'Dinner' && '🍽️'}
                       {meal.name === 'Late Snack' && '🍓'}
                       {meal.name === 'PostWorkout' && '💪'}
+                      {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
                     </div>
                     <div className="text-xl font-bold text-purple-600 mt-1">{meal.calories} cal</div>
                   </div>
@@ -1468,7 +1692,7 @@ const MealSwipeApp = () => {
 
       {/* Create Meal Modal */}
       {showCreateMeal && (
-        <CreateMealModal
+        <CreateMealModalWithUSDA
           onClose={() => setShowCreateMeal(false)}
         />
       )}
