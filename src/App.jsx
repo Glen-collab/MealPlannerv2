@@ -499,38 +499,72 @@ function FullScreenSwipeInterface({
                         onSelectCategory={openFoodSelection} 
                       />
                       
-                      {/* Added Foods Section */}
-                      {meal.items && meal.items.length > 0 && (
-                        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
-                          <h4 className="text-lg font-semibold text-gray-800 mb-4">Foods Added</h4>
-                          <div className="space-y-3">
-                            {meal.items.map((item, index) => (
-                              <div key={index} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <div className="font-semibold text-gray-800 text-lg">{item.food}</div>
-                                    {item.brand && (
-                                      <div className="text-sm text-blue-600 font-medium">{item.brand}</div>
-                                    )}
-                                    <div className="text-sm text-gray-600 mt-1">
-                                      {item.servings}x serving • {Math.round(item.calories)} cal
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      P: {Math.round(item.protein)}g • C: {Math.round(item.carbs)}g • F: {Math.round(item.fat)}g
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={() => removeFoodFromMeal(meal.id, index)}
-                                    className="text-red-500 hover:text-red-700 text-xl ml-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
+                      {/* Added Foods List */}
+                      <MealFoodList 
+                        meal={meal} 
+                        onRemoveFood={removeFoodFromMeal} 
+                      />
+
+                      {/* Manual Macro Entry Section */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-4">Manual Entry (Optional)</h4>
+                        
+                        <div className="space-y-4">
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 font-bold text-lg">P</span>
                               </div>
-                            ))}
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Protein (g)</label>
+                                <input
+                                  type="number"
+                                  value={meal.protein}
+                                  onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <span className="text-green-600 font-bold text-lg">C</span>
+                              </div>
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Carbs (g)</label>
+                                <input
+                                  type="number"
+                                  value={meal.carbs}
+                                  onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <span className="text-yellow-600 font-bold text-lg">F</span>
+                              </div>
+                              <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Fat (g)</label>
+                                <input
+                                  type="number"
+                                  value={meal.fat}
+                                  onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      )}
+                      </div>
 
                       {/* Meal Message Section */}
                       <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
@@ -539,96 +573,6 @@ function FullScreenSwipeInterface({
                 </div>
               </div>
             );
-    };
-
-    // Conflict Warning Modal
-    const ConflictWarningModal = ({ isOpen, conflictInfo, onAddMore, onReplace, onCancel }) => {
-      if (!isOpen || !conflictInfo) return null;
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-70">
-          <div className="bg-white rounded-2xl w-full max-w-md">
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="text-4xl mb-3">⚠️</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Meal Already Has Foods</h3>
-                <p className="text-gray-600">
-                  <strong>{conflictInfo.mealType}</strong> already has <strong>{conflictInfo.existingItemsCount} food{conflictInfo.existingItemsCount > 1 ? 's' : ''}</strong> 
-                  ({conflictInfo.existingCalories} calories)
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={onAddMore}
-                  className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
-                >
-                  ➕ Add More Foods
-                </button>
-                
-                <button
-                  onClick={onReplace}
-                  className="w-full bg-orange-600 text-white py-3 rounded-xl font-bold hover:bg-orange-700 transition-colors"
-                >
-                  🔄 Replace All Foods
-                </button>
-                
-                <button
-                  onClick={onCancel}
-                  className="w-full bg-gray-300 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-400 transition-colors"
-                >
-                  ❌ Cancel
-                </button>
-              </div>
-
-              <div className="mt-4 text-xs text-gray-500 text-center">
-                <strong>Add More:</strong> Keep existing foods and add new ones<br/>
-                <strong>Replace:</strong> Remove existing foods and start fresh
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    // Handle conflict resolution
-    const handleAddMore = () => {
-      setAddMode('add');
-      setSelectedMealType(conflictMealInfo.mealType);
-      setSelectedMealTime(conflictMealInfo.time);
-      setShowConflictWarning(false);
-      setShowTimePicker(false);
-      setPendingMealType(null);
-      setHasAddedFoods(true); // Since meal already has foods
-      setConflictMealInfo(null);
-    };
-
-    const handleReplace = () => {
-      // Clear existing foods from the meal first
-      const selectedMeal = meals.find(meal => meal.name === conflictMealInfo.mealType);
-      if (selectedMeal) {
-        setMeals(prev => prev.map(meal => 
-          meal.name === conflictMealInfo.mealType 
-            ? { ...meal, items: [], protein: 0, carbs: 0, fat: 0, calories: 0 }
-            : meal
-        ));
-      }
-      
-      setAddMode('replace');
-      setSelectedMealType(conflictMealInfo.mealType);
-      setSelectedMealTime(conflictMealInfo.time);
-      setShowConflictWarning(false);
-      setShowTimePicker(false);
-      setPendingMealType(null);
-      setHasAddedFoods(false); // Starting fresh
-      setConflictMealInfo(null);
-    };
-
-    const handleConflictCancel = () => {
-      setShowConflictWarning(false);
-      setShowMealPicker(true); // Go back to meal picker
-      setConflictMealInfo(null);
-    };
           })}
         </div>
 
@@ -789,9 +733,6 @@ const MealSwipeApp = () => {
     const [hasAddedFoods, setHasAddedFoods] = useState(false);
     const [showAddedFeedback, setShowAddedFeedback] = useState('');
     const [foodServings, setFoodServings] = useState({}); // Track servings for each food
-    const [showConflictWarning, setShowConflictWarning] = useState(false);
-    const [conflictMealInfo, setConflictMealInfo] = useState(null);
-    const [addMode, setAddMode] = useState('add'); // 'add' or 'replace'
 
     // Available meal types
     const mealTypes = [
@@ -822,27 +763,11 @@ const MealSwipeApp = () => {
 
     // Handle time confirmation - finalizes meal selection
     const handleTimeConfirm = (time) => {
-      const selectedMeal = meals.find(meal => meal.name === pendingMealType.name);
-      
-      // Check if meal already has foods
-      if (selectedMeal && selectedMeal.items && selectedMeal.items.length > 0) {
-        // Show conflict warning
-        setConflictMealInfo({
-          mealType: pendingMealType.name,
-          time: time,
-          existingItemsCount: selectedMeal.items.length,
-          existingCalories: selectedMeal.calories
-        });
-        setShowConflictWarning(true);
-      } else {
-        // No conflict, proceed normally
-        setSelectedMealType(pendingMealType.name);
-        setSelectedMealTime(time);
-        setShowTimePicker(false);
-        setPendingMealType(null);
-        setHasAddedFoods(false);
-        setAddMode('add');
-      }
+      setSelectedMealType(pendingMealType.name);
+      setSelectedMealTime(time);
+      setShowTimePicker(false);
+      setPendingMealType(null);
+      setHasAddedFoods(false); // Reset when selecting new meal
     };
 
     // Custom Time Picker Modal
@@ -1076,9 +1001,8 @@ const MealSwipeApp = () => {
         // Mark that foods have been added
         setHasAddedFoods(true);
         
-        // Show feedback with mode indicator
-        const modeText = addMode === 'replace' ? 'Replaced with' : 'Added';
-        setShowAddedFeedback(`${modeText}: ${food.description}`);
+        // Show feedback
+        setShowAddedFeedback(food.description);
         setTimeout(() => setShowAddedFeedback(''), 2000);
       }
     };
@@ -1183,7 +1107,7 @@ const MealSwipeApp = () => {
               {/* Added Food Feedback */}
               {showAddedFeedback && (
                 <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-20 animate-pulse">
-                  <div className="text-sm font-medium">✅ {showAddedFeedback.substring(0, 50)}{showAddedFeedback.length > 50 ? '...' : ''}</div>
+                  <div className="text-sm font-medium">✅ Added {showAddedFeedback.substring(0, 30)}...</div>
                 </div>
               )}
 
@@ -1329,15 +1253,6 @@ const MealSwipeApp = () => {
             currentTime={selectedMealTime}
             onSelectTime={handleTimeConfirm}
             onClose={() => setShowTimePicker(false)}
-          />
-
-          {/* Conflict Warning Modal */}
-          <ConflictWarningModal
-            isOpen={showConflictWarning}
-            conflictInfo={conflictMealInfo}
-            onAddMore={handleAddMore}
-            onReplace={handleReplace}
-            onCancel={handleConflictCancel}
           />
         </div>
       </div>
