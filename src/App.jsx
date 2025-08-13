@@ -730,6 +730,8 @@ const MealSwipeApp = () => {
     const [showMealPicker, setShowMealPicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [pendingMealType, setPendingMealType] = useState(null);
+    const [hasAddedFoods, setHasAddedFoods] = useState(false);
+    const [showAddedFeedback, setShowAddedFeedback] = useState('');
 
     // Available meal types
     const mealTypes = [
@@ -764,6 +766,7 @@ const MealSwipeApp = () => {
       setSelectedMealTime(time);
       setShowTimePicker(false);
       setPendingMealType(null);
+      setHasAddedFoods(false); // Reset when selecting new meal
     };
 
     // Custom Time Picker Modal
@@ -986,6 +989,13 @@ const MealSwipeApp = () => {
           }
           return meal;
         }));
+        
+        // Mark that foods have been added
+        setHasAddedFoods(true);
+        
+        // Show feedback
+        setShowAddedFeedback(food.description);
+        setTimeout(() => setShowAddedFeedback(''), 2000);
       }
     };
 
@@ -997,7 +1007,15 @@ const MealSwipeApp = () => {
           <div className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-4">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xl font-bold">Create Meal</h2>
-              <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">×</button>
+              <button 
+                onClick={() => {
+                  setHasAddedFoods(false); // Reset when closing
+                  onClose();
+                }} 
+                className="text-white hover:text-gray-200 text-2xl"
+              >
+                ×
+              </button>
             </div>
             
             {/* Daily Totals */}
@@ -1025,33 +1043,63 @@ const MealSwipeApp = () => {
           <div className="flex-1 overflow-y-auto bg-white">
             <div className="space-y-6 p-4">
               
-              {/* Sticky Select Meal Button */}
+              {/* Sticky Select Meal Button - Full or Minimized */}
               <div className="sticky top-0 bg-white pb-4 z-10">
-                <button
-                  onClick={() => setShowMealPicker(true)}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
-                >
-                  {selectedMealType ? (
+                {!hasAddedFoods ? (
+                  // Full meal selector
+                  <button
+                    onClick={() => setShowMealPicker(true)}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
+                  >
+                    {selectedMealType ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-3xl">
+                            {mealTypes.find(m => m.name === selectedMealType)?.emoji}
+                          </span>
+                          <div>
+                            <div className="text-xl font-bold">{selectedMealType}</div>
+                            <div className="text-sm opacity-80">{selectedMealTime}</div>
+                          </div>
+                        </div>
+                        <div className="text-sm opacity-70">Tap to change</div>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <div className="text-2xl font-bold mb-1">Select Meal</div>
+                        <div className="text-sm opacity-80">Choose meal type and time</div>
+                      </div>
+                    )}
+                  </button>
+                ) : (
+                  // Minimized meal selector
+                  <button
+                    onClick={() => setShowMealPicker(true)}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-3 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg"
+                  >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <span className="text-3xl">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">
                           {mealTypes.find(m => m.name === selectedMealType)?.emoji}
                         </span>
                         <div>
-                          <div className="text-xl font-bold">{selectedMealType}</div>
-                          <div className="text-sm opacity-80">{selectedMealTime}</div>
+                          <div className="text-sm font-bold">{selectedMealType}</div>
+                          <div className="text-xs opacity-80">{selectedMealTime}</div>
                         </div>
+                        <div className="bg-green-400 w-2 h-2 rounded-full"></div>
                       </div>
-                      <div className="text-sm opacity-70">Tap to change</div>
+                      <div className="text-xs opacity-70">Change</div>
                     </div>
-                  ) : (
-                    <div className="text-center">
-                      <div className="text-2xl font-bold mb-1">Select Meal</div>
-                      <div className="text-sm opacity-80">Choose meal type and time</div>
-                    </div>
-                  )}
-                </button>
+                  </button>
+                )}
               </div>
+
+              {/* Added Food Feedback */}
+              {showAddedFeedback && (
+                <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-20 animate-pulse">
+                  <div className="text-sm font-medium">✅ Added {showAddedFeedback.substring(0, 30)}...</div>
+                </div>
+              )}
 
               {/* Food Search - Only show if meal is selected */}
               {selectedMealType && (
