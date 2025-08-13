@@ -751,6 +751,13 @@ const MealSwipeApp = () => {
       setShowTimePicker(true);
     };
 
+    // Search on Enter key
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter') {
+        searchFoods(searchQuery);
+      }
+    };
+
     // Handle time confirmation - finalizes meal selection
     const handleTimeConfirm = (time) => {
       setSelectedMealType(pendingMealType.name);
@@ -936,10 +943,49 @@ const MealSwipeApp = () => {
       return nutritionMap;
     };
 
-    // Search on Enter key
-    const handleKeyPress = (e) => {
-      if (e.key === 'Enter') {
-        searchFoods(searchQuery);
+    // Add food to selected meal
+    const addFoodToSelectedMeal = (food, servings = 100) => {
+      const nutrition = food.nutrition;
+      const adjustedNutrition = {
+        protein: (nutrition.protein * servings / 100).toFixed(1),
+        carbs: (nutrition.carbs * servings / 100).toFixed(1),
+        fat: (nutrition.fat * servings / 100).toFixed(1),
+        calories: Math.round(nutrition.calories * servings / 100),
+        sugar: (nutrition.sugar * servings / 100).toFixed(1)
+      };
+
+      const foodItem = {
+        food: food.description,
+        brand: food.brandName,
+        fdcId: food.fdcId,
+        servings: servings / 100,
+        ...adjustedNutrition
+      };
+
+      // Find the selected meal type and add food to it
+      const selectedMeal = meals.find(meal => meal.name === selectedMealType);
+      if (selectedMeal) {
+        // Update the existing meal
+        setMeals(prev => prev.map(meal => {
+          if (meal.name === selectedMealType) {
+            const updatedItems = [...(meal.items || []), foodItem];
+            const newProtein = meal.protein + parseFloat(adjustedNutrition.protein);
+            const newCarbs = meal.carbs + parseFloat(adjustedNutrition.carbs);
+            const newFat = meal.fat + parseFloat(adjustedNutrition.fat);
+            const newCalories = meal.calories + parseInt(adjustedNutrition.calories);
+
+            return {
+              ...meal,
+              time: selectedMealTime, // Update time too
+              items: updatedItems,
+              protein: Math.round(newProtein * 10) / 10,
+              carbs: Math.round(newCarbs * 10) / 10,
+              fat: Math.round(newFat * 10) / 10,
+              calories: Math.round(newCalories)
+            };
+          }
+          return meal;
+        }));
       }
     };
 
@@ -976,11 +1022,11 @@ const MealSwipeApp = () => {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 bg-white">
-            <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto bg-white">
+            <div className="space-y-6 p-4">
               
-              {/* Select Meal Button */}
-              <div className="space-y-3">
+              {/* Sticky Select Meal Button */}
+              <div className="sticky top-0 bg-white pb-4 z-10">
                 <button
                   onClick={() => setShowMealPicker(true)}
                   className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
@@ -1014,7 +1060,7 @@ const MealSwipeApp = () => {
                     <h3 className="text-xl font-bold text-gray-800 mb-4">Search Foods</h3>
                     
                     {/* Search Input */}
-                    <div className="flex gap-3 mb-4">
+                    <div className="flex gap-3 mb-6">
                       <input
                         type="text"
                         value={searchQuery}
@@ -1029,38 +1075,6 @@ const MealSwipeApp = () => {
                         className="bg-green-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
                       >
                         {isLoading ? '...' : 'Search'}
-                      </button>
-                    </div>
-                    
-                    {/* Quick Category Searches */}
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                      <button
-                        onClick={() => { setSearchQuery('chicken breast'); searchFoods('chicken breast'); }}
-                        className="bg-blue-500 text-white p-4 rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-3"
-                      >
-                        <span className="text-2xl">🍗</span> 
-                        <span>Protein</span>
-                      </button>
-                      <button
-                        onClick={() => { setSearchQuery('rice'); searchFoods('rice'); }}
-                        className="bg-green-500 text-white p-4 rounded-xl font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-3"
-                      >
-                        <span className="text-2xl">🍞</span> 
-                        <span>Carbs</span>
-                      </button>
-                      <button
-                        onClick={() => { setSearchQuery('avocado'); searchFoods('avocado'); }}
-                        className="bg-yellow-500 text-white p-4 rounded-xl font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center gap-3"
-                      >
-                        <span className="text-2xl">🥑</span> 
-                        <span>Fats</span>
-                      </button>
-                      <button
-                        onClick={() => { setSearchQuery('McDonald\'s'); searchFoods('McDonald\'s'); }}
-                        className="bg-red-500 text-white p-4 rounded-xl font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-3"
-                      >
-                        <span className="text-2xl">🍟</span> 
-                        <span>Fast Food</span>
                       </button>
                     </div>
 
@@ -1097,7 +1111,7 @@ const MealSwipeApp = () => {
                               </div>
                             </div>
                             <button
-                              onClick={() => {/* TODO: Add food functionality */}}
+                              onClick={() => addFoodToSelectedMeal(food, 100)}
                               className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors ml-3"
                             >
                               Add
