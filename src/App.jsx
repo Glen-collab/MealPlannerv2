@@ -732,6 +732,7 @@ const MealSwipeApp = () => {
     const [pendingMealType, setPendingMealType] = useState(null);
     const [hasAddedFoods, setHasAddedFoods] = useState(false);
     const [showAddedFeedback, setShowAddedFeedback] = useState('');
+    const [foodServings, setFoodServings] = useState({}); // Track servings for each food
 
     // Available meal types
     const mealTypes = [
@@ -913,6 +914,13 @@ const MealSwipeApp = () => {
         }));
         
         setSearchResults(processedResults);
+        
+        // Initialize servings for each food item (default to 100g)
+        const initialServings = {};
+        processedResults.forEach(food => {
+          initialServings[food.fdcId] = 100;
+        });
+        setFoodServings(prev => ({ ...prev, ...initialServings }));
       } catch (err) {
         setError('Failed to search foods. Please try again.');
         console.error('USDA API Error:', err);
@@ -1043,56 +1051,58 @@ const MealSwipeApp = () => {
           <div className="flex-1 overflow-y-auto bg-white">
             <div className="space-y-6 p-4">
               
-              {/* Sticky Select Meal Button - Full or Minimized */}
-              <div className="sticky top-0 bg-white pb-4 z-10">
-                {!hasAddedFoods ? (
-                  // Full meal selector
-                  <button
-                    onClick={() => setShowMealPicker(true)}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
-                  >
-                    {selectedMealType ? (
+              {/* Sticky Select Meal Button - Full or Minimized - Hidden when modals are open */}
+              {!showMealPicker && !showTimePicker && (
+                <div className="sticky top-0 bg-white pb-4 z-10">
+                  {!hasAddedFoods ? (
+                    // Full meal selector
+                    <button
+                      onClick={() => setShowMealPicker(true)}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
+                    >
+                      {selectedMealType ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-3xl">
+                              {mealTypes.find(m => m.name === selectedMealType)?.emoji}
+                            </span>
+                            <div>
+                              <div className="text-xl font-bold">{selectedMealType}</div>
+                              <div className="text-sm opacity-80">{selectedMealTime}</div>
+                            </div>
+                          </div>
+                          <div className="text-sm opacity-70">Tap to change</div>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold mb-1">Select Meal</div>
+                          <div className="text-sm opacity-80">Choose meal type and time</div>
+                        </div>
+                      )}
+                    </button>
+                  ) : (
+                    // Minimized meal selector
+                    <button
+                      onClick={() => setShowMealPicker(true)}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-3 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg"
+                    >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <span className="text-3xl">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">
                             {mealTypes.find(m => m.name === selectedMealType)?.emoji}
                           </span>
                           <div>
-                            <div className="text-xl font-bold">{selectedMealType}</div>
-                            <div className="text-sm opacity-80">{selectedMealTime}</div>
+                            <div className="text-sm font-bold">{selectedMealType}</div>
+                            <div className="text-xs opacity-80">{selectedMealTime}</div>
                           </div>
+                          <div className="bg-green-400 w-2 h-2 rounded-full"></div>
                         </div>
-                        <div className="text-sm opacity-70">Tap to change</div>
+                        <div className="text-xs opacity-70">Change</div>
                       </div>
-                    ) : (
-                      <div className="text-center">
-                        <div className="text-2xl font-bold mb-1">Select Meal</div>
-                        <div className="text-sm opacity-80">Choose meal type and time</div>
-                      </div>
-                    )}
-                  </button>
-                ) : (
-                  // Minimized meal selector
-                  <button
-                    onClick={() => setShowMealPicker(true)}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-3 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">
-                          {mealTypes.find(m => m.name === selectedMealType)?.emoji}
-                        </span>
-                        <div>
-                          <div className="text-sm font-bold">{selectedMealType}</div>
-                          <div className="text-xs opacity-80">{selectedMealTime}</div>
-                        </div>
-                        <div className="bg-green-400 w-2 h-2 rounded-full"></div>
-                      </div>
-                      <div className="text-xs opacity-70">Change</div>
-                    </div>
-                  </button>
-                )}
-              </div>
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Added Food Feedback */}
               {showAddedFeedback && (
@@ -1144,26 +1154,54 @@ const MealSwipeApp = () => {
                           key={food.fdcId}
                           className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
                         >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-800">
-                                {food.description}
-                              </div>
-                              {food.brandName && (
-                                <div className="text-sm text-blue-600 font-medium">
-                                  {food.brandName}
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-800">
+                                  {food.description}
                                 </div>
-                              )}
-                              <div className="text-sm text-gray-600 mt-1">
-                                {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
+                                {food.brandName && (
+                                  <div className="text-sm text-blue-600 font-medium">
+                                    {food.brandName}
+                                  </div>
+                                )}
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
+                                </div>
                               </div>
                             </div>
-                            <button
-                              onClick={() => addFoodToSelectedMeal(food, 100)}
-                              className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors ml-3"
-                            >
-                              Add
-                            </button>
+                            
+                            {/* Servings Input and Add Button Row */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <label className="text-sm font-medium text-gray-700">Grams:</label>
+                                <input
+                                  type="number"
+                                  value={foodServings[food.fdcId] || 100}
+                                  onChange={(e) => setFoodServings(prev => ({
+                                    ...prev,
+                                    [food.fdcId]: Math.max(1, parseInt(e.target.value) || 1)
+                                  }))}
+                                  className="w-20 p-2 border border-gray-300 rounded-lg text-center"
+                                  min="1"
+                                  step="1"
+                                />
+                                <span className="text-sm text-gray-600">g</span>
+                              </div>
+                              
+                              {/* Calculated nutrition preview */}
+                              <div className="flex-1 text-xs text-gray-600">
+                                {Math.round((food.nutrition.calories * (foodServings[food.fdcId] || 100)) / 100)} cal •{' '}
+                                {Math.round((food.nutrition.protein * (foodServings[food.fdcId] || 100)) / 100)}g protein
+                              </div>
+                              
+                              <button
+                                onClick={() => addFoodToSelectedMeal(food, foodServings[food.fdcId] || 100)}
+                                className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors"
+                              >
+                                Add
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
