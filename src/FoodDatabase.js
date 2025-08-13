@@ -133,8 +133,27 @@ export const FoodDatabase = {
     'Popcorn (air-popped)': { protein: 3.2, carbs: 19, fat: 1.1, sugar: 0.1, calories: 93 },
     'Pretzels': { protein: 2.8, carbs: 22, fat: 0.8, sugar: 0.5, calories: 108 },
     'Rice Cakes (plain)': { protein: 0.7, carbs: 7, fat: 0.4, sugar: 0.1, calories: 35 },
-    'Crackers (whole wheat)': { protein: 1.9, carbs: 11, fat: 1.4, sugar: 0.4, calories: 60 }
+    'Crackers (whole wheat)': { protein: 1.9, carbs: 11, fat: 1.4, sugar: 0.4, calories: 60 },
+  
+    // NEW JUNK FOODS & DRINKS
+    'Chocolate Chip Cookies (2 medium)': { protein: 2, carbs: 22, fat: 8, sugar: 15, calories: 160 },
+    'Frosted Donut': { protein: 3, carbs: 31, fat: 13, sugar: 16, calories: 240 },
+    'Chocolate Cake (slice)': { protein: 4, carbs: 51, fat: 15, sugar: 35, calories: 340 },
+    'Ice Cream (1/2 cup)': { protein: 2.5, carbs: 16, fat: 7, sugar: 14, calories: 130 },
+    'Potato Chips (1 oz bag)': { protein: 2, carbs: 15, fat: 10, sugar: 0.5, calories: 150 },
+    'Beer (12 oz)': { protein: 1.6, carbs: 13, fat: 0, sugar: 0, calories: 150 },
+    'Red Wine (5 oz)': { protein: 0.1, carbs: 4, fat: 0, sugar: 1, calories: 125 },
+    'Cola/Soda (12 oz)': { protein: 0, carbs: 39, fat: 0, sugar: 39, calories: 150 },
+    'Snickers Bar (fun size)': { protein: 2, carbs: 12, fat: 4, sugar: 10, calories: 80 },
+    'French Fries (medium)': { protein: 4, carbs: 43, fat: 17, sugar: 0.5, calories: 320 },
+    'Pizza Slice (cheese)': { protein: 12, carbs: 30, fat: 10, sugar: 4, calories: 250 },
+    'Energy Drink (8 oz)': { protein: 0, carbs: 27, fat: 0, sugar: 27, calories: 110 },
+    'Chocolate Milkshake (12 oz)': { protein: 8, carbs: 56, fat: 12, sugar: 52, calories: 340 },
+    'Frosted Cereal (1 cup)': { protein: 1, carbs: 27, fat: 0.5, sugar: 12, calories: 110 },
+    'Blueberry Muffin (large)': { protein: 4, carbs: 47, fat: 8, sugar: 25, calories: 270 }
+
   },
+
   condiments: {
     'Mustard': { protein: 0.2, carbs: 0.3, fat: 0.2, sugar: 0.1, calories: 3 },
     'Hot Sauce': { protein: 0.1, carbs: 0.1, fat: 0, sugar: 0, calories: 1 },
@@ -152,7 +171,7 @@ export const FoodDatabase = {
     'Italian Seasoning': { protein: 0.1, carbs: 0.6, fat: 0.1, sugar: 0.1, calories: 3 },
     'Everything Bagel Seasoning': { protein: 0.2, carbs: 0.5, fat: 0.2, sugar: 0, calories: 5 },
     'Hummus': { protein: 2, carbs: 5, fat: 2.5, sugar: 0.5, calories: 50 }
-  }
+  },
 };
 
 // Serving size conversions - what constitutes "1 serving" in different units
@@ -284,12 +303,31 @@ export const servingSizeConversions = {
     'Green Beans': { grams: 100, ounces: 3.5, cups: 1, palm: '1 fist' },
     'Zucchini': { grams: 100, ounces: 3.5, cups: 1, palm: '1 fist' }
   },
+  // Updated serving sizes for the new items
   snacks: {
-    'Popcorn (air-popped)': { grams: 24, ounces: 0.85, cups: 3, palm: '3 cups popped' },
-    'Pretzels': { grams: 30, ounces: 1, cups: 0.5, palm: '1 handful' },
-    'Rice Cakes (plain)': { grams: 9, ounces: 0.3, cups: 0.06, palm: '1 cake' },
-    'Crackers (whole wheat)': { grams: 16, ounces: 0.56, cups: 0.1, palm: '5 crackers' }
-  },
+   'Popcorn (air-popped)': { grams: 24, ounces: 0.85, cups: 3, palm: '3 cups popped' },
+   'Pretzels': { grams: 30, ounces: 1, cups: 0.5, palm: '1 handful' },
+   'Rice Cakes (plain)': { grams: 9, ounces: 0.3, cups: 0.06, palm: '1 cake' },
+   'Crackers (whole wheat)': { grams: 16, ounces: 0.56, cups: 0.1, palm: '5 crackers' },
+  
+  // NEW SERVING SIZES
+   'Chocolate Chip Cookies (2 medium)': { grams: 32, ounces: 1.1, cups: 0.15, palm: '2 cookies' },
+   'Frosted Donut': { grams: 60, ounces: 2.1, cups: 0.25, palm: '1 donut' },
+   'Chocolate Cake (slice)': { grams: 95, ounces: 3.4, cups: 0.4, palm: '1 slice' },
+   'Ice Cream (1/2 cup)': { grams: 66, ounces: 2.3, cups: 0.5, palm: '1 scoop' },
+   'Potato Chips (1 oz bag)': { grams: 28, ounces: 1, cups: 0.5, palm: '1 small bag' },
+   'Beer (12 oz)': { grams: 355, ounces: 12, cups: 1.5, palm: '1 bottle' },
+   'Red Wine (5 oz)': { grams: 148, ounces: 5, cups: 0.6, palm: '1 glass' },
+   'Cola/Soda (12 oz)': { grams: 355, ounces: 12, cups: 1.5, palm: '1 can' },
+   'Snickers Bar (fun size)': { grams: 20, ounces: 0.7, cups: 0.1, palm: '1 fun size' },
+   'French Fries (medium)': { grams: 115, ounces: 4, cups: 1, palm: '1 serving' },
+   'Pizza Slice (cheese)': { grams: 107, ounces: 3.8, cups: 0.4, palm: '1 slice' },
+   'Energy Drink (8 oz)': { grams: 240, ounces: 8, cups: 1, palm: '1 can' },
+   'Chocolate Milkshake (12 oz)': { grams: 355, ounces: 12, cups: 1.5, palm: '1 medium' },
+   'Frosted Cereal (1 cup)': { grams: 30, ounces: 1, cups: 1, palm: '1 cup' },
+   'Blueberry Muffin (large)': { grams: 110, ounces: 3.9, cups: 0.5, palm: '1 large muffin' }
+},
+
   condiments: {
     'Mustard': { grams: 5, ounces: 0.2, cups: 0.02, palm: '1 tsp' },
     'Hot Sauce': { grams: 5, ounces: 0.2, cups: 0.02, palm: '1 tsp' },
