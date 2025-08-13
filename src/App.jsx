@@ -721,12 +721,150 @@ const MealSwipeApp = () => {
   // Enhanced Create Meal Modal with USDA Search
   function CreateMealModalWithUSDA({ onClose }) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [customMealName, setCustomMealName] = useState('');
-    const [customMealTime, setCustomMealTime] = useState('12:00 PM');
+    const [selectedMealType, setSelectedMealType] = useState('');
+    const [selectedMealTime, setSelectedMealTime] = useState('12:00 PM');
     const [searchResults, setSearchResults] = useState([]);
     const [selectedFoods, setSelectedFoods] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showMealPicker, setShowMealPicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+
+    // Available meal types
+    const mealTypes = [
+      { name: 'Breakfast', emoji: '🍳', defaultTime: '7:00 AM' },
+      { name: 'First Snack', emoji: '🍎', defaultTime: '9:30 AM' },
+      { name: 'Second Snack', emoji: '🥨', defaultTime: '11:00 AM' },
+      { name: 'Lunch', emoji: '🥗', defaultTime: '12:30 PM' },
+      { name: 'Mid-Afternoon Snack', emoji: '🥜', defaultTime: '3:30 PM' },
+      { name: 'Dinner', emoji: '🍽️', defaultTime: '6:30 PM' },
+      { name: 'Late Snack', emoji: '🍓', defaultTime: '8:30 PM' },
+      { name: 'Post-Workout', emoji: '💪', defaultTime: '5:00 PM' }
+    ];
+
+    // Select meal type and set default time
+    const selectMealType = (mealType) => {
+      setSelectedMealType(mealType.name);
+      setSelectedMealTime(mealType.defaultTime);
+      setShowMealPicker(false);
+    };
+
+    // Custom Time Picker Modal
+    const TimePickerModal = ({ isOpen, currentTime, onSelectTime, onClose }) => {
+      const [selectedHour, setSelectedHour] = useState(12);
+      const [selectedMinute, setSelectedMinute] = useState('00');
+      const [selectedPeriod, setSelectedPeriod] = useState('AM');
+
+      useEffect(() => {
+        if (isOpen && currentTime) {
+          const timeParts = currentTime.split(' ');
+          if (timeParts.length === 2) {
+            const [time, period] = timeParts;
+            const [hour, minute] = time.split(':');
+            setSelectedHour(parseInt(hour));
+            setSelectedMinute(minute);
+            setSelectedPeriod(period);
+          }
+        }
+      }, [isOpen, currentTime]);
+
+      const handleConfirm = () => {
+        const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
+        onSelectTime(formattedTime);
+        onClose();
+      };
+
+      if (!isOpen) return null;
+
+      const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+      const minutes = ['00', '15', '30', '45'];
+      const periods = ['AM', 'PM'];
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
+          <div className="bg-white rounded-2xl w-full max-w-lg">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-6 mb-6">
+                {/* Hours Column */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {hours.map((hour) => (
+                      <button
+                        key={hour}
+                        onClick={() => setSelectedHour(hour)}
+                        className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
+                          selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        }`}
+                      >
+                        {hour}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Minutes Column */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
+                  <div className="space-y-3">
+                    {minutes.map((minute) => (
+                      <button
+                        key={minute}
+                        onClick={() => setSelectedMinute(minute)}
+                        className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
+                          selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        }`}
+                      >
+                        :{minute}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* AM/PM Column */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
+                  <div className="space-y-3">
+                    {periods.map((period) => (
+                      <button
+                        key={period}
+                        onClick={() => setSelectedPeriod(period)}
+                        className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
+                          selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        }`}
+                      >
+                        {period}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mb-6">
+                <div className="text-2xl font-bold text-gray-800 mb-2">
+                  {selectedHour}:{selectedMinute} {selectedPeriod}
+                </div>
+                <p className="text-gray-600">Selected Time</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleConfirm} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
+                  Confirm Time
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
 
     // Search USDA database
     const searchFoods = async (query) => {
@@ -788,73 +926,6 @@ const MealSwipeApp = () => {
       return nutritionMap;
     };
 
-    // Add food to selected foods list
-    const addFoodToMeal = (food, servings = 100) => {
-      const nutrition = food.nutrition;
-      const adjustedNutrition = {
-        protein: (nutrition.protein * servings / 100).toFixed(1), // Convert from per 100g to actual serving
-        carbs: (nutrition.carbs * servings / 100).toFixed(1),
-        fat: (nutrition.fat * servings / 100).toFixed(1),
-        calories: Math.round(nutrition.calories * servings / 100),
-        sugar: (nutrition.sugar * servings / 100).toFixed(1)
-      };
-
-      const foodItem = {
-        food: food.description,
-        brand: food.brandName,
-        fdcId: food.fdcId,
-        servings: servings / 100, // Convert back to serving ratio
-        ...adjustedNutrition
-      };
-
-      setSelectedFoods(prev => [...prev, foodItem]);
-    };
-
-    // Remove food from selected list
-    const removeFoodFromMeal = (index) => {
-      setSelectedFoods(prev => prev.filter((_, i) => i !== index));
-    };
-
-    // Calculate total nutrition
-    const getTotalNutrition = () => {
-      return selectedFoods.reduce((total, food) => ({
-        protein: total.protein + parseFloat(food.protein),
-        carbs: total.carbs + parseFloat(food.carbs),
-        fat: total.fat + parseFloat(food.fat),
-        calories: total.calories + parseInt(food.calories)
-      }), { protein: 0, carbs: 0, fat: 0, calories: 0 });
-    };
-
-    // Save custom meal
-    const handleSaveMeal = () => {
-      if (!customMealName.trim()) {
-        setError('Please enter a meal name');
-        return;
-      }
-
-      if (selectedFoods.length === 0) {
-        setError('Please add at least one food item');
-        return;
-      }
-
-      const totalNutrition = getTotalNutrition();
-      
-      const customMeal = {
-        id: Date.now(), // Simple ID generation
-        name: customMealName,
-        time: customMealTime,
-        items: selectedFoods,
-        protein: Math.round(totalNutrition.protein * 10) / 10,
-        carbs: Math.round(totalNutrition.carbs * 10) / 10,
-        fat: Math.round(totalNutrition.fat * 10) / 10,
-        calories: totalNutrition.calories
-      };
-
-      // Add custom meal to the meals list
-      setMeals(prev => [...prev, customMeal]);
-      onClose();
-    };
-
     // Search on Enter key
     const handleKeyPress = (e) => {
       if (e.key === 'Enter') {
@@ -864,235 +935,223 @@ const MealSwipeApp = () => {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-5/6 flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-800">Create Custom Meal</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
-            >
-              ×
-            </button>
-          </div>
+        <div className="bg-white rounded-2xl w-full max-w-md h-5/6 flex flex-col">
           
+          {/* Sticky Daily Totals Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-t-2xl">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xl font-bold">Create Meal</h2>
+              <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">×</button>
+            </div>
+            
+            {/* Daily Totals */}
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="bg-white bg-opacity-20 rounded-lg p-2">
+                <div className="text-xs font-medium">Protein</div>
+                <div className="text-sm font-bold">{totalMacros.protein}g</div>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-lg p-2">
+                <div className="text-xs font-medium">Carbs</div>
+                <div className="text-sm font-bold">{totalMacros.carbs}g</div>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-lg p-2">
+                <div className="text-xs font-medium">Fat</div>
+                <div className="text-sm font-bold">{totalMacros.fat}g</div>
+              </div>
+              <div className="bg-white bg-opacity-20 rounded-lg p-2">
+                <div className="text-xs font-medium">Calories</div>
+                <div className="text-sm font-bold">{totalMacros.calories}</div>
+              </div>
+            </div>
+          </div>
+
           {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-6 p-6">
-              {/* Left Column - Search & Results */}
-              <div className="space-y-6">
-                {/* Meal Details */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Meal Details</h3>
-                  <div className="space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            
+            {/* Meal Type Selector */}
+            <div className="space-y-3">
+              <label className="block text-lg font-semibold text-gray-800">Select Meal Type</label>
+              <button
+                onClick={() => setShowMealPicker(true)}
+                className="w-full bg-blue-50 border border-blue-200 rounded-xl p-4 text-left hover:bg-blue-100 transition-colors"
+              >
+                {selectedMealType ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">
+                      {mealTypes.find(m => m.name === selectedMealType)?.emoji}
+                    </span>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Meal Name</label>
-                      <input
-                        type="text"
-                        value={customMealName}
-                        onChange={(e) => setCustomMealName(e.target.value)}
-                        placeholder="e.g., Post-Workout Meal"
-                        className="w-full p-3 border border-gray-300 rounded-xl"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Meal Time</label>
-                      <input
-                        type="time"
-                        value={customMealTime.split(' ')[0]}
-                        onChange={(e) => {
-                          const timeValue = e.target.value;
-                          const hour = parseInt(timeValue.split(':')[0]);
-                          const minute = timeValue.split(':')[1];
-                          const period = hour >= 12 ? 'PM' : 'AM';
-                          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                          setCustomMealTime(`${displayHour}:${minute} ${period}`);
-                        }}
-                        className="w-full p-3 border border-gray-300 rounded-xl"
-                      />
+                      <div className="font-medium text-gray-800">{selectedMealType}</div>
+                      <div className="text-sm text-gray-600">Click to change</div>
                     </div>
                   </div>
-                </div>
-
-                {/* USDA Search */}
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Search Foods</h3>
-                  <div className="flex gap-3 mb-4">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Search foods... (e.g., 'chicken breast', 'McDonald's Big Mac')"
-                      className="flex-1 p-3 border border-gray-300 rounded-xl"
-                    />
-                    <button
-                      onClick={() => searchFoods(searchQuery)}
-                      disabled={isLoading}
-                      className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
-                    >
-                      {isLoading ? '...' : 'Search'}
-                    </button>
-                  </div>
-                  
-                  {/* Quick Category Searches */}
-                  <div className="grid grid-cols-4 gap-2 mb-4">
-                    <button
-                      onClick={() => { setSearchQuery('chicken breast'); searchFoods('chicken breast'); }}
-                      className="bg-blue-500 text-white p-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                    >
-                      🍗 Protein
-                    </button>
-                    <button
-                      onClick={() => { setSearchQuery('rice'); searchFoods('rice'); }}
-                      className="bg-green-500 text-white p-2 rounded-lg text-sm hover:bg-green-600 transition-colors"
-                    >
-                      🍞 Carbs
-                    </button>
-                    <button
-                      onClick={() => { setSearchQuery('avocado'); searchFoods('avocado'); }}
-                      className="bg-yellow-500 text-white p-2 rounded-lg text-sm hover:bg-yellow-600 transition-colors"
-                    >
-                      🥑 Fats
-                    </button>
-                    <button
-                      onClick={() => { setSearchQuery('McDonald\'s'); searchFoods('McDonald\'s'); }}
-                      className="bg-red-500 text-white p-2 rounded-lg text-sm hover:bg-red-600 transition-colors"
-                    >
-                      🍟 Fast Food
-                    </button>
-                  </div>
-
-                  {error && (
-                    <p className="text-red-500 text-sm mb-4">{error}</p>
-                  )}
-                  
-                  {/* Search Results */}
-                  <div className="max-h-80 overflow-y-auto space-y-2">
-                    {isLoading && (
-                      <div className="text-center py-4">
-                        <div className="text-2xl mb-2">🔍</div>
-                        <p className="text-gray-600">Searching USDA database...</p>
-                      </div>
-                    )}
-                    
-                    {searchResults.map((food) => (
-                      <div
-                        key={food.fdcId}
-                        className="bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800 text-sm">
-                              {food.description}
-                            </div>
-                            {food.brandName && (
-                              <div className="text-xs text-blue-600 font-medium">
-                                {food.brandName}
-                              </div>
-                            )}
-                            <div className="text-xs text-gray-600 mt-1">
-                              {food.nutrition.calories} cal • {food.nutrition.protein}g protein • {food.nutrition.carbs}g carbs • {food.nutrition.fat}g fat (per 100g)
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => addFoodToMeal(food, 100)} // Default 100g serving
-                            className="bg-blue-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors ml-2"
-                          >
-                            Add 100g
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - Selected Foods & Summary */}
-              <div className="space-y-6">
-                {/* Selected Foods */}
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Selected Foods</h3>
-                  
-                  {selectedFoods.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <div className="text-4xl mb-2">🍽️</div>
-                      <p>No foods selected yet</p>
-                      <p className="text-sm">Search and add foods from the left</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-80 overflow-y-auto">
-                      {selectedFoods.map((food, index) => (
-                        <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="font-medium text-sm text-gray-800">{food.food}</div>
-                              {food.brand && (
-                                <div className="text-xs text-blue-600">{food.brand}</div>
-                              )}
-                              <div className="text-xs text-gray-600 mt-1">
-                                {(food.servings * 100).toFixed(0)}g • {food.calories} cal • {food.protein}g protein
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => removeFoodFromMeal(index)}
-                              className="text-red-500 hover:text-red-700 text-sm ml-2"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Nutrition Summary */}
-                {selectedFoods.length > 0 && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Nutrition Summary</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-blue-100 rounded-lg p-3 text-center">
-                        <div className="text-xs text-blue-600 font-medium">Protein</div>
-                        <div className="text-lg font-bold text-blue-800">{getTotalNutrition().protein.toFixed(1)}g</div>
-                      </div>
-                      <div className="bg-green-100 rounded-lg p-3 text-center">
-                        <div className="text-xs text-green-600 font-medium">Carbs</div>
-                        <div className="text-lg font-bold text-green-800">{getTotalNutrition().carbs.toFixed(1)}g</div>
-                      </div>
-                      <div className="bg-yellow-100 rounded-lg p-3 text-center">
-                        <div className="text-xs text-yellow-600 font-medium">Fat</div>
-                        <div className="text-lg font-bold text-yellow-800">{getTotalNutrition().fat.toFixed(1)}g</div>
-                      </div>
-                      <div className="bg-purple-100 rounded-lg p-3 text-center">
-                        <div className="text-xs text-purple-600 font-medium">Calories</div>
-                        <div className="text-lg font-bold text-purple-800">{getTotalNutrition().calories}</div>
-                      </div>
-                    </div>
-                  </div>
+                ) : (
+                  <div className="text-gray-500 font-medium">Choose meal type...</div>
                 )}
+              </button>
+            </div>
+
+            {/* Time Selector */}
+            {selectedMealType && (
+              <div className="space-y-3">
+                <label className="block text-lg font-semibold text-gray-800">Meal Time</label>
+                <button
+                  onClick={() => setShowTimePicker(true)}
+                  className="w-full bg-green-50 border border-green-200 rounded-xl p-4 text-left hover:bg-green-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🕐</span>
+                    <div>
+                      <div className="font-medium text-gray-800">{selectedMealTime}</div>
+                      <div className="text-sm text-gray-600">Click to change</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {/* Food Search */}
+            {selectedMealType && (
+              <div className="space-y-4">
+                <label className="block text-lg font-semibold text-gray-800">Search Foods</label>
+                
+                {/* Search Input */}
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Search foods... (e.g., 'chicken breast')"
+                    className="flex-1 p-3 border border-gray-300 rounded-xl"
+                  />
+                  <button
+                    onClick={() => searchFoods(searchQuery)}
+                    disabled={isLoading}
+                    className="bg-green-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                  >
+                    {isLoading ? '...' : 'Search'}
+                  </button>
+                </div>
+                
+                {/* Quick Category Searches */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => { setSearchQuery('chicken breast'); searchFoods('chicken breast'); }}
+                    className="bg-blue-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>🍗</span> Protein
+                  </button>
+                  <button
+                    onClick={() => { setSearchQuery('rice'); searchFoods('rice'); }}
+                    className="bg-green-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>🍞</span> Carbs
+                  </button>
+                  <button
+                    onClick={() => { setSearchQuery('avocado'); searchFoods('avocado'); }}
+                    className="bg-yellow-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>🥑</span> Fats
+                  </button>
+                  <button
+                    onClick={() => { setSearchQuery('McDonald\'s'); searchFoods('McDonald\'s'); }}
+                    className="bg-red-500 text-white p-3 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>🍟</span> Fast Food
+                  </button>
+                </div>
+
+                {error && (
+                  <p className="text-red-500 text-sm">{error}</p>
+                )}
+                
+                {/* Search Results */}
+                <div className="space-y-2">
+                  {isLoading && (
+                    <div className="text-center py-8">
+                      <div className="text-2xl mb-2">🔍</div>
+                      <p className="text-gray-600">Searching USDA database...</p>
+                    </div>
+                  )}
+                  
+                  {searchResults.map((food) => (
+                    <div
+                      key={food.fdcId}
+                      className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-800 text-sm">
+                            {food.description}
+                          </div>
+                          {food.brandName && (
+                            <div className="text-xs text-blue-600 font-medium">
+                              {food.brandName}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-600 mt-1">
+                            {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {/* TODO: Add food functionality */}}
+                          className="bg-blue-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-600 transition-colors ml-2"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {searchResults.length === 0 && searchQuery && !isLoading && (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-2xl mb-2">🍽️</div>
+                      <p>No foods found. Try a different search term.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Meal Type Picker Modal */}
+          {showMealPicker && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
+              <div className="bg-white rounded-2xl w-full max-w-sm">
+                <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-gray-800">Select Meal</h3>
+                  <button onClick={() => setShowMealPicker(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                </div>
+                
+                <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                  {mealTypes.map((mealType) => (
+                    <button
+                      key={mealType.name}
+                      onClick={() => selectMealType(mealType)}
+                      className="w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-4 text-left transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{mealType.emoji}</span>
+                        <div>
+                          <div className="font-medium text-gray-800">{mealType.name}</div>
+                          <div className="text-sm text-gray-600">{mealType.defaultTime}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-          
-          {/* Footer */}
-          <div className="p-6 border-t border-gray-200">
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveMeal}
-                disabled={selectedFoods.length === 0 || !customMealName.trim()}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-              >
-                Save Custom Meal
-              </button>
-            </div>
-          </div>
+          )}
+
+          {/* Time Picker Modal */}
+          <TimePickerModal
+            isOpen={showTimePicker}
+            currentTime={selectedMealTime}
+            onSelectTime={setSelectedMealTime}
+            onClose={() => setShowTimePicker(false)}
+          />
         </div>
       </div>
     );
