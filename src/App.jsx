@@ -25,6 +25,141 @@ const MealMessages = {
   }
 };
 
+// Time Picker Modal Component
+function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
+  const [selectedHour, setSelectedHour] = useState(12);
+  const [selectedMinute, setSelectedMinute] = useState('00');
+  const [selectedPeriod, setSelectedPeriod] = useState('AM');
+
+  useEffect(() => {
+    if (isOpen && currentTime) {
+      // Parse current time to set initial selection
+      const timeParts = currentTime.split(' ');
+      if (timeParts.length === 2) {
+        const [time, period] = timeParts;
+        const [hour, minute] = time.split(':');
+        setSelectedHour(parseInt(hour));
+        setSelectedMinute(minute);
+        setSelectedPeriod(period);
+      }
+    }
+  }, [isOpen, currentTime]);
+
+  const handleConfirm = () => {
+    const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
+    onSelectTime(formattedTime);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+  const minutes = ['00', '15', '30', '45'];
+  const periods = ['AM', 'PM'];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl w-full max-w-sm">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="p-6">
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {/* Hours Column */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Hour</h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {hours.map((hour) => (
+                  <button
+                    key={hour}
+                    onClick={() => setSelectedHour(hour)}
+                    className={`w-full p-2 rounded-lg border-2 text-center transition-colors ${
+                      selectedHour === hour
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {hour}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Minutes Column */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Min</h4>
+              <div className="space-y-2">
+                {minutes.map((minute) => (
+                  <button
+                    key={minute}
+                    onClick={() => setSelectedMinute(minute)}
+                    className={`w-full p-2 rounded-lg border-2 text-center transition-colors ${
+                      selectedMinute === minute
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {minute}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* AM/PM Column */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Period</h4>
+              <div className="space-y-2">
+                {periods.map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setSelectedPeriod(period)}
+                    className={`w-full p-2 rounded-lg border-2 text-center transition-colors ${
+                      selectedPeriod === period
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {period}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Preview and Confirm */}
+          <div className="text-center mb-4">
+            <div className="text-lg font-bold text-gray-800 mb-2">
+              Selected: {selectedHour}:{selectedMinute} {selectedPeriod}
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MealMessageSection({ meal, profile, getMealMessage }) {
   const [message, setMessage] = useState('');
 
@@ -89,7 +224,7 @@ function FoodCategoryGrid({ mealId, onSelectCategory }) {
     ],
     [
       { name: 'Condiments', icon: '🧂', color: 'bg-gray-500' },
-      { name: 'Junk Food', icon: '🍪', color: 'bg-orange-500' }
+      { name: 'Junk/Drink', icon: '🍺', color: 'bg-orange-500' }
     ]
   ];
 
@@ -127,7 +262,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
     'Fruit': 'fruits',
     'Vegetables': 'vegetables',
     'Condiments': 'condiments',
-    'Junk Food': 'snacks'
+    'Junk/Drink': 'snacks'
   };
   
   const dbCategory = foodCategoryMapping[category];
@@ -244,6 +379,29 @@ function FullScreenSwipeInterface({
   profile, 
   getMealMessage 
 }) {
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedMealForTime, setSelectedMealForTime] = useState(null);
+
+  const openTimePicker = (mealId) => {
+    setSelectedMealForTime(mealId);
+    setShowTimePicker(true);
+  };
+
+  const closeTimePicker = () => {
+    setShowTimePicker(false);
+    setSelectedMealForTime(null);
+  };
+
+  const handleTimeSelection = (newTime) => {
+    if (selectedMealForTime) {
+      setMeals(prev => prev.map(m => 
+        m.id === selectedMealForTime ? { ...m, time: newTime } : m
+      ));
+    }
+  };
+
+  const getCurrentMeal = () => meals.find(m => m.id === selectedMealForTime);
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
       <div className="h-full flex flex-col">
@@ -295,13 +453,12 @@ function FullScreenSwipeInterface({
                   {/* Compact Header */}
                   <div className="p-4 flex-shrink-0">
                     <div className="text-center">
-                      {/* Top Line: Meal Name + Time */}
-                      <div className="flex items-center justify-between mb-3">
+                      {/* Top Line: Meal Name */}
+                      <div className="mb-3">
                         <h2 className="text-2xl font-bold text-gray-800">{meal.name}</h2>
-                        <div className="text-lg font-medium text-blue-600">{meal.time}</div>
                       </div>
                       
-                      {/* Second Line: Emoji + Calories */}
+                      {/* Second Line: Emoji + Calories + Time Button */}
                       <div className="flex items-center justify-center gap-4">
                         <div className="text-4xl">
                           {meal.name === 'Breakfast' && '🍳'}
@@ -314,6 +471,12 @@ function FullScreenSwipeInterface({
                           {meal.name === 'PostWorkout' && '💪'}
                         </div>
                         <div className="text-3xl font-bold text-purple-600">{meal.calories} cal</div>
+                        <button
+                          onClick={() => openTimePicker(meal.id)}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-600 transition-colors flex items-center gap-2"
+                        >
+                          🕐 {meal.time}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -322,33 +485,6 @@ function FullScreenSwipeInterface({
                   <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
                     <div className="space-y-6">
                       
-                      {/* Meal Time Selector */}
-                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="text-2xl">🕐</div>
-                          <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Meal Time</label>
-                            <input
-                              type="time"
-                              value={meal.time ? meal.time.split(' ')[0] : '07:00'}
-                              onChange={(e) => {
-                                const timeValue = e.target.value;
-                                const hour = parseInt(timeValue.split(':')[0]);
-                                const minute = timeValue.split(':')[1];
-                                const period = hour >= 12 ? 'PM' : 'AM';
-                                const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                                const formattedTime = `${displayHour}:${minute} ${period}`;
-                                
-                                setMeals(prev => prev.map(m => 
-                                  m.id === meal.id ? { ...m, time: formattedTime } : m
-                                ));
-                              }}
-                              className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
                       {/* Food Selection Grid */}
                       <FoodCategoryGrid 
                         mealId={meal.id} 
@@ -431,6 +567,14 @@ function FullScreenSwipeInterface({
             );
           })}
         </div>
+
+        {/* Time Picker Modal */}
+        <TimePickerModal
+          isOpen={showTimePicker}
+          currentTime={getCurrentMeal()?.time}
+          onSelectTime={handleTimeSelection}
+          onClose={closeTimePicker}
+        />
       </div>
     </div>
   );
@@ -465,7 +609,7 @@ const MealSwipeApp = () => {
     'Fruit': 'fruits',
     'Vegetables': 'vegetables',
     'Condiments': 'condiments',
-    'Junk Food': 'snacks'
+    'Junk/Drink': 'snacks'
   };
 
   const [meals, setMeals] = useState([
