@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { FoodDatabase, getFoodsInCategory, getServingInfo } from './FoodDatabase.js';
 import { USDAMealCreator } from './USDAMealCreator.jsx';
+import { WelcomeScreen } from './WelcomeScreen.jsx';
 
 // Import the meal messaging system (uncomment when files are available)
 // import { MealMessages } from './src/MealMessages/index.js';
@@ -636,8 +636,6 @@ function FullScreenSwipeInterface({
                         mealSources={mealSources}
                       />
 
-
-
                       {/* Meal Message Section */}
                       <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
                     </div>
@@ -1256,50 +1254,14 @@ const MealSwipeApp = () => {
           </div>
         )}
 
-        {/* Welcome Message & Pie Chart - Only on main screen */}
+        {/* Welcome Screen with Charts - Only on main screen */}
         {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
-          <div className="bg-white rounded-2xl p-6 mb-6 shadow-xl">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome {profile.name}!</h2>
-              <p className="text-gray-600">Ready to track your {profile.goal} journey? Let's get started!</p>
-            </div>
-            
-            {/* Macro Pie Chart */}
-            <div className="h-64 mb-4">
-              {totalMacros.calories > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Protein', value: totalMacros.protein * 4, color: '#3B82F6' },
-                        { name: 'Carbs', value: totalMacros.carbs * 4, color: '#10B981' },
-                        { name: 'Fat', value: totalMacros.fat * 9, color: '#F59E0B' }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: ${value} cal`}
-                    >
-                      <Cell fill="#3B82F6" />
-                      <Cell fill="#10B981" />
-                      <Cell fill="#F59E0B" />
-                    </Pie>
-                    <Tooltip formatter={(value) => [`${value} calories`, '']} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">📊</div>
-                    <p className="text-gray-500 font-medium">Your macro breakdown will appear here</p>
-                    <p className="text-gray-400 text-sm">Start adding meals to see your progress!</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <WelcomeScreen 
+            profile={profile}
+            totalMacros={totalMacros}
+            meals={meals}
+            calorieData={calorieData}
+          />
         )}
 
         {/* Mode Toggle Buttons */}
@@ -1416,8 +1378,6 @@ const MealSwipeApp = () => {
                       onRemoveFood={removeFoodFromMeal}
                       mealSources={mealSources}
                     />
-
-
                   </div>
                 );
               })}
