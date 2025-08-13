@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { FoodDatabase, getFoodsInCategory } from './FoodDatabase.js';
+import { USDAMealCreator } from './USDAMealCreator.jsx';
 
 // Import the meal messaging system (uncomment when files are available)
 // import { MealMessages } from './src/MealMessages/index.js';
@@ -209,7 +210,11 @@ function MealMessageDisplay({ meal, profile, getMealMessage }) {
   );
 }
 
-function FoodCategoryGrid({ mealId, onSelectCategory }) {
+// Enhanced Food Category Grid with conflict detection
+function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
+  const source = mealSources[mealName];
+  const isUSDAOwned = source === 'usda';
+  
   const categories = [
     [
       { name: 'Protein', icon: '🍗', color: 'bg-blue-500' },
@@ -228,6 +233,22 @@ function FoodCategoryGrid({ mealId, onSelectCategory }) {
       { name: 'Junk/Drink', icon: '🍺', color: 'bg-orange-500' }
     ]
   ];
+
+  if (isUSDAOwned) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Add Foods</h3>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+          <div className="text-blue-600 font-medium text-sm">
+            🔒 This meal is managed by USDA Search
+          </div>
+          <div className="text-blue-500 text-xs mt-1">
+            Use the USDA Create Meal to modify
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -336,26 +357,39 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
   );
 }
 
-function MealFoodList({ meal, onRemoveFood }) {
+function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   if (!meal.items || meal.items.length === 0) return null;
+
+  const source = mealSources[meal.name];
+  const isUSDAOwned = source === 'usda';
 
   return (
     <div className="mt-4 space-y-2">
-      <h4 className="font-semibold text-gray-800 text-sm">Added Foods:</h4>
+      <h4 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
+        Added Foods:
+        {isUSDAOwned && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">USDA</span>}
+      </h4>
       {meal.items.map((item, index) => (
         <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
           <div className="flex-1">
             <div className="font-medium text-sm text-gray-800">{item.food}</div>
+            {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
             <div className="text-xs text-gray-600">
               {item.servings}x serving • {Math.round(item.calories)} cal
+              {item.source === 'usda' && <span className="ml-2 text-blue-500">USDA</span>}
             </div>
           </div>
-          <button
-            onClick={() => onRemoveFood(meal.id, index)}
-            className="text-red-500 hover:text-red-700 text-sm ml-2"
-          >
-            ✕
-          </button>
+          {!readOnly && !isUSDAOwned && (
+            <button
+              onClick={() => onRemoveFood(meal.id, index)}
+              className="text-red-500 hover:text-red-700 text-sm ml-2"
+            >
+              ✕
+            </button>
+          )}
+          {isUSDAOwned && (
+            <div className="text-gray-400 text-sm ml-2">🔒</div>
+          )}
         </div>
       ))}
     </div>
@@ -378,12 +412,22 @@ function FullScreenSwipeInterface({
   updateMeal, 
   setMeals, 
   profile, 
-  getMealMessage 
+  getMealMessage,
+  mealSources,
+  onClaimMeal
 }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMealForTime, setSelectedMealForTime] = useState(null);
 
   const openTimePicker = (mealId) => {
+    const meal = meals.find(m => m.id === mealId);
+    const source = mealSources[meal?.name];
+    
+    // Prevent time changes for USDA-owned meals
+    if (source === 'usda') {
+      return;
+    }
+    
     setSelectedMealForTime(mealId);
     setShowTimePicker(true);
   };
@@ -395,6 +439,11 @@ function FullScreenSwipeInterface({
 
   const handleTimeSelection = (newTime) => {
     if (selectedMealForTime) {
+      const meal = meals.find(m => m.id === selectedMealForTime);
+      
+      // Claim meal for quickview when time is changed
+      onClaimMeal(meal.name, 'quickview');
+      
       setMeals(prev => prev.map(m => 
         m.id === selectedMealForTime ? { ...m, time: newTime } : m
       ));
@@ -430,6 +479,8 @@ function FullScreenSwipeInterface({
             const zIndex = isActive ? 20 : meals.length - Math.abs(index - currentCard);
             const scale = isActive ? 1 : 0.95;
             const opacity = isActive ? 1 : 0.7;
+            const source = mealSources[meal.name];
+            const isUSDAOwned = source === 'usda';
             
             return (
               <div
@@ -454,9 +505,14 @@ function FullScreenSwipeInterface({
                   {/* Compact Header */}
                   <div className="p-4 flex-shrink-0">
                     <div className="text-center">
-                      {/* Top Line: Meal Name */}
-                      <div className="mb-3">
+                      {/* Top Line: Meal Name with Source Indicator */}
+                      <div className="mb-3 flex items-center justify-center gap-2">
                         <h2 className="text-2xl font-bold text-gray-800">{meal.name}</h2>
+                        {isUSDAOwned && (
+                          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">
+                            USDA
+                          </span>
+                        )}
                       </div>
                       
                       {/* Second Line: Emoji + Calories + Time Button */}
@@ -481,9 +537,15 @@ function FullScreenSwipeInterface({
                           }}
                           onMouseDown={(e) => e.stopPropagation()}
                           onTouchStart={(e) => e.stopPropagation()}
-                          className="bg-blue-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-600 transition-colors flex items-center gap-2"
+                          disabled={isUSDAOwned}
+                          className={`px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${
+                            isUSDAOwned 
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                          }`}
                         >
                           🕐 {meal.time}
+                          {isUSDAOwned && <span className="text-xs">🔒</span>}
                         </button>
                       </div>
                     </div>
@@ -496,75 +558,80 @@ function FullScreenSwipeInterface({
                       {/* Food Selection Grid */}
                       <FoodCategoryGrid 
                         mealId={meal.id} 
-                        onSelectCategory={openFoodSelection} 
+                        onSelectCategory={openFoodSelection}
+                        mealSources={mealSources}
+                        mealName={meal.name}
                       />
                       
                       {/* Added Foods List */}
                       <MealFoodList 
                         meal={meal} 
-                        onRemoveFood={removeFoodFromMeal} 
+                        onRemoveFood={removeFoodFromMeal}
+                        mealSources={mealSources}
                       />
 
-                      {/* Manual Macro Entry Section */}
-                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
-                        <h4 className="text-lg font-semibold text-gray-800 mb-4">Manual Entry (Optional)</h4>
-                        
-                        <div className="space-y-4">
-                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-blue-600 font-bold text-lg">P</span>
-                              </div>
-                              <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Protein (g)</label>
-                                <input
-                                  type="number"
-                                  value={meal.protein}
-                                  onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                                  placeholder="0"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                <span className="text-green-600 font-bold text-lg">C</span>
-                              </div>
-                              <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Carbs (g)</label>
-                                <input
-                                  type="number"
-                                  value={meal.carbs}
-                                  onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                                  placeholder="0"
-                                />
+                      {/* Manual Macro Entry Section - Hidden for USDA meals */}
+                      {!isUSDAOwned && (
+                        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
+                          <h4 className="text-lg font-semibold text-gray-800 mb-4">Manual Entry (Optional)</h4>
+                          
+                          <div className="space-y-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <span className="text-blue-600 font-bold text-lg">P</span>
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Protein (g)</label>
+                                  <input
+                                    type="number"
+                                    value={meal.protein}
+                                    onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                    placeholder="0"
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <span className="text-yellow-600 font-bold text-lg">F</span>
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                  <span className="text-green-600 font-bold text-lg">C</span>
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Carbs (g)</label>
+                                  <input
+                                    type="number"
+                                    value={meal.carbs}
+                                    onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                    placeholder="0"
+                                  />
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Fat (g)</label>
-                                <input
-                                  type="number"
-                                  value={meal.fat}
-                                  onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                                  className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
-                                  placeholder="0"
-                                />
+                            </div>
+
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                  <span className="text-yellow-600 font-bold text-lg">F</span>
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Fat (g)</label>
+                                  <input
+                                    type="number"
+                                    value={meal.fat}
+                                    onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-xl text-lg bg-white shadow-sm"
+                                    placeholder="0"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Meal Message Section */}
                       <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
@@ -594,6 +661,18 @@ const MealSwipeApp = () => {
     weight: 150,
     name: "Champion",
     goal: "gain-muscle"
+  });
+
+  // Track which system owns each meal ('quickview', 'usda', or null)
+  const [mealSources, setMealSources] = useState({
+    'Breakfast': null,
+    'FirstSnack': null,
+    'SecondSnack': null,
+    'Lunch': null,
+    'MidAfternoon Snack': null,
+    'Dinner': null,
+    'Late Snack': null,
+    'PostWorkout': null
   });
 
   // Map meal names to messaging system types
@@ -714,566 +793,87 @@ const MealSwipeApp = () => {
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
   const dragRef = useRef({ startX: 0, startY: 0 });
 
-  // USDA API Configuration
-  const USDA_API_KEY = 'tdlBSP5YGMzEbAkkehT6VFCctFwrVwmg2nYsrgjx';
-  const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
-
-  // Enhanced Create Meal Modal with USDA Search
-  function CreateMealModalWithUSDA({ onClose }) {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedMealType, setSelectedMealType] = useState('');
-    const [selectedMealTime, setSelectedMealTime] = useState('12:00 PM');
-    const [searchResults, setSearchResults] = useState([]);
-    const [selectedFoods, setSelectedFoods] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [showMealPicker, setShowMealPicker] = useState(false);
-    const [showTimePicker, setShowTimePicker] = useState(false);
-    const [pendingMealType, setPendingMealType] = useState(null);
-    const [hasAddedFoods, setHasAddedFoods] = useState(false);
-    const [showAddedFeedback, setShowAddedFeedback] = useState('');
-    const [foodServings, setFoodServings] = useState({}); // Track servings for each food
-
-    // Available meal types
-    const mealTypes = [
-      { name: 'Breakfast', emoji: '🍳', defaultTime: '7:00 AM' },
-      { name: 'First Snack', emoji: '🍎', defaultTime: '9:30 AM' },
-      { name: 'Second Snack', emoji: '🥨', defaultTime: '11:00 AM' },
-      { name: 'Lunch', emoji: '🥗', defaultTime: '12:30 PM' },
-      { name: 'Mid-Afternoon Snack', emoji: '🥜', defaultTime: '3:30 PM' },
-      { name: 'Dinner', emoji: '🍽️', defaultTime: '6:30 PM' },
-      { name: 'Late Snack', emoji: '🍓', defaultTime: '8:30 PM' },
-      { name: 'Post-Workout', emoji: '💪', defaultTime: '5:00 PM' }
-    ];
-
-    // Handle meal selection - goes straight to time picker
-    const handleMealSelection = (mealType) => {
-      setPendingMealType(mealType);
-      setSelectedMealTime(mealType.defaultTime);
-      setShowMealPicker(false);
-      setShowTimePicker(true);
-    };
-
-    // Search on Enter key
-    const handleKeyPress = (e) => {
-      if (e.key === 'Enter') {
-        searchFoods(searchQuery);
-      }
-    };
-
-    // Handle time confirmation - finalizes meal selection
-    const handleTimeConfirm = (time) => {
-      setSelectedMealType(pendingMealType.name);
-      setSelectedMealTime(time);
-      setShowTimePicker(false);
-      setPendingMealType(null);
-      setHasAddedFoods(false); // Reset when selecting new meal
-    };
-
-    // Custom Time Picker Modal
-    const TimePickerModal = ({ isOpen, currentTime, onSelectTime, onClose }) => {
-      const [selectedHour, setSelectedHour] = useState(12);
-      const [selectedMinute, setSelectedMinute] = useState('00');
-      const [selectedPeriod, setSelectedPeriod] = useState('AM');
-
-      useEffect(() => {
-        if (isOpen && currentTime) {
-          const timeParts = currentTime.split(' ');
-          if (timeParts.length === 2) {
-            const [time, period] = timeParts;
-            const [hour, minute] = time.split(':');
-            setSelectedHour(parseInt(hour));
-            setSelectedMinute(minute);
-            setSelectedPeriod(period);
-          }
-        }
-      }, [isOpen, currentTime]);
-
-      const handleConfirm = () => {
-        const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
-        onSelectTime(formattedTime);
-      };
-
-      if (!isOpen) return null;
-
-      const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-      const minutes = ['00', '15', '30', '45'];
-      const periods = ['AM', 'PM'];
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
-          <div className="bg-white rounded-2xl w-full max-w-lg">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
-                <p className="text-sm text-gray-600">{pendingMealType?.name}</p>
-              </div>
-              <button onClick={() => { onClose(); setShowMealPicker(true); }} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-3 gap-6 mb-6">
-                {/* Hours Column */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {hours.map((hour) => (
-                      <button
-                        key={hour}
-                        onClick={() => setSelectedHour(hour)}
-                        className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                          selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                        }`}
-                      >
-                        {hour}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Minutes Column */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
-                  <div className="space-y-3">
-                    {minutes.map((minute) => (
-                      <button
-                        key={minute}
-                        onClick={() => setSelectedMinute(minute)}
-                        className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                          selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                        }`}
-                      >
-                        :{minute}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* AM/PM Column */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
-                  <div className="space-y-3">
-                    {periods.map((period) => (
-                      <button
-                        key={period}
-                        onClick={() => setSelectedPeriod(period)}
-                        className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                          selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                        }`}
-                      >
-                        {period}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center mb-6">
-                <div className="text-2xl font-bold text-gray-800 mb-2">
-                  {selectedHour}:{selectedMinute} {selectedPeriod}
-                </div>
-                <p className="text-gray-600">Selected Time</p>
-              </div>
-
-              <button 
-                onClick={handleConfirm} 
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
-              >
-                Confirm {pendingMealType?.name} at {selectedHour}:{selectedMinute} {selectedPeriod}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    // Search USDA database
-    const searchFoods = async (query) => {
-      if (!query.trim()) return;
-      
-      setIsLoading(true);
-      setError('');
-      
-      try {
-        const response = await fetch(
-          `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=20&api_key=${USDA_API_KEY}`
-        );
-        
-        if (!response.ok) throw new Error('Search failed');
-        
-        const data = await response.json();
-        
-        // Process results to extract key nutrition info
-        const processedResults = data.foods.map(food => ({
-          fdcId: food.fdcId,
-          description: food.description,
-          brandName: food.brandName || '',
-          dataType: food.dataType,
-          // Extract key nutrients (per 100g)
-          nutrition: extractNutrition(food.foodNutrients)
-        }));
-        
-        setSearchResults(processedResults);
-        
-        // Initialize servings for each food item (default to 100g)
-        const initialServings = {};
-        processedResults.forEach(food => {
-          initialServings[food.fdcId] = 100;
-        });
-        setFoodServings(prev => ({ ...prev, ...initialServings }));
-      } catch (err) {
-        setError('Failed to search foods. Please try again.');
-        console.error('USDA API Error:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // Extract nutrition from USDA nutrient array
-    const extractNutrition = (nutrients) => {
-      const nutritionMap = {
-        protein: 0,
-        carbs: 0, 
-        fat: 0,
-        calories: 0,
-        sugar: 0
-      };
-
-      nutrients.forEach(nutrient => {
-        const name = nutrient.nutrientName?.toLowerCase() || '';
-        const value = nutrient.value || 0;
-
-        // Map USDA nutrient names to our format
-        if (name.includes('protein')) nutritionMap.protein = value;
-        else if (name.includes('carbohydrate')) nutritionMap.carbs = value;
-        else if (name.includes('total lipid') || name.includes('fat')) nutritionMap.fat = value;
-        else if (name.includes('energy') && nutrient.unitName === 'KCAL') nutritionMap.calories = value;
-        else if (name.includes('sugars, total')) nutritionMap.sugar = value;
-      });
-
-      return nutritionMap;
-    };
-
-    // Add food to selected meal
-    const addFoodToSelectedMeal = (food, servings = 100) => {
-      const nutrition = food.nutrition;
-      const adjustedNutrition = {
-        protein: (nutrition.protein * servings / 100).toFixed(1),
-        carbs: (nutrition.carbs * servings / 100).toFixed(1),
-        fat: (nutrition.fat * servings / 100).toFixed(1),
-        calories: Math.round(nutrition.calories * servings / 100),
-        sugar: (nutrition.sugar * servings / 100).toFixed(1)
-      };
-
-      const foodItem = {
-        food: food.description,
-        brand: food.brandName,
-        fdcId: food.fdcId,
-        servings: servings / 100,
-        ...adjustedNutrition
-      };
-
-      // Find the selected meal type and add food to it
-      const selectedMeal = meals.find(meal => meal.name === selectedMealType);
-      if (selectedMeal) {
-        // Update the existing meal
-        setMeals(prev => prev.map(meal => {
-          if (meal.name === selectedMealType) {
-            const updatedItems = [...(meal.items || []), foodItem];
-            const newProtein = meal.protein + parseFloat(adjustedNutrition.protein);
-            const newCarbs = meal.carbs + parseFloat(adjustedNutrition.carbs);
-            const newFat = meal.fat + parseFloat(adjustedNutrition.fat);
-            const newCalories = meal.calories + parseInt(adjustedNutrition.calories);
-
-            return {
-              ...meal,
-              time: selectedMealTime, // Update time too
-              items: updatedItems,
-              protein: Math.round(newProtein * 10) / 10,
-              carbs: Math.round(newCarbs * 10) / 10,
-              fat: Math.round(newFat * 10) / 10,
-              calories: Math.round(newCalories)
-            };
-          }
-          return meal;
-        }));
-        
-        // Mark that foods have been added
-        setHasAddedFoods(true);
-        
-        // Show feedback
-        setShowAddedFeedback(food.description);
-        setTimeout(() => setShowAddedFeedback(''), 2000);
-      }
-    };
-
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
-        <div className="h-full flex flex-col">
-          
-          {/* Sticky Daily Totals Header */}
-          <div className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-bold">Create Meal</h2>
-              <button 
-                onClick={() => {
-                  setHasAddedFoods(false); // Reset when closing
-                  onClose();
-                }} 
-                className="text-white hover:text-gray-200 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            
-            {/* Daily Totals */}
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="bg-white bg-opacity-20 rounded-lg p-2">
-                <div className="text-xs font-medium">Protein</div>
-                <div className="text-sm font-bold">{totalMacros.protein}g</div>
-              </div>
-              <div className="bg-white bg-opacity-20 rounded-lg p-2">
-                <div className="text-xs font-medium">Carbs</div>
-                <div className="text-sm font-bold">{totalMacros.carbs}g</div>
-              </div>
-              <div className="bg-white bg-opacity-20 rounded-lg p-2">
-                <div className="text-xs font-medium">Fat</div>
-                <div className="text-sm font-bold">{totalMacros.fat}g</div>
-              </div>
-              <div className="bg-white bg-opacity-20 rounded-lg p-2">
-                <div className="text-xs font-medium">Calories</div>
-                <div className="text-sm font-bold">{totalMacros.calories}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto bg-white">
-            <div className="space-y-6 p-4">
-              
-              {/* Sticky Select Meal Button - Full or Minimized - Hidden when modals are open */}
-              {!showMealPicker && !showTimePicker && (
-                <div className="sticky top-0 bg-white pb-4 z-10">
-                  {!hasAddedFoods ? (
-                    // Full meal selector
-                    <button
-                      onClick={() => setShowMealPicker(true)}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
-                    >
-                      {selectedMealType ? (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <span className="text-3xl">
-                              {mealTypes.find(m => m.name === selectedMealType)?.emoji}
-                            </span>
-                            <div>
-                              <div className="text-xl font-bold">{selectedMealType}</div>
-                              <div className="text-sm opacity-80">{selectedMealTime}</div>
-                            </div>
-                          </div>
-                          <div className="text-sm opacity-70">Tap to change</div>
-                        </div>
-                      ) : (
-                        <div className="text-center">
-                          <div className="text-2xl font-bold mb-1">Select Meal</div>
-                          <div className="text-sm opacity-80">Choose meal type and time</div>
-                        </div>
-                      )}
-                    </button>
-                  ) : (
-                    // Minimized meal selector
-                    <button
-                      onClick={() => setShowMealPicker(true)}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-3 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl">
-                            {mealTypes.find(m => m.name === selectedMealType)?.emoji}
-                          </span>
-                          <div>
-                            <div className="text-sm font-bold">{selectedMealType}</div>
-                            <div className="text-xs opacity-80">{selectedMealTime}</div>
-                          </div>
-                          <div className="bg-green-400 w-2 h-2 rounded-full"></div>
-                        </div>
-                        <div className="text-xs opacity-70">Change</div>
-                      </div>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Added Food Feedback */}
-              {showAddedFeedback && (
-                <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-20 animate-pulse">
-                  <div className="text-sm font-medium">✅ Added {showAddedFeedback.substring(0, 30)}...</div>
-                </div>
-              )}
-
-              {/* Food Search - Only show if meal is selected */}
-              {selectedMealType && (
-                <div className="space-y-4">
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">Search Foods</h3>
-                    
-                    {/* Search Input */}
-                    <div className="flex gap-3 mb-6">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Search foods... (e.g., 'chicken breast')"
-                        className="flex-1 p-4 border border-gray-300 rounded-xl text-lg"
-                      />
-                      <button
-                        onClick={() => searchFoods(searchQuery)}
-                        disabled={isLoading}
-                        className="bg-green-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
-                      >
-                        {isLoading ? '...' : 'Search'}
-                      </button>
-                    </div>
-
-                    {error && (
-                      <p className="text-red-500 text-sm mb-4">{error}</p>
-                    )}
-                    
-                    {/* Search Results */}
-                    <div className="space-y-3">
-                      {isLoading && (
-                        <div className="text-center py-8">
-                          <div className="text-2xl mb-2">🔍</div>
-                          <p className="text-gray-600">Searching USDA database...</p>
-                        </div>
-                      )}
-                      
-                      {searchResults.map((food) => (
-                        <div
-                          key={food.fdcId}
-                          className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
-                        >
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-800">
-                                  {food.description}
-                                </div>
-                                {food.brandName && (
-                                  <div className="text-sm text-blue-600 font-medium">
-                                    {food.brandName}
-                                  </div>
-                                )}
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Servings Input and Add Button Row */}
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <label className="text-sm font-medium text-gray-700">Grams:</label>
-                                <input
-                                  type="number"
-                                  value={foodServings[food.fdcId] || 100}
-                                  onChange={(e) => setFoodServings(prev => ({
-                                    ...prev,
-                                    [food.fdcId]: Math.max(1, parseInt(e.target.value) || 1)
-                                  }))}
-                                  className="w-20 p-2 border border-gray-300 rounded-lg text-center"
-                                  min="1"
-                                  step="1"
-                                />
-                                <span className="text-sm text-gray-600">g</span>
-                              </div>
-                              
-                              {/* Calculated nutrition preview */}
-                              <div className="flex-1 text-xs text-gray-600">
-                                {Math.round((food.nutrition.calories * (foodServings[food.fdcId] || 100)) / 100)} cal •{' '}
-                                {Math.round((food.nutrition.protein * (foodServings[food.fdcId] || 100)) / 100)}g protein
-                              </div>
-                              
-                              <button
-                                onClick={() => addFoodToSelectedMeal(food, foodServings[food.fdcId] || 100)}
-                                className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors"
-                              >
-                                Add
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {searchResults.length === 0 && searchQuery && !isLoading && (
-                        <div className="text-center py-8 text-gray-500">
-                          <div className="text-2xl mb-2">🍽️</div>
-                          <p>No foods found. Try a different search term.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Meal Type Picker Modal */}
-          {showMealPicker && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
-              <div className="bg-white rounded-2xl w-full max-w-md max-h-5/6 flex flex-col">
-                <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-800">Select Meal</h3>
-                  <button onClick={() => setShowMealPicker(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {mealTypes.map((mealType) => (
-                      <button
-                        key={mealType.name}
-                        onClick={() => handleMealSelection(mealType)}
-                        className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-4 text-center transition-colors hover:shadow-lg"
-                      >
-                        <div className="text-3xl mb-2">{mealType.emoji}</div>
-                        <div className="font-medium text-gray-800 text-sm">{mealType.name}</div>
-                        <div className="text-xs text-gray-600 mt-1">{mealType.defaultTime}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Time Picker Modal */}
-          <TimePickerModal
-            isOpen={showTimePicker}
-            currentTime={selectedMealTime}
-            onSelectTime={handleTimeConfirm}
-            onClose={() => setShowTimePicker(false)}
-          />
-        </div>
-      </div>
-    );
-  } // End of CreateMealModalWithUSDA function
-
-  const updateMeal = (mealId, field, value) => {
-    setMeals(prev => prev.map(meal => {
-      if (meal.id === mealId) {
-        const updated = { ...meal, [field]: parseInt(value) || 0 };
-        // Calculate calories: protein*4 + carbs*4 + fat*9
-        updated.calories = (updated.protein * 4) + (updated.carbs * 4) + (updated.fat * 9);
-        return updated;
-      }
-      return meal;
+  // Claim a meal for a specific system
+  const claimMeal = (mealName, source) => {
+    setMealSources(prev => ({
+      ...prev,
+      [mealName]: source
     }));
+
+    // If claiming for a new source, reset the meal data
+    if (source !== mealSources[mealName]) {
+      setMeals(prev => prev.map(meal => {
+        if (meal.name === mealName) {
+          return {
+            ...meal,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            calories: 0,
+            items: []
+          };
+        }
+        return meal;
+      }));
+    }
+  };
+
+  // Enhanced updateMeal function to handle USDA updates
+  const updateMeal = (mealId, field, value) => {
+    if (typeof field === 'object') {
+      // Handle USDA updates (object format)
+      const updateData = field;
+      
+      setMeals(prev => prev.map(meal => {
+        if (meal.id === mealId || meal.name === mealId) {
+          const updated = { ...meal };
+          
+          if (updateData.time) {
+            updated.time = updateData.time;
+          }
+          
+          if (updateData.addItem) {
+            const item = updateData.addItem;
+            updated.items = [...(updated.items || []), item];
+            updated.protein = updated.protein + parseFloat(item.protein);
+            updated.carbs = updated.carbs + parseFloat(item.carbs);
+            updated.fat = updated.fat + parseFloat(item.fat);
+            updated.calories = updated.calories + parseInt(item.calories);
+          }
+          
+          return updated;
+        }
+        return meal;
+      }));
+    } else {
+      // Handle quickview updates (legacy format)
+      setMeals(prev => prev.map(meal => {
+        if (meal.id === mealId) {
+          const updated = { ...meal, [field]: parseInt(value) || 0 };
+          // Calculate calories: protein*4 + carbs*4 + fat*9
+          updated.calories = (updated.protein * 4) + (updated.carbs * 4) + (updated.fat * 9);
+          return updated;
+        }
+        return meal;
+      }));
+      
+      // Claim meal for quickview when manually edited
+      const meal = meals.find(m => m.id === mealId);
+      if (meal && mealSources[meal.name] !== 'quickview') {
+        claimMeal(meal.name, 'quickview');
+      }
+    }
   };
 
   const addFoodToMeal = (mealId, category, foodName, servings = 1) => {
     const foodData = FoodDatabase[category]?.[foodName];
     if (!foodData) return;
+
+    // Claim meal for quickview
+    const meal = meals.find(m => m.id === mealId);
+    if (meal) {
+      claimMeal(meal.name, 'quickview');
+    }
 
     setMeals(prev => prev.map(meal => {
       if (meal.id === mealId) {
@@ -1284,7 +884,8 @@ const MealSwipeApp = () => {
           protein: foodData.protein * servings,
           carbs: foodData.carbs * servings,
           fat: foodData.fat * servings,
-          calories: foodData.calories * servings
+          calories: foodData.calories * servings,
+          source: 'quickview'
         };
 
         const updatedItems = [...(meal.items || []), newItem];
@@ -1415,6 +1016,12 @@ const MealSwipeApp = () => {
   };
 
   const openFoodSelection = (category, mealId) => {
+    // Check if meal is USDA-owned
+    const meal = meals.find(m => m.id === mealId);
+    if (meal && mealSources[meal.name] === 'usda') {
+      return; // Prevent opening for USDA meals
+    }
+    
     setSelectedCategory(category);
     setSelectedMealForFood(mealId);
   };
@@ -1740,6 +1347,8 @@ const MealSwipeApp = () => {
             setMeals={setMeals}
             profile={profile}
             getMealMessage={getMealMessage}
+            mealSources={mealSources}
+            onClaimMeal={claimMeal}
           />
         )}
       </div>
@@ -1759,74 +1368,91 @@ const MealSwipeApp = () => {
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {meals.map((meal, index) => (
-                <div key={meal.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <div className="text-center mb-4">
-                    <h3 className="text-xl font-bold text-gray-800">{meal.name}</h3>
-                    <div className="text-2xl mt-1">
-                      {meal.name === 'Breakfast' && '🍳'}
-                      {meal.name === 'FirstSnack' && '🍎'}
-                      {meal.name === 'SecondSnack' && '🥨'}
-                      {meal.name === 'Lunch' && '🥗'}
-                      {meal.name === 'MidAfternoon Snack' && '🥜'}
-                      {meal.name === 'Dinner' && '🍽️'}
-                      {meal.name === 'Late Snack' && '🍓'}
-                      {meal.name === 'PostWorkout' && '💪'}
-                      {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
+              {meals.map((meal, index) => {
+                const source = mealSources[meal.name];
+                const isUSDAOwned = source === 'usda';
+                
+                return (
+                  <div key={meal.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div className="text-center mb-4">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <h3 className="text-xl font-bold text-gray-800">{meal.name}</h3>
+                        {isUSDAOwned && (
+                          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">
+                            USDA
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-2xl mt-1">
+                        {meal.name === 'Breakfast' && '🍳'}
+                        {meal.name === 'FirstSnack' && '🍎'}
+                        {meal.name === 'SecondSnack' && '🥨'}
+                        {meal.name === 'Lunch' && '🥗'}
+                        {meal.name === 'MidAfternoon Snack' && '🥜'}
+                        {meal.name === 'Dinner' && '🍽️'}
+                        {meal.name === 'Late Snack' && '🍓'}
+                        {meal.name === 'PostWorkout' && '💪'}
+                        {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
+                      </div>
+                      <div className="text-xl font-bold text-purple-600 mt-1">{meal.calories} cal</div>
                     </div>
-                    <div className="text-xl font-bold text-purple-600 mt-1">{meal.calories} cal</div>
-                  </div>
 
-                  {/* Food Selection Grid for Scroll Modal */}
-                  <FoodCategoryGrid 
-                    mealId={meal.id} 
-                    onSelectCategory={openFoodSelection} 
-                  />
-                  
-                  {/* Added Foods List */}
-                  <MealFoodList 
-                    meal={meal} 
-                    onRemoveFood={removeFoodFromMeal} 
-                  />
+                    {/* Food Selection Grid for Scroll Modal */}
+                    <FoodCategoryGrid 
+                      mealId={meal.id} 
+                      onSelectCategory={openFoodSelection}
+                      mealSources={mealSources}
+                      mealName={meal.name}
+                    />
+                    
+                    {/* Added Foods List */}
+                    <MealFoodList 
+                      meal={meal} 
+                      onRemoveFood={removeFoodFromMeal}
+                      mealSources={mealSources}
+                    />
 
-                  {/* Manual Entry Section */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Manual Entry (Optional)</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <label className="block text-xs text-gray-600">Protein</label>
-                        <input
-                          type="number"
-                          value={meal.protein}
-                          onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-sm"
-                          placeholder="0"
-                        />
+                    {/* Manual Entry Section - Hidden for USDA meals */}
+                    {!isUSDAOwned && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Manual Entry (Optional)</h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-xs text-gray-600">Protein</label>
+                            <input
+                              type="number"
+                              value={meal.protein}
+                              onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600">Carbs</label>
+                            <input
+                              type="number"
+                              value={meal.carbs}
+                              onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600">Fat</label>
+                            <input
+                              type="number"
+                              value={meal.fat}
+                              onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-600">Carbs</label>
-                        <input
-                          type="number"
-                          value={meal.carbs}
-                          onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-sm"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600">Fat</label>
-                        <input
-                          type="number"
-                          value={meal.fat}
-                          onChange={(e) => updateMeal(meal.id, 'fat', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-sm"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <div className="p-6 border-t border-gray-200">
@@ -1851,12 +1477,16 @@ const MealSwipeApp = () => {
         />
       )}
 
-      {/* Create Meal Modal */}
-      {showCreateMeal && (
-        <CreateMealModalWithUSDA
-          onClose={() => setShowCreateMeal(false)}
-        />
-      )}
+      {/* USDA Create Meal Modal */}
+      <USDAMealCreator
+        isOpen={showCreateMeal}
+        onClose={() => setShowCreateMeal(false)}
+        meals={meals}
+        onUpdateMeal={updateMeal}
+        totalMacros={totalMacros}
+        mealSources={mealSources}
+        onClaimMeal={claimMeal}
+      />
     </div>
   );
 };
