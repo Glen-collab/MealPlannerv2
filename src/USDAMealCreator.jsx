@@ -1,0 +1,620 @@
+import React, { useState, useEffect } from 'react';
+
+// USDA API Configuration
+const USDA_API_KEY = 'tdlBSP5YGMzEbAkkehT6VFCctFwrVwmg2nYsrgjx';
+const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
+
+// Time Picker Modal Component
+function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose, mealType }) {
+  const [selectedHour, setSelectedHour] = useState(12);
+  const [selectedMinute, setSelectedMinute] = useState('00');
+  const [selectedPeriod, setSelectedPeriod] = useState('AM');
+
+  useEffect(() => {
+    if (isOpen && currentTime) {
+      const timeParts = currentTime.split(' ');
+      if (timeParts.length === 2) {
+        const [time, period] = timeParts;
+        const [hour, minute] = time.split(':');
+        setSelectedHour(parseInt(hour));
+        setSelectedMinute(minute);
+        setSelectedPeriod(period);
+      }
+    }
+  }, [isOpen, currentTime]);
+
+  const handleConfirm = () => {
+    const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
+    onSelectTime(formattedTime);
+  };
+
+  if (!isOpen) return null;
+
+  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+  const minutes = ['00', '15', '30', '45'];
+  const periods = ['AM', 'PM'];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
+      <div className="bg-white rounded-2xl w-full max-w-lg">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
+            <p className="text-sm text-gray-600">{mealType?.name}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+        </div>
+        
+        <div className="p-6">
+          <div className="grid grid-cols-3 gap-6 mb-6">
+            {/* Hours Column */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {hours.map((hour) => (
+                  <button
+                    key={hour}
+                    onClick={() => setSelectedHour(hour)}
+                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
+                      selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                  >
+                    {hour}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Minutes Column */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
+              <div className="space-y-3">
+                {minutes.map((minute) => (
+                  <button
+                    key={minute}
+                    onClick={() => setSelectedMinute(minute)}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
+                      selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                  >
+                    :{minute}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* AM/PM Column */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
+              <div className="space-y-3">
+                {periods.map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setSelectedPeriod(period)}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
+                      selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                  >
+                    {period}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mb-6">
+            <div className="text-2xl font-bold text-gray-800 mb-2">
+              {selectedHour}:{selectedMinute} {selectedPeriod}
+            </div>
+            <p className="text-gray-600">Selected Time</p>
+          </div>
+
+          <button 
+            onClick={handleConfirm} 
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+          >
+            Confirm {mealType?.name} at {selectedHour}:{selectedMinute} {selectedPeriod}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main USDA Meal Creator Component
+export function USDAMealCreator({ 
+  isOpen, 
+  onClose, 
+  meals, 
+  onUpdateMeal, 
+  totalMacros,
+  mealSources, // Track which system owns each meal
+  onClaimMeal  // Function to claim a meal for USDA system
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMealType, setSelectedMealType] = useState('');
+  const [selectedMealTime, setSelectedMealTime] = useState('12:00 PM');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showMealPicker, setShowMealPicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pendingMealType, setPendingMealType] = useState(null);
+  const [hasAddedFoods, setHasAddedFoods] = useState(false);
+  const [showAddedFeedback, setShowAddedFeedback] = useState('');
+  const [foodServings, setFoodServings] = useState({});
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictMealType, setConflictMealType] = useState(null);
+
+  // Available meal types with mapping to internal names
+  const mealTypes = [
+    { name: 'Breakfast', internalName: 'Breakfast', emoji: '🍳', defaultTime: '7:00 AM' },
+    { name: 'First Snack', internalName: 'FirstSnack', emoji: '🍎', defaultTime: '9:30 AM' },
+    { name: 'Second Snack', internalName: 'SecondSnack', emoji: '🥨', defaultTime: '11:00 AM' },
+    { name: 'Lunch', internalName: 'Lunch', emoji: '🥗', defaultTime: '12:30 PM' },
+    { name: 'Mid-Afternoon Snack', internalName: 'MidAfternoon Snack', emoji: '🥜', defaultTime: '3:30 PM' },
+    { name: 'Dinner', internalName: 'Dinner', emoji: '🍽️', defaultTime: '6:30 PM' },
+    { name: 'Late Snack', internalName: 'Late Snack', emoji: '🍓', defaultTime: '8:30 PM' },
+    { name: 'Post-Workout', internalName: 'PostWorkout', emoji: '💪', defaultTime: '5:00 PM' }
+  ];
+
+  // Get available meal types (not owned by quick-view system)
+  const getAvailableMealTypes = () => {
+    return mealTypes.map(mealType => {
+      const meal = meals.find(m => m.name === mealType.internalName);
+      const source = mealSources[mealType.internalName];
+      const hasQuickViewData = source === 'quickview' && meal && (meal.calories > 0 || (meal.items && meal.items.length > 0));
+      
+      return {
+        ...mealType,
+        disabled: hasQuickViewData,
+        hasExistingData: hasQuickViewData,
+        existingCalories: meal?.calories || 0,
+        source: source
+      };
+    });
+  };
+
+  // Handle meal selection with conflict detection
+  const handleMealSelection = (mealType) => {
+    const meal = meals.find(m => m.name === mealType.internalName);
+    const source = mealSources[mealType.internalName];
+    
+    // Check if meal has quick-view data
+    if (source === 'quickview' && meal && (meal.calories > 0 || (meal.items && meal.items.length > 0))) {
+      setConflictMealType(mealType);
+      setShowConflictModal(true);
+      setShowMealPicker(false);
+      return;
+    }
+
+    // Proceed normally
+    setPendingMealType(mealType);
+    setSelectedMealTime(mealType.defaultTime);
+    setShowMealPicker(false);
+    setShowTimePicker(true);
+  };
+
+  // Handle conflict resolution
+  const handleConflictResolution = (action) => {
+    if (action === 'override') {
+      // Claim the meal for USDA system and reset its data
+      onClaimMeal(conflictMealType.internalName, 'usda');
+      
+      // Proceed with meal selection
+      setPendingMealType(conflictMealType);
+      setSelectedMealTime(conflictMealType.defaultTime);
+      setShowConflictModal(false);
+      setShowTimePicker(true);
+    } else {
+      // Cancel - go back to meal picker
+      setShowConflictModal(false);
+      setShowMealPicker(true);
+    }
+    setConflictMealType(null);
+  };
+
+  // Handle time confirmation
+  const handleTimeConfirm = (time) => {
+    setSelectedMealType(pendingMealType.name);
+    setSelectedMealTime(time);
+    setShowTimePicker(false);
+    setPendingMealType(null);
+    setHasAddedFoods(false);
+    
+    // Claim the meal for USDA system
+    onClaimMeal(pendingMealType.internalName, 'usda');
+  };
+
+  // Search on Enter key
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      searchFoods(searchQuery);
+    }
+  };
+
+  // Search USDA database
+  const searchFoods = async (query) => {
+    if (!query.trim()) return;
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetch(
+        `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=20&api_key=${USDA_API_KEY}`
+      );
+      
+      if (!response.ok) throw new Error('Search failed');
+      
+      const data = await response.json();
+      
+      const processedResults = data.foods.map(food => ({
+        fdcId: food.fdcId,
+        description: food.description,
+        brandName: food.brandName || '',
+        dataType: food.dataType,
+        nutrition: extractNutrition(food.foodNutrients)
+      }));
+      
+      setSearchResults(processedResults);
+      
+      const initialServings = {};
+      processedResults.forEach(food => {
+        initialServings[food.fdcId] = 100;
+      });
+      setFoodServings(prev => ({ ...prev, ...initialServings }));
+    } catch (err) {
+      setError('Failed to search foods. Please try again.');
+      console.error('USDA API Error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Extract nutrition from USDA nutrient array
+  const extractNutrition = (nutrients) => {
+    const nutritionMap = {
+      protein: 0,
+      carbs: 0, 
+      fat: 0,
+      calories: 0,
+      sugar: 0
+    };
+
+    nutrients.forEach(nutrient => {
+      const name = nutrient.nutrientName?.toLowerCase() || '';
+      const value = nutrient.value || 0;
+
+      if (name.includes('protein')) nutritionMap.protein = value;
+      else if (name.includes('carbohydrate')) nutritionMap.carbs = value;
+      else if (name.includes('total lipid') || name.includes('fat')) nutritionMap.fat = value;
+      else if (name.includes('energy') && nutrient.unitName === 'KCAL') nutritionMap.calories = value;
+      else if (name.includes('sugars, total')) nutritionMap.sugar = value;
+    });
+
+    return nutritionMap;
+  };
+
+  // Add food to selected meal
+  const addFoodToSelectedMeal = (food, servings = 100) => {
+    const nutrition = food.nutrition;
+    const adjustedNutrition = {
+      protein: (nutrition.protein * servings / 100).toFixed(1),
+      carbs: (nutrition.carbs * servings / 100).toFixed(1),
+      fat: (nutrition.fat * servings / 100).toFixed(1),
+      calories: Math.round(nutrition.calories * servings / 100),
+      sugar: (nutrition.sugar * servings / 100).toFixed(1)
+    };
+
+    const foodItem = {
+      food: food.description,
+      brand: food.brandName,
+      fdcId: food.fdcId,
+      servings: servings / 100,
+      source: 'usda',
+      ...adjustedNutrition
+    };
+
+    // Find meal by display name and convert to internal name
+    const mealTypeObj = mealTypes.find(mt => mt.name === selectedMealType);
+    const internalName = mealTypeObj?.internalName;
+    
+    if (internalName) {
+      onUpdateMeal(internalName, {
+        time: selectedMealTime,
+        addItem: foodItem,
+        source: 'usda'
+      });
+      
+      setHasAddedFoods(true);
+      setShowAddedFeedback(food.description);
+      setTimeout(() => setShowAddedFeedback(''), 2000);
+    }
+  };
+
+  // Reset state when closing
+  const handleClose = () => {
+    setHasAddedFoods(false);
+    setSelectedMealType('');
+    setSearchQuery('');
+    setSearchResults([]);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const availableMealTypes = getAvailableMealTypes();
+
+  return (
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
+      <div className="h-full flex flex-col">
+        
+        {/* Header with Daily Totals */}
+        <div className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl font-bold">Create Meal (USDA)</h2>
+            <button onClick={handleClose} className="text-white hover:text-gray-200 text-2xl">×</button>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="bg-white bg-opacity-20 rounded-lg p-2">
+              <div className="text-xs font-medium">Protein</div>
+              <div className="text-sm font-bold">{totalMacros.protein}g</div>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-lg p-2">
+              <div className="text-xs font-medium">Carbs</div>
+              <div className="text-sm font-bold">{totalMacros.carbs}g</div>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-lg p-2">
+              <div className="text-xs font-medium">Fat</div>
+              <div className="text-sm font-bold">{totalMacros.fat}g</div>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-lg p-2">
+              <div className="text-xs font-medium">Calories</div>
+              <div className="text-sm font-bold">{totalMacros.calories}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto bg-white">
+          <div className="space-y-6 p-4">
+            
+            {/* Meal Selection Button */}
+            {!showMealPicker && !showTimePicker && !showConflictModal && (
+              <div className="sticky top-0 bg-white pb-4 z-10">
+                {!hasAddedFoods ? (
+                  <button
+                    onClick={() => setShowMealPicker(true)}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl"
+                  >
+                    {selectedMealType ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-3xl">
+                            {mealTypes.find(m => m.name === selectedMealType)?.emoji}
+                          </span>
+                          <div>
+                            <div className="text-xl font-bold">{selectedMealType}</div>
+                            <div className="text-sm opacity-80">{selectedMealTime}</div>
+                          </div>
+                        </div>
+                        <div className="text-sm opacity-70">Tap to change</div>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <div className="text-2xl font-bold mb-1">Select Meal</div>
+                        <div className="text-sm opacity-80">Choose meal type and time</div>
+                      </div>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowMealPicker(true)}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-3 text-left hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">
+                          {mealTypes.find(m => m.name === selectedMealType)?.emoji}
+                        </span>
+                        <div>
+                          <div className="text-sm font-bold">{selectedMealType}</div>
+                          <div className="text-xs opacity-80">{selectedMealTime}</div>
+                        </div>
+                        <div className="bg-green-400 w-2 h-2 rounded-full"></div>
+                      </div>
+                      <div className="text-xs opacity-70">Change</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Added Food Feedback */}
+            {showAddedFeedback && (
+              <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-20 animate-pulse">
+                <div className="text-sm font-medium">✅ Added {showAddedFeedback.substring(0, 30)}...</div>
+              </div>
+            )}
+
+            {/* Food Search */}
+            {selectedMealType && (
+              <div className="space-y-4">
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Search Foods</h3>
+                  
+                  <div className="flex gap-3 mb-6">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Search foods... (e.g., 'chicken breast')"
+                      className="flex-1 p-4 border border-gray-300 rounded-xl text-lg"
+                    />
+                    <button
+                      onClick={() => searchFoods(searchQuery)}
+                      disabled={isLoading}
+                      className="bg-green-600 text-white px-6 py-4 rounded-xl font-bold hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                    >
+                      {isLoading ? '...' : 'Search'}
+                    </button>
+                  </div>
+
+                  {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                  
+                  {/* Search Results */}
+                  <div className="space-y-3">
+                    {isLoading && (
+                      <div className="text-center py-8">
+                        <div className="text-2xl mb-2">🔍</div>
+                        <p className="text-gray-600">Searching USDA database...</p>
+                      </div>
+                    )}
+                    
+                    {searchResults.map((food) => (
+                      <div key={food.fdcId} className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-800">{food.description}</div>
+                              {food.brandName && (
+                                <div className="text-sm text-blue-600 font-medium">{food.brandName}</div>
+                              )}
+                              <div className="text-sm text-gray-600 mt-1">
+                                {food.nutrition.calories} cal • {food.nutrition.protein}g protein (per 100g)
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <label className="text-sm font-medium text-gray-700">Grams:</label>
+                              <input
+                                type="number"
+                                value={foodServings[food.fdcId] || 100}
+                                onChange={(e) => setFoodServings(prev => ({
+                                  ...prev,
+                                  [food.fdcId]: Math.max(1, parseInt(e.target.value) || 1)
+                                }))}
+                                className="w-20 p-2 border border-gray-300 rounded-lg text-center"
+                                min="1"
+                                step="1"
+                              />
+                              <span className="text-sm text-gray-600">g</span>
+                            </div>
+                            
+                            <div className="flex-1 text-xs text-gray-600">
+                              {Math.round((food.nutrition.calories * (foodServings[food.fdcId] || 100)) / 100)} cal •{' '}
+                              {Math.round((food.nutrition.protein * (foodServings[food.fdcId] || 100)) / 100)}g protein
+                            </div>
+                            
+                            <button
+                              onClick={() => addFoodToSelectedMeal(food, foodServings[food.fdcId] || 100)}
+                              className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {searchResults.length === 0 && searchQuery && !isLoading && (
+                      <div className="text-center py-8 text-gray-500">
+                        <div className="text-2xl mb-2">🍽️</div>
+                        <p>No foods found. Try a different search term.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Meal Type Picker Modal */}
+        {showMealPicker && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-5/6 flex flex-col">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">Select Meal</h3>
+                <button onClick={() => setShowMealPicker(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {availableMealTypes.map((mealType) => (
+                    <button
+                      key={mealType.name}
+                      onClick={() => handleMealSelection(mealType)}
+                      disabled={mealType.disabled}
+                      className={`border border-gray-200 rounded-xl p-4 text-center transition-colors hover:shadow-lg ${
+                        mealType.disabled 
+                          ? 'bg-red-50 border-red-200 cursor-not-allowed opacity-60' 
+                          : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="text-3xl mb-2">{mealType.emoji}</div>
+                      <div className="font-medium text-gray-800 text-sm">{mealType.name}</div>
+                      <div className="text-xs text-gray-600 mt-1">{mealType.defaultTime}</div>
+                      {mealType.hasExistingData && (
+                        <div className="text-xs text-red-600 mt-1 font-medium">
+                          Quick View: {mealType.existingCalories} cal
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Conflict Resolution Modal */}
+        {showConflictModal && conflictMealType && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
+            <div className="bg-white rounded-2xl w-full max-w-md">
+              <div className="p-6">
+                <div className="text-center mb-6">
+                  <div className="text-4xl mb-3">⚠️</div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Meal Conflict</h3>
+                  <p className="text-gray-600">
+                    <strong>{conflictMealType.name}</strong> already has data from Quick View 
+                    ({meals.find(m => m.name === conflictMealType.internalName)?.calories || 0} calories).
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleConflictResolution('override')}
+                    className="w-full bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition-colors"
+                  >
+                    Override & Use USDA
+                  </button>
+                  <button
+                    onClick={() => handleConflictResolution('cancel')}
+                    className="w-full bg-gray-300 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel & Choose Different Meal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Time Picker Modal */}
+        <TimePickerModal
+          isOpen={showTimePicker}
+          currentTime={selectedMealTime}
+          onSelectTime={handleTimeConfirm}
+          onClose={() => setShowTimePicker(false)}
+          mealType={pendingMealType}
+        />
+      </div>
+    </div>
+  );
+}
