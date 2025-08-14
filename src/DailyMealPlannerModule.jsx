@@ -1,103 +1,103 @@
 import React, { useState, useEffect } from 'react';
 import Week1Messages from './MealMessages/Week1Messages.json';
 
-const DailyMealPlannerModule = ({ 
-  meals = [], 
-  profile = {}, 
-  totalMacros = {},
-  mealSources = {},
-  className = "" 
+const DailyMealPlannerModule = ({
+    meals = [],
+    profile = {},
+    totalMacros = {},
+    mealSources = {},
+    className = ""
 }) => {
-  const [motivationalMessage, setMotivationalMessage] = useState('');
-  const [dailyQuote, setDailyQuote] = useState('');
+    const [motivationalMessage, setMotivationalMessage] = useState('');
+    const [dailyQuote, setDailyQuote] = useState('');
 
-  // Get random motivational message and quote on component mount
-  useEffect(() => {
-    const messages = Week1Messages.week1.messages;
-    const quotes = Week1Messages.week1.quotes;
-    
-    if (messages && messages.length > 0) {
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      // Replace placeholders with actual profile data
-      const personalizedMessage = randomMessage
-        .replace(/{name}/g, profile.name || 'Champion')
-        .replace(/{goal}/g, profile.goal || 'your goals');
-      setMotivationalMessage(personalizedMessage);
+    // Get random motivational message and quote on component mount
+    useEffect(() => {
+        const messages = Week1Messages.week1.messages;
+        const quotes = Week1Messages.week1.quotes;
+
+        if (messages && messages.length > 0) {
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            // Replace placeholders with actual profile data
+            const personalizedMessage = randomMessage
+                .replace(/{name}/g, profile.name || 'Champion')
+                .replace(/{goal}/g, profile.goal || 'your goals');
+            setMotivationalMessage(personalizedMessage);
+        }
+
+        if (quotes && quotes.length > 0) {
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            setDailyQuote(randomQuote);
+        }
+    }, [profile]);
+
+    // Filter out meals with no calories for cleaner display
+    const activeMeals = meals.filter(meal => meal && meal.calories > 0);
+
+    // Sort meals by time for chronological display
+    const sortedMeals = [...activeMeals].sort((a, b) => {
+        const timeA = convertTimeToMinutes(a.time);
+        const timeB = convertTimeToMinutes(b.time);
+        return timeA - timeB;
+    });
+
+    // Helper function to convert time string to minutes for sorting
+    function convertTimeToMinutes(timeStr) {
+        if (!timeStr) return 0;
+        const [time, period] = timeStr.split(' ');
+        const [hours, minutes] = time.split(':').map(Number);
+        let totalMinutes = hours * 60 + (minutes || 0);
+
+        if (period === 'PM' && hours !== 12) {
+            totalMinutes += 12 * 60;
+        } else if (period === 'AM' && hours === 12) {
+            totalMinutes -= 12 * 60;
+        }
+
+        return totalMinutes;
     }
-    
-    if (quotes && quotes.length > 0) {
-      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-      setDailyQuote(randomQuote);
-    }
-  }, [profile]);
 
-  // Filter out meals with no calories for cleaner display
-  const activeMeals = meals.filter(meal => meal && meal.calories > 0);
-
-  // Sort meals by time for chronological display
-  const sortedMeals = [...activeMeals].sort((a, b) => {
-    const timeA = convertTimeToMinutes(a.time);
-    const timeB = convertTimeToMinutes(b.time);
-    return timeA - timeB;
-  });
-
-  // Helper function to convert time string to minutes for sorting
-  function convertTimeToMinutes(timeStr) {
-    if (!timeStr) return 0;
-    const [time, period] = timeStr.split(' ');
-    const [hours, minutes] = time.split(':').map(Number);
-    let totalMinutes = hours * 60 + (minutes || 0);
-    
-    if (period === 'PM' && hours !== 12) {
-      totalMinutes += 12 * 60;
-    } else if (period === 'AM' && hours === 12) {
-      totalMinutes -= 12 * 60;
-    }
-    
-    return totalMinutes;
-  }
-
-  // Get meal type emoji
-  const getMealEmoji = (mealName) => {
-    const emojiMap = {
-      'Breakfast': '🍳',
-      'FirstSnack': '🍎',
-      'SecondSnack': '🥨', 
-      'Lunch': '🥗',
-      'MidAfternoon Snack': '🥜',
-      'Dinner': '🍽️',
-      'Late Snack': '🍓',
-      'PostWorkout': '💪'
+    // Get meal type emoji
+    const getMealEmoji = (mealName) => {
+        const emojiMap = {
+            'Breakfast': '🍳',
+            'FirstSnack': '🍎',
+            'SecondSnack': '🥨',
+            'Lunch': '🥗',
+            'MidAfternoon Snack': '🥜',
+            'Dinner': '🍽️',
+            'Late Snack': '🍓',
+            'PostWorkout': '💪'
+        };
+        return emojiMap[mealName] || '🌟';
     };
-    return emojiMap[mealName] || '🌟';
-  };
 
-  // Get meal display name
-  const getMealDisplayName = (mealName) => {
-    const nameMap = {
-      'FirstSnack': 'Morning Snack',
-      'SecondSnack': 'Mid-Morning Snack',
-      'MidAfternoon Snack': 'Afternoon Snack',
-      'PostWorkout': 'Post-Workout'
+    // Get meal display name
+    const getMealDisplayName = (mealName) => {
+        const nameMap = {
+            'FirstSnack': 'Morning Snack',
+            'SecondSnack': 'Mid-Morning Snack',
+            'MidAfternoon Snack': 'Afternoon Snack',
+            'PostWorkout': 'Post-Workout'
+        };
+        return nameMap[mealName] || mealName;
     };
-    return nameMap[mealName] || mealName;
-  };
 
-  if (!meals || meals.length === 0) {
+    if (!meals || meals.length === 0) {
+        return (
+            <div className={`w-full ${className}`}>
+                <div className="text-center p-8 text-gray-500">
+                    <div className="text-4xl mb-4">🍽️</div>
+                    <h3 className="text-lg font-semibold mb-2">No meals planned yet</h3>
+                    <p className="text-sm">Start adding foods to see your daily meal plan!</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-      <div className={`w-full ${className}`}>
-        <div className="text-center p-8 text-gray-500">
-          <div className="text-4xl mb-4">🍽️</div>
-          <h3 className="text-lg font-semibold mb-2">No meals planned yet</h3>
-          <p className="text-sm">Start adding foods to see your daily meal plan!</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`w-full ${className}`}>
-      <style jsx>{`
+        <div className={`w-full ${className}`}>
+            <style jsx>{`
         .planner-container {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
           background: white;
@@ -148,9 +148,20 @@ const DailyMealPlannerModule = ({
         }
 
         .meals-container {
-          max-height: 60vh;
+          flex: 1;
           overflow-y: auto;
           background: white;
+        }
+
+        .planner-container.full-screen {
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .planner-container.full-screen .meals-container {
+          flex: 1;
+          min-height: 0;
         }
 
         .meal-item {
@@ -356,100 +367,100 @@ const DailyMealPlannerModule = ({
         }
       `}</style>
 
-      <div className="planner-container">
-        <div className="header">
-          <h1>Daily Meal Plan</h1>
-          <p>Your personalized nutrition schedule</p>
-        </div>
-
-        <div className="nutrition-header">
-          <div>Food & Serving</div>
-          <div>Calories</div>
-        </div>
-
-        <div className="meals-container">
-          {sortedMeals.length > 0 ? (
-            sortedMeals.map((meal) => {
-              const source = mealSources[meal.name];
-              const isUSDAOwned = source === 'usda';
-              
-              return (
-                <div key={meal.id} className="meal-item">
-                  <div className="meal-header">
-                    <div className="meal-time">{meal.time}</div>
-                    <div className="meal-type">
-                      {getMealEmoji(meal.name)} {getMealDisplayName(meal.name)}
-                      {isUSDAOwned && <span className="source-badge">USDA</span>}
-                    </div>
-                  </div>
-                  <div className="meal-content">
-                    <div className="meal-details">
-                      <div className="meal-name">
-                        {meal.items && meal.items.length > 0 ? (
-                          meal.items.map((item, index) => (
-                            <div key={index}>{item.food}</div>
-                          ))
-                        ) : (
-                          <span style={{ color: '#6c757d', fontStyle: 'italic' }}>No foods added</span>
-                        )}
-                      </div>
-                      {meal.items && meal.items.length > 0 && (
-                        <div className="meal-serving">
-                          {meal.items.map((item, index) => (
-                            <div key={index}>
-                              {Math.round(item.servings * 10) / 10}x serving
-                              {item.brand && ` • ${item.brand}`}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="macros">
-                        <div className="macro-item">P: {Math.round(meal.protein)}g</div>
-                        <div className="macro-item">C: {Math.round(meal.carbs)}g</div>
-                        <div className="macro-item">F: {Math.round(meal.fat)}g</div>
-                      </div>
-                    </div>
-                    <div className="calorie-value">{Math.round(meal.calories)}</div>
-                  </div>
+            <div className={`planner-container ${className.includes('h-full') ? 'full-screen' : ''}`}>
+                <div className="header">
+                    <h1>Daily Meal Plan</h1>
+                    <p>Your personalized nutrition schedule</p>
                 </div>
-              );
-            })
-          ) : (
-            <div className="meal-item" style={{ textAlign: 'center', color: '#6c757d' }}>
-              <div className="text-4xl mb-2">🍽️</div>
-              <div>Start adding foods to see your meal plan!</div>
-            </div>
-          )}
-        </div>
 
-        <div className="total-row">
-          <div>
-            DAILY TOTALS
-            <div className="total-macros">
-              <span>P: {Math.round(totalMacros.protein || 0)}g</span>
-              <span>C: {Math.round(totalMacros.carbs || 0)}g</span>
-              <span>F: {Math.round(totalMacros.fat || 0)}g</span>
-            </div>
-          </div>
-          <div>{Math.round(totalMacros.calories || 0)}</div>
-        </div>
+                <div className="nutrition-header">
+                    <div>Food & Serving</div>
+                    <div>Calories</div>
+                </div>
 
-        {/* Motivational Section */}
-        <div className="motivation-section">
-          {motivationalMessage && (
-            <div className="motivation-message">
-              💪 {motivationalMessage}
+                <div className="meals-container">
+                    {sortedMeals.length > 0 ? (
+                        sortedMeals.map((meal) => {
+                            const source = mealSources[meal.name];
+                            const isUSDAOwned = source === 'usda';
+
+                            return (
+                                <div key={meal.id} className="meal-item">
+                                    <div className="meal-header">
+                                        <div className="meal-time">{meal.time}</div>
+                                        <div className="meal-type">
+                                            {getMealEmoji(meal.name)} {getMealDisplayName(meal.name)}
+                                            {isUSDAOwned && <span className="source-badge">USDA</span>}
+                                        </div>
+                                    </div>
+                                    <div className="meal-content">
+                                        <div className="meal-details">
+                                            <div className="meal-name">
+                                                {meal.items && meal.items.length > 0 ? (
+                                                    meal.items.map((item, index) => (
+                                                        <div key={index}>{item.food}</div>
+                                                    ))
+                                                ) : (
+                                                    <span style={{ color: '#6c757d', fontStyle: 'italic' }}>No foods added</span>
+                                                )}
+                                            </div>
+                                            {meal.items && meal.items.length > 0 && (
+                                                <div className="meal-serving">
+                                                    {meal.items.map((item, index) => (
+                                                        <div key={index}>
+                                                            {Math.round(item.servings * 10) / 10}x serving
+                                                            {item.brand && ` • ${item.brand}`}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <div className="macros">
+                                                <div className="macro-item">P: {Math.round(meal.protein)}g</div>
+                                                <div className="macro-item">C: {Math.round(meal.carbs)}g</div>
+                                                <div className="macro-item">F: {Math.round(meal.fat)}g</div>
+                                            </div>
+                                        </div>
+                                        <div className="calorie-value">{Math.round(meal.calories)}</div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="meal-item" style={{ textAlign: 'center', color: '#6c757d' }}>
+                            <div className="text-4xl mb-2">🍽️</div>
+                            <div>Start adding foods to see your meal plan!</div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="total-row">
+                    <div>
+                        DAILY TOTALS
+                        <div className="total-macros">
+                            <span>P: {Math.round(totalMacros.protein || 0)}g</span>
+                            <span>C: {Math.round(totalMacros.carbs || 0)}g</span>
+                            <span>F: {Math.round(totalMacros.fat || 0)}g</span>
+                        </div>
+                    </div>
+                    <div>{Math.round(totalMacros.calories || 0)}</div>
+                </div>
+
+                {/* Motivational Section */}
+                <div className="motivation-section">
+                    {motivationalMessage && (
+                        <div className="motivation-message">
+                            💪 {motivationalMessage}
+                        </div>
+                    )}
+                    {dailyQuote && (
+                        <div className="daily-quote">
+                            {dailyQuote}
+                        </div>
+                    )}
+                </div>
             </div>
-          )}
-          {dailyQuote && (
-            <div className="daily-quote">
-              {dailyQuote}
-            </div>
-          )}
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default DailyMealPlannerModule;
