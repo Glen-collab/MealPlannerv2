@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, X, RotateCcw, Trophy, Star } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Heart, X, RotateCcw, AlertTriangle } from 'lucide-react';
 import { generatePersonalTrainerSummary } from './PersonalTrainerSummary.js';
 
 const MealSwipeGame = ({ 
@@ -15,9 +15,98 @@ const MealSwipeGame = ({
   const [gameComplete, setGameComplete] = useState(false);
   const [overallGrade, setOverallGrade] = useState('');
   const [lastResponse, setLastResponse] = useState('');
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [swipeState, setSwipeState] = useState({ x: 0, rotation: 0, opacity: 1 });
   const [isDragging, setIsDragging] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState('');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [showingReaction, setShowingReaction] = useState(false);
+  const cardRef = useRef(null);
+  const startPosRef = useRef({ x: 0, y: 0 });
+
+  // Enhanced meal evaluation with new warnings
+  const evaluateMealQuality = (card) => {
+    const { totals } = card;
+    let score = 0;
+    const issues = [];
+    const strengths = [];
+    const warnings = [];
+
+    // Calculate macro percentages
+    const totalMacroCalories = (totals.protein * 4) + (totals.carbs * 4) + (totals.fat * 9);
+    const proteinPercent = totalMacroCalories > 0 ? (totals.protein * 4) / totalMacroCalories * 100 : 0;
+    const carbPercent = totalMacroCalories > 0 ? (totals.carbs * 4) / totalMacroCalories * 100 : 0;
+    const fatPercent = totalMacroCalories > 0 ? (totals.fat * 9) / totalMacroCalories * 100 : 0;
+
+    // Check for warnings first
+    if (totals.sugar > 25) warnings.push('sugar');
+    if (totals.cholesterol > 300) warnings.push('cholesterol');
+    if (totals.glycemicIndex > 70) warnings.push('glycemic');
+
+    // Sweetheart criteria (40-40-20 ±10%)
+    const proteinSweetheart = Math.abs(proteinPercent - 40) <= 10;
+    const carbSweetheart = Math.abs(carbPercent - 40) <= 10;
+    const fatSweetheart = Math.abs(fatPercent - 20) <= 10;
+
+    if (proteinSweetheart && carbSweetheart && fatSweetheart) {
+      score += 50;
+      strengths.push('sweetheart_macros');
+    } else if (proteinPercent >= 45) {
+      score += 35;
+      strengths.push('metabolism_booster');
+    } else if (proteinPercent < 25) {
+      score -= 20;
+      issues.push('metabolism_killer');
+    }
+
+    // High carb = digestive destroyer
+    if (totals.carbs > 55) {
+      score -= 30;
+      issues.push('carb_bloater');
+    } else if (totals.carbs <= 30) {
+      score += 15;
+      strengths.push('lean_machine');
+    }
+
+    // Enhanced sugar evaluation
+    if (totals.sugar <= 15) {
+      score += 25;
+      strengths.push('sugar_angel');
+    } else if (totals.sugar <= 25) {
+      score += 10;
+      strengths.push('manageable_sugar');
+    } else if (totals.sugar > 25) {
+      const sugarOverage = totals.sugar - 25;
+      const warningLevel = Math.floor(sugarOverage / 10) + 1;
+      score -= (15 + (warningLevel * 10));
+      issues.push(`sugar_bomb_level_${warningLevel}`);
+    }
+
+    // Calorie burn potential
+    if (totals.calories >= 100 && totals.calories <= 600) {
+      score += 15;
+      strengths.push('calorie_burn_friendly');
+    } else if (totals.calories > 800) {
+      score -= 20;
+      issues.push('calorie_bomb');
+    }
+
+    // Protein metabolism boost bonus
+    if (proteinPercent >= 50) {
+      score += 20;
+      strengths.push('fat_burning_machine');
+    }
+
+    return {
+      score: Math.max(0, Math.min(100, score)),
+      issues,
+      strengths,
+      warnings,
+      macros: { proteinPercent, carbPercent, fatPercent },
+      carbGrams: totals.carbs,
+      sugarGrams: totals.sugar,
+      cholesterolMg: totals.cholesterol,
+      glycemicIndex: totals.glycemicIndex
+    };
+  };
 
   // Initialize game cards from actual meal data
   useEffect(() => {
@@ -28,11 +117,18 @@ const MealSwipeGame = ({
     // Only include meals that have actual food (calories > 50)
     Object.entries(allMeals).forEach(([mealType, mealData]) => {
       if (mealData.totals && mealData.totals.calories > 50) {
+        // Add glycemic index estimation based on carbs and sugar
+        const estimatedGI = Math.min(95, Math.max(10, (mealData.totals.carbs * 1.2) + (mealData.totals.sugar * 1.8)));
+        
         cards.push({
           id: `${mealType}-${Date.now()}`,
           mealType,
           time: mealData.time,
-          totals: mealData.totals,
+          totals: {
+            ...mealData.totals,
+            glycemicIndex: Math.round(estimatedGI),
+            cholesterol: mealData.totals.cholesterol || Math.round((mealData.totals.fat * 8) + (mealData.totals.protein * 2))
+          },
           pieData: mealData.pieData || [],
           items: mealData.items || [],
           isRealMeal: true
@@ -60,283 +156,214 @@ const MealSwipeGame = ({
     setOverallGrade(summary.grade || 'C');
   }, [allMeals, userProfile, calorieData]);
 
-  // Evaluate meal quality (returns score 0-100)
-  const evaluateMealQuality = (card) => {
-    const { totals } = card;
-    let score = 0;
-    const issues = [];
-    const strengths = [];
-
-    // Calculate macro percentages
-    const totalMacroCalories = (totals.protein * 4) + (totals.carbs * 4) + (totals.fat * 9);
-    const proteinPercent = totalMacroCalories > 0 ? (totals.protein * 4) / totalMacroCalories * 100 : 0;
-    const carbPercent = totalMacroCalories > 0 ? (totals.carbs * 4) / totalMacroCalories * 100 : 0;
-    const fatPercent = totalMacroCalories > 0 ? (totals.fat * 9) / totalMacroCalories * 100 : 0;
-
-    // NEW: Sweetheart criteria (40-40-20 ±10%)
-    const proteinSweetheart = Math.abs(proteinPercent - 40) <= 10;
-    const carbSweetheart = Math.abs(carbPercent - 40) <= 10;
-    const fatSweetheart = Math.abs(fatPercent - 20) <= 10;
-
-    if (proteinSweetheart && carbSweetheart && fatSweetheart) {
-      score += 50;
-      strengths.push('sweetheart_macros');
-    } else if (proteinPercent >= 45) {
-      score += 35;
-      strengths.push('metabolism_booster');
-    } else if (proteinPercent < 25) {
-      score -= 20;
-      issues.push('metabolism_killer');
-    }
-
-    // NEW: High carb = digestive destroyer
-    if (totals.carbs > 55) {
-      score -= 30;
-      issues.push('carb_bloater');
-    } else if (totals.carbs <= 30) {
-      score += 15;
-      strengths.push('lean_machine');
-    }
-
-    // NEW: Sugar evaluation with stricter single-item limits
-    if (totals.sugar <= 15) {
-      score += 25;
-      strengths.push('sugar_angel');
-    } else if (totals.sugar <= 25) {
-      score += 10;
-      strengths.push('manageable_sugar');
-    } else if (totals.sugar > 25) {
-      // Single item sugar warning system
-      const sugarOverage = totals.sugar - 25;
-      const warningLevel = Math.floor(sugarOverage / 10) + 1; // +1 for base warning
-      score -= (15 + (warningLevel * 10));
-      issues.push(`sugar_bomb_level_${warningLevel}`);
-    }
-
-    // Calorie burn potential
-    if (totals.calories >= 100 && totals.calories <= 600) {
-      score += 15;
-      strengths.push('calorie_burn_friendly');
-    } else if (totals.calories > 800) {
-      score -= 20;
-      issues.push('calorie_bomb');
-    }
-
-    // Protein metabolism boost bonus
-    if (proteinPercent >= 50) {
-      score += 20;
-      strengths.push('fat_burning_machine');
-    }
-
-    return {
-      score: Math.max(0, Math.min(100, score)),
-      issues,
-      strengths,
-      macros: { proteinPercent, carbPercent, fatPercent },
-      carbGrams: totals.carbs,
-      sugarGrams: totals.sugar
+  // Enhanced responses with new warning types
+  const getSwipeResponse = (card, swipeDirection, evaluation) => {
+    const { firstName, gender } = userProfile;
+    const { score, issues, strengths, warnings, macros, carbGrams, sugarGrams, cholesterolMg, glycemicIndex } = evaluation;
+    const swipedRight = swipeDirection === 'right';
+    const isGoodMeal = score >= 70;
+    
+    // Gender-specific pronouns for dating theme
+    const genderPronouns = {
+      male: { they: 'she', possessive: 'her', title: 'queen' },
+      female: { they: 'he', possessive: 'his', title: 'king' },
+      'non-binary': { they: 'they', possessive: 'their', title: 'royalty' }
     };
-  };
-
-  // Get contextual response based on swipe and meal quality
-const getSwipeResponse = (card, swipeDirection, evaluation) => {
-  const { firstName, gender } = userProfile;
-  const { score, issues, strengths, macros, carbGrams, sugarGrams } = evaluation;
-  const swipedRight = swipeDirection === 'right';
-  const isGoodMeal = score >= 70;
-  
-  // Gender-specific pronouns
-  const genderPronouns = {
-    male: { they: 'she', possessive: 'her', title: 'queen' },
-    female: { they: 'he', possessive: 'his', title: 'king' },
-    'non-binary': { they: 'they', possessive: 'their', title: 'royalty' }
-  };
-  
-  const pronouns = genderPronouns[gender] || genderPronouns['non-binary'];
-  
-  // Create responses based on grade and scenario
-  if (swipedRight && isGoodMeal) {
-    // Swiped right on good meal - Success with metabolism focus!
-    if (strengths.includes('sweetheart_macros')) {
-      const sweetheartMessages = [
-        `🔥 SWEETHEART MATCH! That 40-40-20 balance will have your metabolism PURRING like a Ferrari engine!`,
-        `💍 WIFEY/HUBBY MATERIAL! Perfect macros = fat-burning machine activated, ${firstName}!`,
-        `🏆 KEEPER ALERT! That balanced beauty will torch calories for HOURS after eating!`,
-        `✨ MARRIAGE MATERIAL! Your metabolism just found its soulmate - prepare for the calorie burn!`
+    
+    const pronouns = genderPronouns[gender] || genderPronouns['non-binary'];
+    
+    // Priority: Show warning-specific responses first
+    if (swipedRight && warnings.includes('glycemic')) {
+      const glycemicRejectionMessages = [
+        `💔 GHOSTED! GI of ${glycemicIndex}?! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} said "A moment on the lips, FOREVER on the hips" and blocked you!`,
+        `🍯💥 DIABETES ALERT! That ${glycemicIndex} GI spike just gave you the "I don't date pre-diabetics" speech! Moment on lips = lifetime on hips!`,
+        `📈⚡ BLOOD SUGAR REJECTION! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} wants stable energy, not glucose roller coasters! Forever on the hips, baby!`,
+        `🎢 SUGAR CRASH ZONE! That GI spike screamed "moment on the lips, forever on the hips" and ran away crying!`
       ];
-      return sweetheartMessages[Math.floor(Math.random() * sweetheartMessages.length)];
-    } else if (strengths.includes('metabolism_booster')) {
-      const metabolismMessages = [
-        `💪 METABOLISM ROCKET! That protein will have you burning calories while you sleep!`,
-        `🚀 FAT BURNING ACTIVATED! High protein = thermogenic BEAST MODE engaged!`,
-        `🔥 CALORIE INCINERATOR! Your body is about to work OVERTIME digesting that protein!`,
-        `⚡ METABOLIC LIGHTNING! That protein percentage just turned you into a calorie-burning machine!`
-      ];
-      return metabolismMessages[Math.floor(Math.random() * metabolismMessages.length)];
-    } else {
-      const generalSuccessMessages = [
-        `✅ SOLID CHOICE! Your metabolism approves of this calorie-burning combination!`,
-        `👍 NICE PICK! That meal won't slow down your fat-burning potential!`,
-        `🎯 SMART SWIPE! Your body will actually THANK YOU for this one!`
-      ];
-      return generalSuccessMessages[Math.floor(Math.random() * generalSuccessMessages.length)];
+      return glycemicRejectionMessages[Math.floor(Math.random() * glycemicRejectionMessages.length)];
     }
-  }
-  
-  if (swipedRight && !isGoodMeal) {
-    // Swiped right on bad meal - Rejection with savage sarcasm!
-    if (issues.includes('carb_bloater')) {
-      const carbBloaterMessages = [
-        `💔 REJECTED! ${firstName}, ${Math.round(carbGrams)}g carbs?! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} said "I don't date people who make me look pregnant!"`,
-        `🚫 GHOSTED! That ${Math.round(carbGrams)}g carb bomb just called you "bloat buddy" and ran away!`,
-        `❌ ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} swiped LEFT on your stomach! Too many carbs = looking 6 months pregnant tomorrow!`,
-        `💸 FRIEND-ZONED! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} wants someone whose face won't match their bloated belly!`
-      ];
-      return carbBloaterMessages[Math.floor(Math.random() * carbBloaterMessages.length)];
-    } else if (issues.some(issue => issue.startsWith('sugar_bomb'))) {
+    
+    if (swipedRight && warnings.includes('sugar')) {
       const sugarLevel = issues.find(issue => issue.startsWith('sugar_bomb_level_'))?.split('_')[3] || '1';
-      const sugarSavageMessages = [
-        `🍭 DIABETES ALERT! ${Math.round(sugarGrams)}g sugar just gave you the "I don't date pre-diabetics" speech!`,
-        `💔 SUGAR CRASH REJECTION! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} said "Call me when your blood sugar stabilizes!"`,
-        `🚨 INSULIN SPIKE! That ${Math.round(sugarGrams)}g sugar bomb just blocked you on all social media!`,
-        `🤡 EVEN CANDY doesn't want to be associated with that sugar disaster! Level ${sugarLevel} warning!`
+      const sugarRejectionMessages = [
+        `🍭💀 DIABETES DATING DISASTER! ${Math.round(sugarGrams)}g sugar just filed a restraining order! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} said "Call me when your pancreas works!"`,
+        `💔 INSULIN SPIKE REJECTION! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} doesn't date people who crash harder than the stock market!`,
+        `🚨 SUGAR EMERGENCY! That ${Math.round(sugarGrams)}g bomb just blocked you on all dating apps! Level ${sugarLevel} catastrophe!`,
+        `🤡 Even CANDY doesn't want to be associated with that sugar disaster! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} wants someone stable!`
       ];
-      return sugarSavageMessages[Math.floor(Math.random() * sugarSavageMessages.length)];
-    } else if (issues.includes('metabolism_killer')) {
-      const metabolismKillerMessages = [
-        `💀 METABOLISM MURDER! ${Math.round(macros.proteinPercent)}% protein just KILLED your calorie burn!`,
-        `😴 HIBERNATION MODE! That low protein put your metabolism to sleep permanently!`,
-        `🐌 SLUG SPEED! Your fat-burning potential just crawled into a cave and died!`,
-        `❄️ FROZEN METABOLISM! ${Math.round(macros.proteinPercent)}% protein = ice age calorie burn!`
-      ];
-      return metabolismKillerMessages[Math.floor(Math.random() * metabolismKillerMessages.length)];
-    } else {
-      const generalRejectionMessages = [
-        `😬 STANDARDS CHECK! That nutritional disaster wants someone with WORSE taste!`,
-        `🤦‍♀️ ${firstName}, even junk food has standards! You got rejected by GARBAGE!`,
-        `💸 That meal said "It's not you, it's your metabolism... and your face... and everything!"`,
-        `📱 Read receipt: OFF! That meal doesn't want your digestive chaos!`
-      ];
-      return generalRejectionMessages[Math.floor(Math.random() * generalRejectionMessages.length)];
+      return sugarRejectionMessages[Math.floor(Math.random() * sugarRejectionMessages.length)];
     }
-  }
-  
-  if (!swipedRight && isGoodMeal) {
-    // Swiped left on good meal - Missed metabolic opportunity!
-    if (strengths.includes('sweetheart_macros')) {
-      const missedSweetheartMessages = [
-        `😱 WHAT?! ${firstName}, you just rejected METABOLIC PERFECTION! That 40-40-20 was your calorie-burning soulmate!`,
-        `🤯 SELF-SABOTAGE! You let a fat-burning GODDESS walk away! Your metabolism is CRYING!`,
-        `💔 HEARTBREAK! That sweetheart would have torched calories for HOURS and you said no!`,
-        `🏃‍♀️ ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} dodged a bullet! You're not ready for that level of metabolic excellence!`
+    
+    if (swipedRight && warnings.includes('cholesterol')) {
+      const cholesterolRejectionMessages = [
+        `❤️💥 HEART ATTACK HOOKUP! ${cholesterolMg}mg cholesterol just clogged your dating chances! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} wants to live past 50!`,
+        `🫀🚨 CARDIAC ARREST ALERT! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} said "I don't date people who kill my arteries on the first meal!"`,
+        `💓⚠️ CHOLESTEROL CHAOS! That artery-clogging disaster wants someone with WORSE cardiovascular health!`,
+        `🫁💀 HEART HEALTH HORROR! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} heard your blood pressure from three states away and fled!`
       ];
-      return missedSweetheartMessages[Math.floor(Math.random() * missedSweetheartMessages.length)];
-    } else if (strengths.includes('metabolism_booster')) {
-      const missedMetabolismMessages = [
-        `😭 MISSED OPPORTUNITY! That protein powerhouse would have turned you into a calorie-burning MACHINE!`,
-        `🚪 One that got away! Your metabolism just lost its best friend forever!`,
-        `💸 You rejected PREMIUM fat-burning fuel! That's like turning down a Ferrari for a bicycle!`,
-        `🤦‍♀️ ${firstName}, you just said no to 6+ hours of elevated calorie burn!`
-      ];
-      return missedMetabolismMessages[Math.floor(Math.random() * missedMetabolismMessages.length)];
-    } else {
-      const generalMissedMessages = [
-        `🤷‍♀️ Your loss! That was decent metabolism fuel and you pushed it away!`,
-        `📋 Add it to the list of good nutrition you've rejected for no reason!`,
-        `🎪 Self-sabotage! You can't recognize calorie-burning gold when you see it!`
-      ];
-      return generalMissedMessages[Math.floor(Math.random() * generalMissedMessages.length)];
+      return cholesterolRejectionMessages[Math.floor(Math.random() * cholesterolRejectionMessages.length)];
     }
-  }
-  
-  // Swiped left on bad meal - Smart metabolic choice!
-  if (issues.includes('carb_bloater')) {
-    const smartCarbAvoidanceMessages = [
-      `👑 DIGESTIVE ROYALTY! You spotted that ${Math.round(carbGrams)}g bloat-bomb immediately!`,
-      `🛡️ BELLY PROTECTION! You saved yourself from looking 6 months pregnant tomorrow!`,
-      `🎯 SAVAGE INTUITION! You saw through that carb catastrophe like a PRO!`,
-      `💪 METABOLISM DEFENDER! That carb disaster couldn't fool your fat-burning instincts!`
-    ];
-    return smartCarbAvoidanceMessages[Math.floor(Math.random() * smartCarbAvoidanceMessages.length)];
-  } else if (issues.some(issue => issue.startsWith('sugar_bomb'))) {
-    const smartSugarAvoidanceMessages = [
-      `🍭 SUGAR DETECTIVE! You spotted that ${Math.round(sugarGrams)}g diabetes trap from a mile away!`,
-      `🚨 BLOOD SUGAR BODYGUARD! You protected your insulin like a CHAMPION!`,
-      `🎯 METABOLIC GENIUS! That sugar bomb couldn't trick your calorie-burning brain!`,
-      `⚡ ENERGY STABILITY! You chose sustained metabolism over sugar crash chaos!`
-    ];
-    return smartSugarAvoidanceMessages[Math.floor(Math.random() * smartSugarAvoidanceMessages.length)];
-  } else if (issues.includes('metabolism_killer')) {
-    const smartProteinChoiceMessages = [
-      `🔥 METABOLISM PROTECTOR! You refused to let that low-protein disaster kill your calorie burn!`,
-      `💪 FAT-BURNING GUARDIAN! You saved your metabolism from hibernation mode!`,
-      `🚀 SMART SWIPE! You kept your calorie-burning machine running at full speed!`,
-      `⚡ THERMOGENIC WISDOM! You know protein = metabolic FIRE!`
-    ];
-    return smartProteinChoiceMessages[Math.floor(Math.random() * smartProteinChoiceMessages.length)];
-  } else {
-    const generalGoodRejectMessages = [
-      `👍 SOLID INSTINCTS! You're learning to protect your metabolism!`,
-      `🚫 SMART DEFENSE! That nutritional chaos couldn't fool you!`,
-      `📊 PROGRESS! You're developing fat-burning meal standards!`,
-      `🔥 There's hope! You rejected something that would kill your calorie burn!`
-    ];
-    return generalGoodRejectMessages[Math.floor(Math.random() * generalGoodRejectMessages.length)];
-  }
-};
-
-  // Enhanced drag handlers for smooth Tinder-style swiping
-  const handleDragStart = (e) => {
-    setIsDragging(true);
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    setDragPosition({ x: clientX, y: clientY });
-  };
-
-  const handleDragMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
     
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
-    const deltaX = clientX - dragPosition.x;
-    const deltaY = clientY - dragPosition.y;
-    
-    // Update card position
-    const card = document.getElementById('swipe-card');
-    if (card) {
-      const rotation = deltaX * 0.1;
-      card.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(${rotation}deg)`;
-      
-      // Show swipe direction indicators
-      if (Math.abs(deltaX) > 50) {
-        setSwipeDirection(deltaX > 0 ? 'right' : 'left');
-      } else {
-        setSwipeDirection('');
+    // Regular dating responses for non-warning scenarios
+    if (swipedRight && isGoodMeal) {
+      if (strengths.includes('sweetheart_macros')) {
+        const sweetheartMessages = [
+          `🔥 SWEETHEART MATCH! That 40-40-20 balance will have your metabolism PURRING like a Ferrari engine!`,
+          `💍 WIFEY/HUBBY MATERIAL! Perfect macros = fat-burning machine activated, ${firstName}!`,
+          `🏆 KEEPER ALERT! That balanced beauty will torch calories for HOURS after eating!`,
+          `✨ MARRIAGE MATERIAL! Your metabolism just found its soulmate - prepare for the calorie burn!`
+        ];
+        return sweetheartMessages[Math.floor(Math.random() * sweetheartMessages.length)];
+      } else if (strengths.includes('metabolism_booster')) {
+        const metabolismMessages = [
+          `💪 METABOLISM ROCKET! That protein will have you burning calories while you sleep!`,
+          `🚀 FAT BURNING ACTIVATED! High protein = thermogenic BEAST MODE engaged!`,
+          `🔥 CALORIE INCINERATOR! Your body is about to work OVERTIME digesting that protein!`,
+          `⚡ METABOLIC LIGHTNING! That protein percentage just turned you into a calorie-burning machine!`
+        ];
+        return metabolismMessages[Math.floor(Math.random() * metabolismMessages.length)];
       }
     }
+    
+    if (swipedRight && !isGoodMeal) {
+      if (issues.includes('carb_bloater')) {
+        const carbBloaterMessages = [
+          `💔 REJECTED! ${firstName}, ${Math.round(carbGrams)}g carbs?! ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} said "I don't date people who make me look pregnant!"`,
+          `🚫 GHOSTED! That ${Math.round(carbGrams)}g carb bomb just called you "bloat buddy" and ran away!`,
+          `❌ ${pronouns.they.charAt(0).toUpperCase() + pronouns.they.slice(1)} swiped LEFT on your stomach! Too many carbs = looking 6 months pregnant tomorrow!`
+        ];
+        return carbBloaterMessages[Math.floor(Math.random() * carbBloaterMessages.length)];
+      }
+    }
+    
+    if (!swipedRight && warnings.includes('glycemic')) {
+      const smartGlycemicMessages = [
+        `🍯👑 GLUCOSE GENIUS! You spotted that ${glycemicIndex} GI disaster immediately! Saved yourself from "moment on lips, forever on hips!"`,
+        `📈🛡️ BLOOD SUGAR BODYGUARD! You protected your energy stability like a CHAMPION! No glucose roller coasters here!`,
+        `🎯 METABOLIC MASTERMIND! That glycemic bomb couldn't fool your fat-burning instincts!`
+      ];
+      return smartGlycemicMessages[Math.floor(Math.random() * smartGlycemicMessages.length)];
+    }
+    
+    // Fallback to original responses for other scenarios
+    return getOriginalResponse(card, swipeDirection, evaluation, firstName, pronouns);
   };
 
-  const handleDragEnd = (e) => {
-    if (!isDragging) return;
+  // Original response logic for non-warning scenarios
+  const getOriginalResponse = (card, swipeDirection, evaluation, firstName, pronouns) => {
+    const { score, issues, strengths, macros, carbGrams, sugarGrams } = evaluation;
+    const swipedRight = swipeDirection === 'right';
+    const isGoodMeal = score >= 70;
+    
+    if (!swipedRight && isGoodMeal) {
+      if (strengths.includes('sweetheart_macros')) {
+        return `😱 WHAT?! ${firstName}, you just rejected METABOLIC PERFECTION! That 40-40-20 was your calorie-burning soulmate!`;
+      }
+      return `🤷‍♀️ Your loss! That was decent metabolism fuel and you pushed it away!`;
+    }
+    
+    if (!swipedRight && !isGoodMeal) {
+      if (issues.includes('carb_bloater')) {
+        return `👑 DIGESTIVE ROYALTY! You spotted that ${Math.round(carbGrams)}g bloat-bomb immediately!`;
+      }
+      return `👍 SOLID INSTINCTS! You're learning to protect your metabolism!`;
+    }
+    
+    return `✅ SOLID CHOICE! Your metabolism approves of this calorie-burning combination!`;
+  };
+
+  // Smooth drag handlers
+  const handleStart = (clientX, clientY) => {
+    if (isAnimating || showingReaction) return;
+    setIsDragging(true);
+    startPosRef.current = { x: clientX, y: clientY };
+  };
+
+  const handleMove = (clientX, clientY) => {
+    if (!isDragging || isAnimating || showingReaction) return;
+    
+    const deltaX = clientX - startPosRef.current.x;
+    const rotation = deltaX * 0.1;
+    const opacity = Math.max(0.6, 1 - Math.abs(deltaX) * 0.002);
+    
+    setSwipeState({
+      x: deltaX,
+      rotation: Math.max(-15, Math.min(15, rotation)),
+      opacity
+    });
+  };
+
+  const handleEnd = () => {
+    if (!isDragging || isAnimating || showingReaction) return;
     setIsDragging(false);
     
-    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-    const deltaX = clientX - dragPosition.x;
-    
-    const card = document.getElementById('swipe-card');
-    if (card) {
-      card.style.transform = '';
-    }
-    
-    setSwipeDirection('');
-    
-    // Determine swipe action based on distance
-    if (Math.abs(deltaX) > 100) {
-      handleSwipe(deltaX > 0 ? 'right' : 'left');
+    const threshold = 100;
+    if (Math.abs(swipeState.x) > threshold) {
+      const direction = swipeState.x > 0 ? 'right' : 'left';
+      animateSwipeOut(direction);
+    } else {
+      setSwipeState({ x: 0, rotation: 0, opacity: 1 });
     }
   };
+
+  const animateSwipeOut = (direction) => {
+    setIsAnimating(true);
+    const directionMultiplier = direction === 'right' ? 1 : -1;
+    
+    setSwipeState({
+      x: directionMultiplier * 400,
+      rotation: directionMultiplier * 30,
+      opacity: 0
+    });
+    
+    setTimeout(() => {
+      handleSwipe(direction);
+      setSwipeState({ x: 0, rotation: 0, opacity: 1 });
+      setIsAnimating(false);
+    }, 300);
+  };
+
+  // Mouse events
+  const handleMouseDown = (e) => {
+    handleStart(e.clientX, e.clientY);
+  };
+
+  const handleMouseMove = (e) => {
+    handleMove(e.clientX, e.clientY);
+  };
+
+  const handleMouseUp = () => {
+    handleEnd();
+  };
+
+  // Touch events
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleStart(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleMove(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    handleEnd();
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, swipeState.x]);
 
   const handleSwipe = (direction) => {
     const currentCard = gameCards[currentCardIndex];
@@ -346,6 +373,7 @@ const getSwipeResponse = (card, swipeDirection, evaluation) => {
     const response = getSwipeResponse(currentCard, direction, evaluation);
     
     setLastResponse(response);
+    setShowingReaction(true);
     
     setSwipeResults(prev => [...prev, {
       card: currentCard,
@@ -354,7 +382,11 @@ const getSwipeResponse = (card, swipeDirection, evaluation) => {
       evaluation,
       isCorrect: direction === 'right' ? evaluation.score >= 70 : evaluation.score < 70
     }]);
+  };
 
+  const handleNextCard = () => {
+    setShowingReaction(false);
+    
     if (currentCardIndex >= gameCards.length - 1) {
       setGameComplete(true);
       setTimeout(() => {
@@ -372,6 +404,8 @@ const getSwipeResponse = (card, swipeDirection, evaluation) => {
     setSwipeResults([]);
     setGameComplete(false);
     setLastResponse('');
+    setShowingReaction(false);
+    setSwipeState({ x: 0, rotation: 0, opacity: 1 });
   };
 
   const getMealTypeDisplayName = (mealType) => {
@@ -390,9 +424,9 @@ const getSwipeResponse = (card, swipeDirection, evaluation) => {
 
   if (gameCards.length === 0) {
     return (
-      <div className="max-w-md mx-auto bg-gradient-to-br from-pink-100 to-purple-100 rounded-xl shadow-lg p-6 text-center border-2 border-pink-200">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">🍽️ No Meals to Rate!</h2>
-        <p className="text-gray-600 mb-4">Add meals first, then you can rate them and see your calorie burn in action!</p>
+      <div className="max-w-md mx-auto bg-gradient-to-br from-green-800 via-green-900 to-green-800 rounded-xl shadow-lg p-6 text-center">
+        <h2 className="text-xl font-bold text-white mb-4">🍽️ No Meals to Rate!</h2>
+        <p className="text-green-200 mb-4">Add meals first, then you can rate them and see your calorie burn in action!</p>
       </div>
     );
   }
@@ -400,138 +434,253 @@ const getSwipeResponse = (card, swipeDirection, evaluation) => {
   const currentCard = gameCards[currentCardIndex];
 
   if (gameComplete) {
-    const finalScore = Math.round((swipeResults.filter(r => r.isCorrect).length / swipeResults.length) * 100);
+    const correctCount = swipeResults.filter(r => r.isCorrect).length;
+    const finalScore = Math.round((correctCount / swipeResults.length) * 100);
     
     return (
-      <div className="max-w-md mx-auto bg-gradient-to-br from-pink-100 to-purple-100 rounded-xl shadow-lg p-6 border-2 border-pink-200">
+      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex flex-col items-center justify-center p-4">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">🎯 Swipe Complete!</h1>
-          <div className="text-lg text-gray-600">Your Nutrition Dating Score: {finalScore}%</div>
+          <h2 className="text-3xl font-bold text-white mb-2">Your Dating Hand: {correctCount}/{gameCards.length}</h2>
+          <div className="text-xl text-green-200">Nutrition Dating Score: {finalScore}%</div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 mb-4">
-          <h3 className="font-bold text-gray-800 mb-3">Final Verdict:</h3>
-          <p className="text-gray-700 text-sm italic">
-            {finalScore >= 80 ? `${userProfile.firstName}, you've got excellent nutrition instincts! You know quality when you see it!` :
-             finalScore >= 60 ? `Not bad, ${userProfile.firstName}! You're learning to spot good nutrition.` :
-             `${userProfile.firstName}, your nutrition game needs work! Time to learn what quality meals look like!`}
+        <div className="bg-green-700 rounded-3xl p-6 mb-6 shadow-2xl border-4 border-green-600">
+          <div className="grid grid-cols-4 gap-4">
+            {gameCards.map((card, index) => {
+              const isCorrect = swipeResults[index] && swipeResults[index].isCorrect;
+              
+              if (isCorrect) {
+                return (
+                  <div key={index} className="bg-white rounded-lg shadow-lg border-2 border-gray-300 p-2 w-20 h-28 flex flex-col">
+                    <div className="text-lg text-center">❤️</div>
+                    <div className="text-xs font-bold text-center text-gray-800 leading-tight mb-1">
+                      {getMealTypeDisplayName(card.mealType)}
+                    </div>
+                    <div className="text-xs text-center text-gray-600 mb-1">
+                      {Math.round(card.totals.calories)} cal
+                    </div>
+                    <div className="text-xs text-center text-purple-600 mb-1">
+                      {Math.round(card.totals.protein)}p {Math.round(card.totals.carbs)}c {Math.round(card.totals.fat)}f
+                    </div>
+                    <div className="text-center mt-auto">
+                      <div className="text-xs text-green-600 font-bold">MATCH ♠</div>
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div key={index} className="bg-gradient-to-br from-red-800 to-red-900 rounded-lg shadow-lg border-2 border-red-700 p-2 w-20 h-28 flex flex-col items-center justify-center">
+                    <div className="text-white text-center">
+                      <div className="text-xs mb-1">💔</div>
+                      <div className="text-xs font-bold">REJECTED</div>
+                    </div>
+                  </div>
+                );
+              }
+            })}
+          </div>
+        </div>
+
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 max-w-lg text-center shadow-xl">
+          <h3 className="text-lg font-bold text-gray-800 mb-3">Dating Coach Final Verdict:</h3>
+          <p className="text-gray-700 text-sm leading-relaxed mb-4">
+            {finalScore >= 80 ? `🏆 DATING LEGEND! ${userProfile.firstName}, you've got excellent nutrition taste! You know quality metabolism fuel when you see it!` :
+             finalScore >= 60 ? `💪 SOLID INSTINCTS! ${userProfile.firstName}, you're learning to spot good nutrition dates!` :
+             finalScore >= 40 ? `🤔 RISKY CHOICES! ${userProfile.firstName}, your nutrition dating game needs work!` :
+             `😅 DISASTER ZONE! ${userProfile.firstName}, you got rejected by your own meals! Time to learn what quality looks like!`}
           </p>
+          
+          {!isIntegrated && (
+            <button
+              onClick={resetGame}
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
+            >
+              <RotateCcw size={18} />
+              Date Again
+            </button>
+          )}
         </div>
+      </div>
+    );
+  }
 
-        {!isIntegrated && (
-          <button
-            onClick={resetGame}
-            className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors font-medium flex items-center justify-center gap-2"
+  if (showingReaction) {
+    const currentEvaluation = evaluateMealQuality(currentCard);
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+        <div className="relative max-w-md w-full">
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl shadow-xl transform rotate-2 scale-95 opacity-30"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl transform -rotate-1 scale-98 opacity-50"></div>
+          
+          <div 
+            className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border border-gray-200 p-6 relative z-10 cursor-pointer hover:shadow-3xl transition-all duration-200"
+            onClick={handleNextCard}
           >
-            <RotateCcw size={18} />
-            Swipe Again
-          </button>
-        )}
+            <div className="bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl p-3 mb-6 text-center border border-gray-200">
+              <h3 className="text-sm font-medium text-gray-600 mb-1">{getMealTypeDisplayName(currentCard.mealType)}</h3>
+              <div className="flex justify-center gap-4 text-xs text-gray-500 mb-2">
+                <span>Cal: {Math.round(currentCard.totals.calories)}</span>
+                <span>P: {Math.round(currentCard.totals.protein)}g</span>
+                <span>C: {Math.round(currentCard.totals.carbs)}g</span>
+                <span>F: {Math.round(currentCard.totals.fat)}g</span>
+              </div>
+            </div>
+
+            {/* Warnings */}
+            {currentEvaluation.warnings.length > 0 && (
+              <div className="mb-6 space-y-2">
+                {currentEvaluation.warnings.includes('sugar') && (
+                  <div className="bg-red-100 border border-red-300 rounded-xl p-3 flex items-center gap-2">
+                    <AlertTriangle className="text-red-600" size={20} />
+                    <span className="text-red-800 text-sm font-medium">SUGAR BOMB: {Math.round(currentCard.totals.sugar)}g!</span>
+                  </div>
+                )}
+                {currentEvaluation.warnings.includes('cholesterol') && (
+                  <div className="bg-orange-100 border border-orange-300 rounded-xl p-3 flex items-center gap-2">
+                    <AlertTriangle className="text-orange-600" size={20} />
+                    <span className="text-orange-800 text-sm font-medium">HEART ATTACK: {currentEvaluation.cholesterolMg}mg!</span>
+                  </div>
+                )}
+                {currentEvaluation.warnings.includes('glycemic') && (
+                  <div className="bg-yellow-100 border border-yellow-300 rounded-xl p-3 flex items-center gap-2">
+                    <AlertTriangle className="text-yellow-600" size={20} />
+                    <span className="text-yellow-800 text-sm font-medium">GLUCOSE SPIKE: GI {currentEvaluation.glycemicIndex}!</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">💔</div>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Dating Coach Says:</h2>
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+                <p className="text-lg text-gray-700 leading-relaxed">
+                  {lastResponse}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center text-gray-500 text-sm p-4 rounded-xl bg-gray-50 border border-gray-200">
+              {currentCardIndex < gameCards.length - 1 ? 
+                `Tap anywhere to continue dating → (${currentCardIndex + 2}/${gameCards.length})` : 
+                'Tap anywhere to see your dating results →'
+              }
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      {/* Game Header */}
-      <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-t-xl p-4 text-center">
-        <h1 className="text-xl font-bold mb-1">🔥 Swipe Your Meals</h1>
-        <div className="text-sm opacity-90">
-          {currentCardIndex + 1} of {gameCards.length} • Grade: {overallGrade}
+    <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+      <div className="relative max-w-md w-full">
+        {/* Progress indicator - STATIC */}
+        <div className="absolute top-6 left-6 right-6 z-20 flex justify-center pointer-events-none">
+          <div className="bg-gray-200 rounded-full w-full h-2">
+            <div 
+              className="bg-gradient-to-r from-pink-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentCardIndex + 1) / gameCards.length) * 100}%` }}
+            />
+          </div>
         </div>
-        <div className="text-xs opacity-75 mt-1">
-          Swipe like your goals depend on it!
-        </div>
-      </div>
 
-      {/* Card Container with Tinder-style stacking */}
-      <div className="relative bg-white rounded-b-xl shadow-lg min-h-[500px] overflow-hidden">
+        {/* Instructions - STATIC */}
+        <div className="absolute top-16 left-6 right-6 z-20 text-center text-white text-sm pointer-events-none">
+          ❌ Pass • ❤️ Match • Swipe for dating fate!
+        </div>
+
+        {/* Hot standard reminder - STATIC */}
+        <div className="absolute bottom-6 left-6 right-6 z-20 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-3 text-center text-xs text-purple-700 border border-purple-200 pointer-events-none">
+          SWEETHEART Standard: 40% protein, 40% carbs, 20% fat (±10%), sugar under 25g
+        </div>
+
+        {/* Card counter - STATIC */}
+        <div className="absolute bottom-20 left-6 right-6 z-20 text-center text-white text-sm pointer-events-none">
+          Dating Card {currentCardIndex + 1} of {gameCards.length} • Grade: {overallGrade}
+        </div>
+
+        {/* Background cards for depth - STATIC */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl shadow-xl transform rotate-2 scale-95 opacity-30"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl transform -rotate-1 scale-98 opacity-50"></div>
         
-        {/* Background Cards (stacked effect) */}
-        {gameCards.slice(currentCardIndex + 1, currentCardIndex + 3).map((card, index) => (
-          <div 
-            key={card.id}
-            className="absolute inset-4 bg-gray-100 rounded-lg border"
-            style={{ 
-              transform: `scale(${0.95 - index * 0.05}) translateY(${index * 8}px)`,
-              zIndex: 10 - index,
-              opacity: 0.6 - index * 0.2
-            }}
-          />
-        ))}
-
-        {/* Current Card with Drag Support */}
-        {currentCard && (
-          <div 
-            id="swipe-card"
-            className="relative bg-gradient-to-br from-white to-gray-50 rounded-lg border-2 border-gray-200 p-6 shadow-lg cursor-grab active:cursor-grabbing"
-            style={{ zIndex: 20 }}
-            onMouseDown={handleDragStart}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onTouchStart={handleDragStart}
-            onTouchMove={handleDragMove}
-            onTouchEnd={handleDragEnd}
-          >
+        {/* Swipeable card content */}
+        <div 
+          ref={cardRef}
+          className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border border-gray-200 p-6 relative z-10 cursor-grab active:cursor-grabbing select-none"
+          style={{ 
+            transform: `translateX(${swipeState.x}px) rotate(${swipeState.rotation}deg)`,
+            opacity: swipeState.opacity,
+            transition: isAnimating ? 'all 0.3s ease-out' : isDragging ? 'none' : 'transform 0.2s ease-out'
+          }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Swipe indicators */}
+          {isDragging && (
+            <>
+              <div 
+                className={`absolute top-20 left-4 text-6xl transition-opacity duration-200 pointer-events-none ${swipeState.x < -30 ? 'opacity-100' : 'opacity-30'}`}
+              >
+                ❌
+              </div>
+              <div 
+                className={`absolute top-20 right-4 text-6xl transition-opacity duration-200 pointer-events-none ${swipeState.x > 30 ? 'opacity-100' : 'opacity-30'}`}
+              >
+                ❤️
+              </div>
+            </>
+          )}
+          
+          {/* Meal content */}
+          <div className="text-center pt-16 pb-20 pointer-events-none">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              {getMealTypeDisplayName(currentCard.mealType)}
+            </h2>
+            <div className="text-sm text-gray-600 mb-6">⏰ {currentCard.time}</div>
             
-            {/* Swipe Direction Indicators */}
-            {swipeDirection && (
-              <div className={`absolute inset-0 flex items-center justify-center pointer-events-none ${
-                swipeDirection === 'right' ? 'bg-green-500' : 'bg-red-500'
-              } bg-opacity-20 rounded-lg`}>
-                <div className={`text-6xl font-bold ${
-                  swipeDirection === 'right' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {swipeDirection === 'right' ? '❤️' : '❌'}
+            {/* Nutrition Display */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 mb-6 border border-gray-200">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600">{Math.round(currentCard.totals.calories)}</div>
+                  <div className="text-sm text-gray-600">Calories</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{Math.round(currentCard.totals.protein)}g</div>
+                  <div className="text-sm text-gray-600">Protein</div>
                 </div>
               </div>
-            )}
-            
-            {/* Card Header */}
-            <div className="text-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-1">
-                {getMealTypeDisplayName(currentCard.mealType)}
-              </h2>
-              <div className="text-sm text-gray-600">⏰ {currentCard.time}</div>
-            </div>
-
-            {/* Nutrition Display */}
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">Calories:</span>
-                <span className="font-bold text-lg">{Math.round(currentCard.totals.calories)}</span>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">{Math.round(currentCard.totals.carbs)}g</div>
+                  <div className="text-sm text-gray-600">Carbs</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-yellow-600">{Math.round(currentCard.totals.fat)}g</div>
+                  <div className="text-sm text-gray-600">Fat</div>
+                </div>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">Protein:</span>
-                <span className="font-bold text-blue-600">{Math.round(currentCard.totals.protein)}g</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">Carbs:</span>
-                <span className="font-bold text-green-600">{Math.round(currentCard.totals.carbs)}g</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">Fat:</span>
-                <span className="font-bold text-yellow-600">{Math.round(currentCard.totals.fat)}g</span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">Sugar:</span>
-                <span className={`font-bold ${currentCard.totals.sugar > 30 ? 'text-red-600' : 'text-gray-600'}`}>
-                  {Math.round(currentCard.totals.sugar)}g
-                </span>
+              <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                <div className="text-center">Sugar: {Math.round(currentCard.totals.sugar)}g</div>
+                <div className="text-center">GI: {currentCard.totals.glycemicIndex}</div>
               </div>
             </div>
 
             {/* Macro Percentages */}
             {currentCard.pieData && currentCard.pieData.length > 0 && (
               <div className="text-center mb-6">
-                <div className="text-sm font-medium text-gray-700 mb-2">Macro Split:</div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Dating Profile:</div>
                 <div className="text-sm text-gray-600">
                   💪 {currentCard.pieData[0]?.percentage || 0}% • 
                   🌾 {currentCard.pieData[1]?.percentage || 0}% • 
                   🥑 {currentCard.pieData[2]?.percentage || 0}%
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  (Target: 40% • 40% • 20%)
+                  (Sweetheart Target: 40% • 40% • 20%)
                 </div>
               </div>
             )}
@@ -539,36 +688,20 @@ const getSwipeResponse = (card, swipeDirection, evaluation) => {
             {/* Swipe Actions */}
             <div className="flex justify-center gap-8 mb-4">
               <button
-                onClick={() => handleSwipe('left')}
-                className="bg-red-500 hover:bg-red-600 text-white w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg"
+                onClick={() => !isDragging && !isAnimating && handleSwipe('left')}
+                className="bg-red-500 hover:bg-red-600 text-white w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
               >
                 <X size={32} />
               </button>
               <button
-                onClick={() => handleSwipe('right')}
-                className="bg-green-500 hover:bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg"
+                onClick={() => !isDragging && !isAnimating && handleSwipe('right')}
+                className="bg-green-500 hover:bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
               >
                 <Heart size={32} />
               </button>
             </div>
-
-            <div className="text-center text-xs text-gray-500">
-              ❌ Pass • ❤️ Accept • 👆 Drag to swipe
-            </div>
           </div>
-        )}
-
-        {/* Last Response */}
-        {lastResponse && (
-          <div className="absolute bottom-4 left-4 right-4 bg-pink-50 border border-pink-200 rounded-lg p-3 z-30">
-            <div className="text-sm font-medium text-pink-800 mb-1">
-              💭 Dating Coach Says:
-            </div>
-            <div className="text-sm text-pink-700">
-              "{lastResponse}"
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
