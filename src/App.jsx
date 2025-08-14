@@ -6,6 +6,7 @@ import MealSwipeGame from './MealSwipeGame.jsx';
 import DailyMealPlannerModule from './DailyMealPlannerModule';
 import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
+import { MealMessages } from './MealMessages/index.js';
 
 // Mock the messaging system for now
 const MealMessages = {
@@ -713,6 +714,144 @@ const MealSwipeApp = () => {
     }
   };
 
+  // Generate smart meal recommendations based on current progress
+  const getSmartMealRecommendations = () => {
+    if (!profile.firstName || totalMacros.calories < 50) return [];
+
+    const recommendations = [];
+    const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
+      profile.goal === 'gain-muscle' ? 130 :
+        profile.goal === 'lose' ? 120 : 100;
+
+    const proteinGap = proteinTarget - totalMacros.protein;
+    const calorieGap = calorieData.targetCalories - totalMacros.calories;
+
+    // High priority recommendations (critical gaps)
+    if (proteinGap > 50) {
+      recommendations.push({
+        priority: 'high',
+        title: 'Protein Emergency!',
+        message: `You need ${Math.round(proteinGap)}g more protein today! Consider adding protein-rich meals like chicken, fish, or protein shakes to catch up.`
+      });
+    }
+
+    if (profile.goal === 'dirty-bulk' && calorieGap > 800) {
+      recommendations.push({
+        priority: 'high',
+        title: 'Bulk Fuel Shortage!',
+        message: `You're ${Math.round(calorieGap)} calories short for dirty bulk! Add calorie-dense meals with healthy fats and complex carbs.`
+      });
+    }
+
+    // Medium priority recommendations (optimization opportunities)
+    if (proteinGap > 20 && proteinGap <= 50) {
+      recommendations.push({
+        priority: 'medium',
+        title: 'Protein Boost Needed',
+        message: `Add ${Math.round(proteinGap)}g more protein to hit your ${proteinTarget}g target. Perfect opportunity for a protein-rich snack!`
+      });
+    }
+
+    if (profile.goal === 'lose' && totalMacros.calories > calorieData.targetCalories * 1.1) {
+      recommendations.push({
+        priority: 'medium',
+        title: 'Calorie Check',
+        message: `You're ${Math.round(totalMacros.calories - calorieData.targetCalories)} calories over target. Focus on lean proteins and vegetables for remaining meals.`
+      });
+    }
+
+    // Low priority recommendations (fine-tuning)
+    if (proteinGap <= 20 && proteinGap > 0) {
+      recommendations.push({
+        priority: 'low',
+        title: 'Almost Perfect!',
+        message: `Just ${Math.round(proteinGap)}g more protein needed. You're crushing your ${profile.goal} goals today!`
+      });
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push({
+        priority: 'low',
+        title: 'Excellent Progress!',
+        message: `You're hitting your nutrition targets perfectly for ${profile.goal}. Keep this consistency going!`
+      });
+    }
+
+    // Limit to top 2 recommendations to avoid overwhelming
+    return recommendations.slice(0, 2);
+  };
+
+  // Generate quick action suggestions based on current state
+  const getQuickActionSuggestions = () => {
+    const actions = [];
+    const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
+      profile.goal === 'gain-muscle' ? 130 :
+        profile.goal === 'lose' ? 120 : 100;
+
+    const proteinGap = proteinTarget - totalMacros.protein;
+
+    // Find the meal with the least calories (most likely to need attention)
+    const emptyMeals = meals.filter(meal => meal.calories < 50);
+    const lowCalorieMeals = meals.filter(meal => meal.calories >= 50 && meal.calories < 200);
+
+    if (proteinGap > 30) {
+      actions.push({
+        icon: '💪',
+        text: 'Add Protein to Low Meals',
+        onClick: () => enterFullScreenSwipe()
+      });
+    }
+
+    if (emptyMeals.length > 0) {
+      const nextMeal = emptyMeals[0];
+      if (['Breakfast', 'Lunch', 'Dinner'].includes(nextMeal.name)) {
+        actions.push({
+          icon: '💡',
+          text: `Get ${nextMeal.name} Ideas`,
+          onClick: () => {
+            handleOpenMealIdeas(nextMeal.name.toLowerCase());
+          }
+        });
+      }
+    }
+
+    if (profile.goal === 'dirty-bulk' && totalMacros.calories < calorieData.targetCalories * 0.7) {
+      actions.push({
+        icon: '🚀',
+        text: 'Find High-Calorie Foods',
+        onClick: () => setShowCreateMeal(true)
+      });
+    }
+
+    if (lowCalorieMeals.length > 2) {
+      actions.push({
+        icon: '📈',
+        text: 'Boost Meal Sizes',
+        onClick: () => enterSwipeMode()
+      });
+    }
+
+    // Always suggest meal ideas if no specific issues
+    if (actions.length === 0) {
+      const mainMeals = ['Breakfast', 'Lunch', 'Dinner'];
+      const incompleteMeals = meals.filter(meal =>
+        mainMeals.includes(meal.name) && meal.calories < 300
+      );
+
+      if (incompleteMeals.length > 0) {
+        const targetMeal = incompleteMeals[0];
+        actions.push({
+          icon: '✨',
+          text: `Enhance ${targetMeal.name}`,
+          onClick: () => handleOpenMealIdeas(targetMeal.name.toLowerCase())
+        });
+      }
+    }
+
+    // Limit to top 3 actions
+    return actions.slice(0, 3);
+  };
+
   const addFoodToMeal = (mealId, category, foodName, servings = 1) => {
     const foodData = FoodDatabase[category]?.[foodName];
     if (!foodData) return;
@@ -861,15 +1000,39 @@ const MealSwipeApp = () => {
 
   const getMealMessage = (meal) => {
     if (!meal || meal.calories < 25) return null;
+
     const allMeals = formatMealsForMessaging();
     const currentMealType = mealTypeMapping[meal.name];
     if (!currentMealType) return null;
 
-    const currentMealTotals = { calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, sugar: 0 };
-    const pieData = calculatePieData(meal);
-    const userProfileForMessages = { firstName: profile.firstName || profile.name || 'Champion', goal: profile.goal || 'gain-muscle', weight: profile.weight };
+    const currentMealTotals = {
+      calories: meal.calories,
+      protein: meal.protein,
+      carbs: meal.carbs,
+      fat: meal.fat,
+      sugar: Math.round(meal.carbs * 0.3) // Estimate sugar as 30% of carbs
+    };
 
-    return MealMessages.getTimeAwareMessage(allMeals, currentMealType, currentMealTotals, meal.items, userProfileForMessages, calorieData, meal.time, pieData);
+    const pieData = calculatePieData(meal);
+
+    // Enhanced user profile for messaging
+    const userProfileForMessages = {
+      firstName: profile.firstName || profile.name || 'Champion',
+      goal: profile.goal || 'gain-muscle',
+      weight: profile.weight || 150
+    };
+
+    // Use the comprehensive time-aware messaging system
+    return MealMessages.getTimeAwareMessage(
+      allMeals,                    // All meals with timing
+      currentMealType,             // Current meal type
+      currentMealTotals,           // Current meal totals
+      meal.items || [],            // Current meal items
+      userProfileForMessages,      // Enhanced user profile
+      calorieData,                // TDEE/BMR data
+      meal.time,                  // Current meal time
+      pieData                     // Pie chart data
+    );
   };
 
   const openFoodSelection = (category, mealId) => {
@@ -995,6 +1158,54 @@ const MealSwipeApp = () => {
     return Math.max(0, 3 - fruitsConsumed);
   };
 
+  // Generate daily progress message using the sophisticated messaging system
+  const getDailyProgressMessage = () => {
+    if (!profile.firstName || totalMacros.calories < 100) {
+      return "Start adding meals to see personalized nutrition insights!";
+    }
+
+    const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
+      profile.goal === 'gain-muscle' ? 130 :
+        profile.goal === 'lose' ? 120 : 100;
+
+    const proteinProgress = (totalMacros.protein / proteinTarget) * 100;
+    const calorieProgress = (totalMacros.calories / calorieData.targetCalories) * 100;
+
+    // Generate goal-specific insights
+    if (profile.goal === 'dirty-bulk') {
+      if (totalMacros.calories >= calorieData.targetCalories && totalMacros.protein >= proteinTarget) {
+        return `${profile.firstName}, BULK DOMINATION! ${Math.round(totalMacros.calories)} calories and ${Math.round(totalMacros.protein)}g protein - you're building SERIOUS mass today!`;
+      } else if (totalMacros.calories < calorieData.targetCalories * 0.7) {
+        return `${profile.firstName}, only ${Math.round(totalMacros.calories)} calories for dirty bulk? You need ${Math.round(calorieData.targetCalories - totalMacros.calories)} more to hit your mass-building target!`;
+      } else {
+        return `${profile.firstName}, solid bulk progress at ${Math.round(totalMacros.calories)} calories - keep feeding the machine for maximum gains!`;
+      }
+    } else if (profile.goal === 'gain-muscle') {
+      if (proteinProgress >= 85 && calorieProgress >= 80 && calorieProgress <= 120) {
+        return `${profile.firstName}, LEAN MUSCLE PERFECTION! ${Math.round(totalMacros.protein)}g protein and ${Math.round(totalMacros.calories)} calories - textbook muscle building!`;
+      } else if (proteinProgress < 60) {
+        return `${profile.firstName}, protein alert! Only ${Math.round(totalMacros.protein)}g of your ${proteinTarget}g target - lean gains need more protein focus!`;
+      } else {
+        return `${profile.firstName}, good muscle-building progress with ${Math.round(totalMacros.protein)}g protein - stay consistent for lean gains!`;
+      }
+    } else if (profile.goal === 'lose') {
+      if (proteinProgress >= 80 && totalMacros.calories <= calorieData.targetCalories) {
+        return `${profile.firstName}, FAT LOSS PRECISION! ${Math.round(totalMacros.protein)}g protein with controlled calories - perfect for preserving muscle while cutting!`;
+      } else if (totalMacros.calories > calorieData.targetCalories * 1.2) {
+        return `${profile.firstName}, calories running high at ${Math.round(totalMacros.calories)} - fat loss requires staying closer to your ${calorieData.targetCalories} target!`;
+      } else {
+        return `${profile.firstName}, steady fat loss approach with ${Math.round(totalMacros.protein)}g protein - consistency wins the race!`;
+      }
+    } else {
+      // maintain
+      if (proteinProgress >= 70 && Math.abs(calorieProgress - 100) <= 15) {
+        return `${profile.firstName}, MAINTENANCE MASTERY! ${Math.round(totalMacros.protein)}g protein and balanced calories - sustainable excellence!`;
+      } else {
+        return `${profile.firstName}, good maintenance foundation with ${Math.round(totalMacros.calories)} calories - keep building consistent habits!`;
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-blue-500 to-red-600 p-4">
       <div className="max-w-md mx-auto">
@@ -1008,12 +1219,16 @@ const MealSwipeApp = () => {
               onProfileUpdate={handleProfileUpdate}
             />
 
+            {/* Enhanced Daily Summary with Smart Messaging */}
             <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
-              <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Totals</h2>
-              <div className="grid grid-cols-4 gap-3 text-center">
+              <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Nutrition Summary</h2>
+              <div className="grid grid-cols-4 gap-3 text-center mb-4">
                 <div className="bg-blue-100 rounded-lg p-2">
                   <div className="text-xs text-blue-600 font-medium">Protein</div>
                   <div className="text-lg font-bold text-blue-800">{Math.round(totalMacros.protein)}g</div>
+                  <div className="text-xs text-blue-500">
+                    {profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} target
+                  </div>
                 </div>
                 <div className="bg-green-100 rounded-lg p-2">
                   <div className="text-xs text-green-600 font-medium">Carbs</div>
@@ -1026,14 +1241,59 @@ const MealSwipeApp = () => {
                 <div className="bg-purple-100 rounded-lg p-2">
                   <div className="text-xs text-purple-600 font-medium">Calories</div>
                   <div className="text-lg font-bold text-purple-800">{Math.round(totalMacros.calories)}</div>
+                  <div className="text-xs text-purple-500">
+                    {calorieData.targetCalories} target
+                  </div>
                 </div>
               </div>
+
+              {/* Smart Daily Insight */}
+              {totalMacros.calories > 100 && (
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="text-lg">🎯</div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-800 text-sm mb-1">Daily Progress Insight</h4>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        {getDailyProgressMessage()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <WelcomeScreen profile={profile} totalMacros={totalMacros} meals={meals} />
 
+            {/* Smart Next Meal Recommendations */}
+            {profile.firstName && totalMacros.calories > 50 && (
+              <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
+                <h2 className="text-lg font-bold text-gray-800 mb-3 text-center flex items-center justify-center gap-2">
+                  <span>🎯</span> Smart Recommendations
+                </h2>
+                <div className="space-y-3">
+                  {getSmartMealRecommendations().map((rec, index) => (
+                    <div key={index} className={`p-3 rounded-xl border-2 ${rec.priority === 'high' ? 'border-red-200 bg-red-50' : rec.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
+                      <div className="flex items-start gap-2">
+                        <div className="text-lg">{rec.priority === 'high' ? '🚨' : rec.priority === 'medium' ? '⚡' : '💡'}</div>
+                        <div className="flex-1">
+                          <h4 className={`font-semibold text-sm mb-1 ${rec.priority === 'high' ? 'text-red-800' : rec.priority === 'medium' ? 'text-yellow-800' : 'text-green-800'}`}>
+                            {rec.title}
+                          </h4>
+                          <p className={`text-xs leading-relaxed ${rec.priority === 'high' ? 'text-red-700' : rec.priority === 'medium' ? 'text-yellow-700' : 'text-green-700'}`}>
+                            {rec.message}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="text-center mb-6 space-y-3">
-              <div className="grid grid-cols-2 gap-3 justify-center">
+              {/* Quick Action Buttons based on current state */}
+              <div className="grid grid-cols-2 gap-3 justify-center mb-4">
                 <button
                   onClick={enterSwipeMode}
                   className="bg-white text-purple-600 px-4 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
@@ -1059,6 +1319,25 @@ const MealSwipeApp = () => {
                   🔍 Create Meal
                 </button>
               </div>
+
+              {/* Smart Action Suggestions */}
+              {profile.firstName && totalMacros.calories > 50 && (
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3 mb-4">
+                  <h3 className="font-semibold text-indigo-800 text-sm mb-2">💡 Suggested Next Actions</h3>
+                  <div className="grid grid-cols-1 gap-2">
+                    {getQuickActionSuggestions().map((action, index) => (
+                      <button
+                        key={index}
+                        onClick={action.onClick}
+                        className="bg-white hover:bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 hover:border-indigo-300 transition-all"
+                      >
+                        {action.icon} {action.text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-center">
                 <button
                   onClick={() => setShowGame(true)}
