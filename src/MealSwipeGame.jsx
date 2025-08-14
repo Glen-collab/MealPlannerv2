@@ -538,7 +538,7 @@ const MealSwipeGame = ({
     ];
 
     return (
-      <div className="max-w-md mx-auto bg-gradient-to-br from-green-800 via-green-900 to-green-800 rounded-xl shadow-lg p-6 text-center">
+      <div className="max-w-sm mx-auto bg-gradient-to-br from-green-800 via-green-900 to-green-800 rounded-xl shadow-lg border-2 border-black p-5 text-center">
         <h2 className="text-xl font-bold text-white mb-2">🎮 Try Our Demo Game!</h2>
         <p className="text-green-200 mb-4">No meals yet? No problem! Test your macro vision with our strategic nutrition challenges!</p>
         <div className="text-xs text-green-300 mb-4">
@@ -621,7 +621,7 @@ const MealSwipeGame = ({
           </div>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 max-w-lg text-center shadow-xl">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-black p-5 max-w-sm text-center shadow-xl mx-auto">
           <h3 className="text-lg font-bold text-gray-800 mb-3">
             {gameCards[0]?.demoName ? 'Demo Coach Analysis:' : 'Dating Coach Final Verdict:'}
           </h3>
@@ -675,15 +675,15 @@ const MealSwipeGame = ({
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
-        <div className="relative max-w-md w-full">
+        <div className="relative max-w-sm w-full mx-auto">
           <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl shadow-xl transform rotate-2 scale-95 opacity-30"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl transform -rotate-1 scale-98 opacity-50"></div>
           
           <div 
-            className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border border-gray-200 p-6 relative z-10 cursor-pointer hover:shadow-3xl transition-all duration-200"
+            className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-5 relative z-10 cursor-pointer hover:shadow-3xl transition-all duration-200"
             onClick={handleNextCard}
           >
-            <div className="bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl p-3 mb-6 text-center border border-gray-200">
+            <div className="bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl p-3 mb-5 text-center border border-gray-200">
               <h3 className="text-sm font-medium text-gray-600 mb-1">
                 {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
               </h3>
@@ -700,7 +700,7 @@ const MealSwipeGame = ({
 
             {/* Warnings */}
             {currentEvaluation.warnings.length > 0 && (
-              <div className="mb-6 space-y-2">
+              <div className="mb-5 space-y-2">
                 {currentEvaluation.warnings.includes('sugar') && (
                   <div className="bg-red-100 border border-red-300 rounded-xl p-3 flex items-center gap-2">
                     <AlertTriangle className="text-red-600" size={20} />
@@ -722,17 +722,17 @@ const MealSwipeGame = ({
               </div>
             )}
 
-            <div className="text-center mb-8">
-              <div className="text-6xl mb-4">💔</div>
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Dating Coach Says:</h2>
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-3">💔</div>
+              <h2 className="text-xl font-bold text-gray-800 mb-3">Dating Coach Says:</h2>
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200">
                 <p className="text-lg text-gray-700 leading-relaxed">
                   {lastResponse}
                 </p>
               </div>
             </div>
 
-            <div className="text-center text-gray-500 text-sm p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div className="text-center text-gray-500 text-sm p-3 rounded-xl bg-gray-50 border border-gray-200">
               {currentCardIndex < gameCards.length - 1 ? 
                 `Tap anywhere to continue dating → (${currentCardIndex + 2}/${gameCards.length})` : 
                 'Tap anywhere to see your dating results →'
@@ -746,7 +746,7 @@ const MealSwipeGame = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
-      <div className="relative max-w-md w-full">
+      <div className="relative max-w-sm w-full mx-auto">
         {/* Progress indicator - STATIC */}
         <div className="absolute top-6 left-6 right-6 z-20 flex justify-center pointer-events-none">
           <div className="bg-gray-200 rounded-full w-full h-2">
@@ -779,7 +779,7 @@ const MealSwipeGame = ({
         {/* Swipeable card content */}
         <div 
           ref={cardRef}
-          className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border border-gray-200 p-6 relative z-10 cursor-grab active:cursor-grabbing select-none"
+          className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-5 relative z-10 cursor-grab active:cursor-grabbing select-none max-w-sm mx-auto"
           style={{ 
             transform: `translateX(${swipeState.x}px) rotate(${swipeState.rotation}deg)`,
             opacity: swipeState.opacity,
@@ -807,17 +807,17 @@ const MealSwipeGame = ({
           )}
           
           {/* Meal content */}
-          <div className="text-center pt-16 pb-20 pointer-events-none">
+          <div className="text-center pt-14 pb-18 pointer-events-none">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
               {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
             </h2>
-            <div className="text-sm text-gray-600 mb-6">
+            <div className="text-sm text-gray-600 mb-5">
               ⏰ {currentCard.time}
               {currentCard.demoName && <span className="ml-2 text-purple-600 font-medium">• DEMO</span>}
             </div>
             
             {/* Nutrition Display */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 mb-6 border border-gray-200">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 mb-5 border border-gray-200">
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-purple-600">{Math.round(currentCard.totals.calories)}</div>
@@ -846,7 +846,7 @@ const MealSwipeGame = ({
 
             {/* Macro Percentages */}
             {currentCard.pieData && currentCard.pieData.length > 0 && (
-              <div className="text-center mb-6">
+              <div className="text-center mb-5">
                 <div className="text-sm font-medium text-gray-700 mb-2">Dating Profile:</div>
                 <div className="text-sm text-gray-600">
                   💪 {currentCard.pieData[0]?.percentage || 0}% • 
@@ -860,18 +860,18 @@ const MealSwipeGame = ({
             )}
 
             {/* Swipe Actions */}
-            <div className="flex justify-center gap-8 mb-4">
+            <div className="flex justify-center gap-6 mb-3">
               <button
                 onClick={() => !isDragging && !isAnimating && handleSwipe('left')}
-                className="bg-red-500 hover:bg-red-600 text-white w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
+                className="bg-red-500 hover:bg-red-600 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
               >
-                <X size={32} />
+                <X size={28} />
               </button>
               <button
                 onClick={() => !isDragging && !isAnimating && handleSwipe('right')}
-                className="bg-green-500 hover:bg-green-600 text-white w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
+                className="bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
               >
-                <Heart size={32} />
+                <Heart size={28} />
               </button>
             </div>
           </div>
