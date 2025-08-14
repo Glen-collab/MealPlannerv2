@@ -5,8 +5,7 @@ import { WelcomeScreen } from './WelcomeScreen.jsx';
 import MealSwipeGame from './MealSwipeGame.jsx';
 import DailyMealPlannerModule from './DailyMealPlannerModule';
 import ProfileModule from './ProfileModule.jsx';
-// Import MealIdeas when ready
-// import MealIdeasModal from './MealIdeas.jsx';
+import MealIdeasModal from './MealIdeas.jsx';
 
 // Mock the messaging system for now
 const MealMessages = {
@@ -615,17 +614,56 @@ const MealSwipeApp = () => {
   const [showGame, setShowGame] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
-  // State for MealIdeas - ready to be uncommented when integrated
-  // const [showMealIdeas, setShowMealIdeas] = useState(false);
-  // const [selectedMealType, setSelectedMealType] = useState('breakfast');
+  // State for MealIdeas
+  const [showMealIdeas, setShowMealIdeas] = useState(false);
+  const [selectedMealType, setSelectedMealType] = useState('breakfast');
   const dragRef = useRef({ startX: 0, startY: 0 });
 
-  // Helper function to handle meal ideas opening - ready for integration
+  // Helper function to handle meal ideas opening
   const handleOpenMealIdeas = (mealType) => {
     console.log(`Opening meal ideas for ${mealType}`);
-    // Uncomment when MealIdeas is integrated:
-    // setSelectedMealType(mealType);
-    // setShowMealIdeas(true);
+    setSelectedMealType(mealType);
+    setShowMealIdeas(true);
+  };
+
+  // Helper function to add meal from MealIdeas to the actual meal
+  const handleAddMealFromIdeas = (mealData) => {
+    console.log('Adding meal from ideas:', mealData);
+
+    // Find the meal to add to based on selectedMealType
+    const targetMealName = selectedMealType.charAt(0).toUpperCase() + selectedMealType.slice(1);
+    const targetMeal = meals.find(m => m.name === targetMealName);
+
+    if (!targetMeal) {
+      console.error('Target meal not found:', targetMealName);
+      return;
+    }
+
+    // Claim the meal for quickview
+    claimMeal(targetMeal.name, 'quickview');
+
+    // Add each item from the meal idea to the target meal
+    mealData.items.forEach(item => {
+      const categoryMapping = {
+        'protein': 'protein',
+        'carbohydrate': 'carbohydrate',
+        'fat': 'fat',
+        'supplements': 'supplements',
+        'fruits': 'fruits',
+        'vegetables': 'vegetables',
+        'condiments': 'condiments',
+        'snacks': 'snacks'
+      };
+
+      const dbCategory = categoryMapping[item.category];
+      if (dbCategory && FoodDatabase[dbCategory] && FoodDatabase[dbCategory][item.food]) {
+        addFoodToMeal(targetMeal.id, dbCategory, item.food, item.serving);
+      } else {
+        console.warn('Food not found in database:', item.food, 'category:', item.category);
+      }
+    });
+
+    setShowMealIdeas(false);
   };
 
   const claimMeal = (mealName, source) => {
@@ -756,11 +794,70 @@ const MealSwipeApp = () => {
     return allMeals;
   };
 
-  // Calculate calorie data from profile (will be replaced by ProfileModule)
-  const calorieData = {
-    targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500,
-    tdee: profile.weight ? Math.round(profile.weight * 15 + (profile.goal === 'dirty-bulk' ? 500 : 0)) : 2500
+  // Calculate calorie data from profile using ProfileModule's TDEE calculation
+  const calculateTDEE = (userProfile) => {
+    const { heightFeet, heightInches, weight, exerciseLevel, goal, gender } = userProfile;
+
+    if (!heightFeet || !heightInches || !weight || !exerciseLevel || !goal || !gender) {
+      return {
+        bmr: 1800,
+        tdee: 2200,
+        targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500
+      };
+    }
+
+    const totalHeightInches = parseInt(heightFeet) * 12 + parseInt(heightInches);
+    const heightCm = totalHeightInches * 2.54;
+    const weightKg = parseFloat(weight) * 0.453592;
+
+    // BMR calculation using Mifflin-St Jeor equation
+    let bmr;
+    if (gender === 'male') {
+      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 + 5; // Using age 25 as default
+    } else if (gender === 'female') {
+      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 - 161;
+    } else {
+      // Non-binary - use average
+      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 - 78;
+    }
+
+    // Activity multipliers
+    const activityMultipliers = {
+      'sedentary': 1.2,
+      'light': 1.375,
+      'moderate': 1.55,
+      'active': 1.725,
+      'very-active': 1.9
+    };
+
+    const tdee = bmr * activityMultipliers[exerciseLevel];
+
+    // Goal adjustments
+    let targetCalories;
+    switch (goal) {
+      case 'lose':
+        targetCalories = tdee - 500; // 500 cal deficit for 1lb/week loss
+        break;
+      case 'gain-muscle':
+        targetCalories = tdee + 300; // 300 cal surplus for lean gains
+        break;
+      case 'dirty-bulk':
+        targetCalories = tdee + 700; // 700 cal surplus for rapid gains
+        break;
+      case 'maintain':
+      default:
+        targetCalories = tdee;
+        break;
+    }
+
+    return {
+      bmr: Math.round(bmr),
+      tdee: Math.round(tdee),
+      targetCalories: Math.round(targetCalories)
+    };
   };
+
+  const calorieData = calculateTDEE(profile);
 
   const getMealMessage = (meal) => {
     if (!meal || meal.calories < 25) return null;
@@ -881,6 +978,21 @@ const MealSwipeApp = () => {
   const handleProfileUpdate = (newProfile) => {
     setProfile(newProfile);
     console.log('Profile updated:', newProfile);
+  };
+
+  // Calculate fruit budget remaining (3 fruits per day max recommended)
+  const calculateFruitBudgetRemaining = () => {
+    let fruitsConsumed = 0;
+    meals.forEach(meal => {
+      if (meal.items) {
+        meal.items.forEach(item => {
+          if (item.category === 'fruits') {
+            fruitsConsumed += item.servings;
+          }
+        });
+      }
+    });
+    return Math.max(0, 3 - fruitsConsumed);
   };
 
   return (
@@ -1044,7 +1156,7 @@ const MealSwipeApp = () => {
           </div>
         )}
 
-        {/* Ready for MealIdeas integration - uncomment when ready:
+        {/* MealIdeas Modal Integration */}
         {showMealIdeas && (
           <MealIdeasModal
             isOpen={showMealIdeas}
@@ -1054,10 +1166,9 @@ const MealSwipeApp = () => {
             calorieData={calorieData}
             isMobile={true}
             mealType={selectedMealType}
-            fruitBudgetRemaining={3}
+            fruitBudgetRemaining={calculateFruitBudgetRemaining()}
           />
         )}
-        */}
       </div>
     </div>
   );
