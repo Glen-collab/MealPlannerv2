@@ -3,7 +3,7 @@ import { FoodDatabase, getFoodsInCategory, getServingInfo } from './FoodDatabase
 import { USDAMealCreator } from './USDAMealCreator.jsx';
 import { WelcomeScreen } from './WelcomeScreen.jsx';
 import MealSwipeGame from './MealSwipeGame.jsx';
-import DailyMealPlannerModule from './DailyMealPlannerModule';
+import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
 import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
