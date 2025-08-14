@@ -1328,41 +1328,24 @@ const MealSwipeApp = () => {
         )}
       </div>
 
-      // Then replace your scroll modal with this:
-      {/* Scrolling Modal */}
+      /* REPLACE THE ENTIRE SECTION ABOVE WITH THIS: */
+      {/* Scrolling Modal - Full Screen */}
       {isScrollModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md h-5/6 flex flex-col">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">Daily Meal Plan</h2>
-              <button
-                onClick={exitScrollModal}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-white z-50">
+          <button
+            onClick={exitScrollModal}
+            className="absolute top-4 right-4 z-50 bg-gray-800 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl hover:bg-gray-700 transition-colors shadow-lg"
+          >
+            ×
+          </button>
 
-            {/* Replace the entire flex-1 overflow-y-auto section with this: */}
-            <div className="flex-1 overflow-hidden">
-              <DailyMealPlannerModule
-                meals={meals}
-                profile={profile}
-                totalMacros={totalMacros}
-                mealSources={mealSources}
-                className="h-full"
-              />
-            </div>
-
-            <div className="p-6 border-t border-gray-200">
-              <button
-                onClick={exitScrollModal}
-                className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </div>
+          <DailyMealPlannerModule
+            meals={meals}
+            profile={profile}
+            totalMacros={totalMacros}
+            mealSources={mealSources}
+            className="h-full"
+          />
         </div>
       )}
 
