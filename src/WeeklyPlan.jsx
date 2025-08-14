@@ -14,7 +14,7 @@ import {
   getSugarWarningMessage,
   getCalorieProgressMessage
 } from './Utils.js';
-import { MealMessages } from './MealMessages.js';
+import { MealMessages } from './MealMessages./index.js';
 import MealTracker from './MealTracker.js';
 
 // Goal-Based Week Plan Modal Component
