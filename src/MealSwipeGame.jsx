@@ -283,12 +283,13 @@ const MealSwipeGame = ({
     if (!isDragging || isAnimating || showingReaction) return;
     
     const deltaX = clientX - startPosRef.current.x;
-    const rotation = deltaX * 0.1;
-    const opacity = Math.max(0.6, 1 - Math.abs(deltaX) * 0.002);
+    // Limit rotation for smoother feel
+    const rotation = Math.max(-10, Math.min(10, deltaX * 0.08));
+    const opacity = Math.max(0.7, 1 - Math.abs(deltaX) * 0.001);
     
     setSwipeState({
       x: deltaX,
-      rotation: Math.max(-15, Math.min(15, rotation)),
+      rotation,
       opacity
     });
   };
@@ -297,7 +298,7 @@ const MealSwipeGame = ({
     if (!isDragging || isAnimating || showingReaction) return;
     setIsDragging(false);
     
-    const threshold = 100;
+    const threshold = 80; // More responsive threshold
     if (Math.abs(swipeState.x) > threshold) {
       const direction = swipeState.x > 0 ? 'right' : 'left';
       animateSwipeOut(direction);
@@ -312,7 +313,7 @@ const MealSwipeGame = ({
     
     setSwipeState({
       x: directionMultiplier * 400,
-      rotation: directionMultiplier * 30,
+      rotation: directionMultiplier * 20, // Reduced rotation for smoother animation
       opacity: 0
     });
     
@@ -676,14 +677,40 @@ const MealSwipeGame = ({
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
         <div className="relative max-w-sm w-full mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl shadow-xl transform rotate-2 scale-95 opacity-30"></div>
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl transform -rotate-1 scale-98 opacity-50"></div>
+          {/* Background depth cards - STATIC */}
+          <div className="absolute inset-4 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl shadow-xl transform rotate-1 scale-95 opacity-20"></div>
+          <div className="absolute inset-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl transform -rotate-1 scale-98 opacity-40"></div>
           
-          <div 
-            className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-5 relative z-10 cursor-pointer hover:shadow-3xl transition-all duration-200"
+          {/* Reaction Card - FIXED SIZE */}
+          <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-5 cursor-pointer hover:shadow-3xl transition-all duration-200 w-full max-w-sm mx-4 h-96 relative flex flex-col"
             onClick={handleNextCard}
           >
-            <div className="bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl p-3 mb-5 text-center border border-gray-200">
+            {/* Warnings - OVERLAID */}
+            {currentEvaluation.warnings.length > 0 && (
+              <div className="absolute top-2 left-2 right-2 z-40 space-y-1">
+                {currentEvaluation.warnings.includes('sugar') && (
+                  <div className="bg-red-100/90 backdrop-blur-sm border border-red-300 rounded-lg p-2 flex items-center gap-2">
+                    <AlertTriangle className="text-red-600" size={16} />
+                    <span className="text-red-800 text-xs font-medium">SUGAR BOMB: {Math.round(currentCard.totals.sugar)}g!</span>
+                  </div>
+                )}
+                {currentEvaluation.warnings.includes('cholesterol') && (
+                  <div className="bg-orange-100/90 backdrop-blur-sm border border-orange-300 rounded-lg p-2 flex items-center gap-2">
+                    <AlertTriangle className="text-orange-600" size={16} />
+                    <span className="text-orange-800 text-xs font-medium">HEART ATTACK: {currentEvaluation.cholesterolMg}mg!</span>
+                  </div>
+                )}
+                {currentEvaluation.warnings.includes('glycemic') && (
+                  <div className="bg-yellow-100/90 backdrop-blur-sm border border-yellow-300 rounded-lg p-2 flex items-center gap-2">
+                    <AlertTriangle className="text-yellow-600" size={16} />
+                    <span className="text-yellow-800 text-xs font-medium">GLUCOSE SPIKE: GI {currentEvaluation.glycemicIndex}!</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Header */}
+            <div className="bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl p-3 mb-3 text-center border border-gray-200 flex-shrink-0">
               <h3 className="text-sm font-medium text-gray-600 mb-1">
                 {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
               </h3>
@@ -698,41 +725,19 @@ const MealSwipeGame = ({
               )}
             </div>
 
-            {/* Warnings */}
-            {currentEvaluation.warnings.length > 0 && (
-              <div className="mb-5 space-y-2">
-                {currentEvaluation.warnings.includes('sugar') && (
-                  <div className="bg-red-100 border border-red-300 rounded-xl p-3 flex items-center gap-2">
-                    <AlertTriangle className="text-red-600" size={20} />
-                    <span className="text-red-800 text-sm font-medium">SUGAR BOMB: {Math.round(currentCard.totals.sugar)}g!</span>
-                  </div>
-                )}
-                {currentEvaluation.warnings.includes('cholesterol') && (
-                  <div className="bg-orange-100 border border-orange-300 rounded-xl p-3 flex items-center gap-2">
-                    <AlertTriangle className="text-orange-600" size={20} />
-                    <span className="text-orange-800 text-sm font-medium">HEART ATTACK: {currentEvaluation.cholesterolMg}mg!</span>
-                  </div>
-                )}
-                {currentEvaluation.warnings.includes('glycemic') && (
-                  <div className="bg-yellow-100 border border-yellow-300 rounded-xl p-3 flex items-center gap-2">
-                    <AlertTriangle className="text-yellow-600" size={20} />
-                    <span className="text-yellow-800 text-sm font-medium">GLUCOSE SPIKE: GI {currentEvaluation.glycemicIndex}!</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="text-center mb-6">
-              <div className="text-5xl mb-3">💔</div>
-              <h2 className="text-xl font-bold text-gray-800 mb-3">Dating Coach Says:</h2>
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200">
-                <p className="text-lg text-gray-700 leading-relaxed">
+            {/* Reaction Content */}
+            <div className="text-center flex-1 flex flex-col justify-center">
+              <div className="text-4xl mb-2">💔</div>
+              <h2 className="text-lg font-bold text-gray-800 mb-3">Dating Coach Says:</h2>
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 flex-1 flex items-center justify-center">
+                <p className="text-sm text-gray-700 leading-relaxed">
                   {lastResponse}
                 </p>
               </div>
             </div>
 
-            <div className="text-center text-gray-500 text-sm p-3 rounded-xl bg-gray-50 border border-gray-200">
+            {/* Bottom instruction */}
+            <div className="text-center text-gray-500 text-xs p-2 rounded-xl bg-gray-50 border border-gray-200 mt-3 flex-shrink-0">
               {currentCardIndex < gameCards.length - 1 ? 
                 `Tap anywhere to continue dating → (${currentCardIndex + 2}/${gameCards.length})` : 
                 'Tap anywhere to see your dating results →'
@@ -747,9 +752,9 @@ const MealSwipeGame = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
       <div className="relative max-w-sm w-full mx-auto">
-        {/* Progress indicator - STATIC */}
-        <div className="absolute top-6 left-6 right-6 z-20 flex justify-center pointer-events-none">
-          <div className="bg-gray-200 rounded-full w-full h-2">
+        {/* Progress indicator - COMPLETELY STATIC */}
+        <div className="absolute top-4 left-4 right-4 z-30 flex justify-center pointer-events-none">
+          <div className="bg-white/90 backdrop-blur-sm rounded-full w-full h-2 shadow-lg">
             <div 
               className="bg-gradient-to-r from-pink-500 to-purple-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${((currentCardIndex + 1) / gameCards.length) * 100}%` }}
@@ -757,122 +762,131 @@ const MealSwipeGame = ({
           </div>
         </div>
 
-        {/* Instructions - STATIC */}
-        <div className="absolute top-16 left-6 right-6 z-20 text-center text-white text-sm pointer-events-none">
+        {/* Instructions - COMPLETELY STATIC */}
+        <div className="absolute top-12 left-4 right-4 z-30 text-center text-white text-sm pointer-events-none bg-black/30 backdrop-blur-sm rounded-xl p-2">
           ❌ Pass • ❤️ Match • Swipe for dating fate!
         </div>
 
-        {/* Hot standard reminder - STATIC */}
-        <div className="absolute bottom-6 left-6 right-6 z-20 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-3 text-center text-xs text-purple-700 border border-purple-200 pointer-events-none">
-          SWEETHEART Standard: 40% protein, 40% carbs, 20% fat (±10%), sugar under 25g
-        </div>
-
-        {/* Card counter - STATIC */}
-        <div className="absolute bottom-20 left-6 right-6 z-20 text-center text-white text-sm pointer-events-none">
+        {/* Card counter - COMPLETELY STATIC */}
+        <div className="absolute bottom-16 left-4 right-4 z-30 text-center text-white text-sm pointer-events-none bg-black/30 backdrop-blur-sm rounded-xl p-2">
           Dating Card {currentCardIndex + 1} of {gameCards.length} • Grade: {overallGrade}
         </div>
 
-        {/* Background cards for depth - STATIC */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl shadow-xl transform rotate-2 scale-95 opacity-30"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl transform -rotate-1 scale-98 opacity-50"></div>
-        
-        {/* Swipeable card content */}
-        <div 
-          ref={cardRef}
-          className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-5 relative z-10 cursor-grab active:cursor-grabbing select-none max-w-sm mx-auto"
-          style={{ 
-            transform: `translateX(${swipeState.x}px) rotate(${swipeState.rotation}deg)`,
-            opacity: swipeState.opacity,
-            transition: isAnimating ? 'all 0.3s ease-out' : isDragging ? 'none' : 'transform 0.2s ease-out'
-          }}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Swipe indicators */}
-          {isDragging && (
-            <>
-              <div 
-                className={`absolute top-20 left-4 text-6xl transition-opacity duration-200 pointer-events-none ${swipeState.x < -30 ? 'opacity-100' : 'opacity-30'}`}
-              >
-                ❌
-              </div>
-              <div 
-                className={`absolute top-20 right-4 text-6xl transition-opacity duration-200 pointer-events-none ${swipeState.x > 30 ? 'opacity-100' : 'opacity-30'}`}
-              >
-                ❤️
-              </div>
-            </>
-          )}
+        {/* Hot standard reminder - COMPLETELY STATIC */}
+        <div className="absolute bottom-4 left-4 right-4 z-30 bg-white/90 backdrop-blur-sm rounded-xl p-2 text-center text-xs text-purple-700 border border-purple-200 pointer-events-none">
+          SWEETHEART Standard: 40% protein, 40% carbs, 20% fat (±10%), sugar under 25g
+        </div>
+
+        {/* Card Container - Only this moves */}
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          {/* Background depth cards - STATIC */}
+          <div className="absolute inset-4 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl shadow-xl transform rotate-1 scale-95 opacity-20"></div>
+          <div className="absolute inset-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl transform -rotate-1 scale-98 opacity-40"></div>
           
-          {/* Meal content */}
-          <div className="text-center pt-14 pb-18 pointer-events-none">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
-            </h2>
-            <div className="text-sm text-gray-600 mb-5">
-              ⏰ {currentCard.time}
-              {currentCard.demoName && <span className="ml-2 text-purple-600 font-medium">• DEMO</span>}
-            </div>
-            
-            {/* Nutrition Display */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 mb-5 border border-gray-200">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600">{Math.round(currentCard.totals.calories)}</div>
-                  <div className="text-sm text-gray-600">Calories</div>
+          {/* Main swipeable card - ONLY THIS MOVES */}
+          <div 
+            ref={cardRef}
+            className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-5 cursor-grab active:cursor-grabbing select-none w-full max-w-sm mx-4 h-96 relative"
+            style={{ 
+              transform: `translateX(${swipeState.x}px) rotate(${swipeState.rotation}deg)`,
+              opacity: swipeState.opacity,
+              transition: isAnimating ? 'all 0.3s ease-out' : isDragging ? 'none' : 'transform 0.2s ease-out'
+            }}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Swipe indicators - OVERLAID */}
+            {isDragging && (
+              <>
+                <div 
+                  className={`absolute top-16 left-4 text-6xl transition-opacity duration-200 pointer-events-none z-40 ${swipeState.x < -30 ? 'opacity-100' : 'opacity-30'}`}
+                >
+                  ❌
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">{Math.round(currentCard.totals.protein)}g</div>
-                  <div className="text-sm text-gray-600">Protein</div>
+                <div 
+                  className={`absolute top-16 right-4 text-6xl transition-opacity duration-200 pointer-events-none z-40 ${swipeState.x > 30 ? 'opacity-100' : 'opacity-30'}`}
+                >
+                  ❤️
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{Math.round(currentCard.totals.carbs)}g</div>
-                  <div className="text-sm text-gray-600">Carbs</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-600">{Math.round(currentCard.totals.fat)}g</div>
-                  <div className="text-sm text-gray-600">Fat</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                <div className="text-center">Sugar: {Math.round(currentCard.totals.sugar)}g</div>
-                <div className="text-center">GI: {currentCard.totals.glycemicIndex}</div>
-              </div>
-            </div>
-
-            {/* Macro Percentages */}
-            {currentCard.pieData && currentCard.pieData.length > 0 && (
-              <div className="text-center mb-5">
-                <div className="text-sm font-medium text-gray-700 mb-2">Dating Profile:</div>
-                <div className="text-sm text-gray-600">
-                  💪 {currentCard.pieData[0]?.percentage || 0}% • 
-                  🌾 {currentCard.pieData[1]?.percentage || 0}% • 
-                  🥑 {currentCard.pieData[2]?.percentage || 0}%
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  (Sweetheart Target: 40% • 40% • 20%)
-                </div>
-              </div>
+              </>
             )}
+            
+            {/* Card Content - Fixed Height Container */}
+            <div className="flex flex-col h-full pointer-events-none relative">
+              {/* Header */}
+              <div className="text-center mb-3">
+                <h2 className="text-xl font-bold text-gray-800 mb-1">
+                  {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
+                </h2>
+                <div className="text-xs text-gray-600">
+                  ⏰ {currentCard.time}
+                  {currentCard.demoName && <span className="ml-2 text-purple-600 font-medium">• DEMO</span>}
+                </div>
+              </div>
+              
+              {/* Nutrition Display - Compact */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 mb-3 border border-gray-200 flex-shrink-0">
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">{Math.round(currentCard.totals.calories)}</div>
+                    <div className="text-xs text-gray-600">Calories</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{Math.round(currentCard.totals.protein)}g</div>
+                    <div className="text-xs text-gray-600">Protein</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{Math.round(currentCard.totals.carbs)}g</div>
+                    <div className="text-xs text-gray-600">Carbs</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">{Math.round(currentCard.totals.fat)}g</div>
+                    <div className="text-xs text-gray-600">Fat</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                  <div className="text-center">Sugar: {Math.round(currentCard.totals.sugar)}g</div>
+                  <div className="text-center">GI: {currentCard.totals.glycemicIndex}</div>
+                </div>
+              </div>
 
-            {/* Swipe Actions */}
-            <div className="flex justify-center gap-6 mb-3">
-              <button
-                onClick={() => !isDragging && !isAnimating && handleSwipe('left')}
-                className="bg-red-500 hover:bg-red-600 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
-              >
-                <X size={28} />
-              </button>
-              <button
-                onClick={() => !isDragging && !isAnimating && handleSwipe('right')}
-                className="bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
-              >
-                <Heart size={28} />
-              </button>
+              {/* Macro Percentages - Compact */}
+              {currentCard.pieData && currentCard.pieData.length > 0 && (
+                <div className="text-center mb-3 flex-shrink-0">
+                  <div className="text-xs font-medium text-gray-700 mb-1">Dating Profile:</div>
+                  <div className="text-xs text-gray-600">
+                    💪 {currentCard.pieData[0]?.percentage || 0}% • 
+                    🌾 {currentCard.pieData[1]?.percentage || 0}% • 
+                    🥑 {currentCard.pieData[2]?.percentage || 0}%
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    (Sweetheart Target: 40% • 40% • 20%)
+                  </div>
+                </div>
+              )}
+
+              {/* Spacer to push buttons to bottom */}
+              <div className="flex-1"></div>
+
+              {/* Swipe Actions - Bottom Fixed */}
+              <div className="flex justify-center gap-6 mb-2 flex-shrink-0">
+                <button
+                  onClick={() => !isDragging && !isAnimating && handleSwipe('left')}
+                  className="bg-red-500 hover:bg-red-600 text-white w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
+                >
+                  <X size={24} />
+                </button>
+                <button
+                  onClick={() => !isDragging && !isAnimating && handleSwipe('right')}
+                  className="bg-green-500 hover:bg-green-600 text-white w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
+                >
+                  <Heart size={24} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
