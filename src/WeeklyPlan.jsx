@@ -1,14 +1,14 @@
-// WeeklyPlan.js - Main Component (Final Modular Version)
+// WeeklyPlan.js - Main Component with Week Plan Modal Integration
 import React, { useState } from 'react';
-import { X, Scale, Coffee, Hand } from 'lucide-react';
+import { X, Scale, Coffee, Hand, Users, Clock, Target } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 // Import our modular components
 import { foodDatabase, servingSizeConversions, getServingInfo } from './foodDatabase.js';
-import { 
-  calculateTotals, 
-  preparePieData, 
-  calculateTDEE, 
+import {
+  calculateTotals,
+  preparePieData,
+  calculateTDEE,
   getServingWarnings,
   getSugarWarningStyle,
   getSugarWarningMessage,
@@ -16,6 +16,309 @@ import {
 } from './Utils.js';
 import { MealMessages } from './MealMessages.js';
 import MealTracker from './MealTracker.js';
+
+// Week Plan Modal Component
+const WeekPlanModal = ({ isOpen, onClose, onAddWeekPlan, userProfile, calorieData, isMobile = false }) => {
+  const [selectedPlan, setSelectedPlan] = useState(null);
+
+  if (!isOpen) return null;
+
+  const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  const createFoodItem = (category, food, serving = 1) => ({
+    id: generateId(),
+    category,
+    food,
+    serving,
+    displayServing: serving.toString(),
+    displayUnit: 'servings'
+  });
+
+  // Pre-defined meal plans
+  const mealPlans = {
+    3: {
+      title: "3 Meals (Classic)",
+      description: "Traditional breakfast, lunch, dinner",
+      icon: "🍽️",
+      meals: {
+        breakfast: {
+          time: "7:00 AM",
+          items: [
+            createFoodItem('carbohydrate', 'Oats (dry)', 0.5),
+            createFoodItem('fruits', 'Banana', 1),
+            createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5)
+          ]
+        },
+        lunch: {
+          time: "12:30 PM",
+          items: [
+            createFoodItem('protein', 'Chicken Breast', 1),
+            createFoodItem('carbohydrate', 'Brown Rice (cooked)', 1),
+            createFoodItem('vegetables', 'Broccoli', 1)
+          ]
+        },
+        dinner: {
+          time: "6:30 PM",
+          items: [
+            createFoodItem('protein', 'Salmon', 1),
+            createFoodItem('carbohydrate', 'Sweet Potato', 1),
+            createFoodItem('vegetables', 'Asparagus', 1),
+            createFoodItem('fat', 'Olive Oil', 0.5)
+          ]
+        }
+      }
+    },
+    5: {
+      title: "5 Meals (Balanced)",
+      description: "3 main meals + 2 healthy snacks",
+      icon: "⚖️",
+      meals: {
+        breakfast: {
+          time: "7:00 AM",
+          items: [
+            createFoodItem('carbohydrate', 'Oats (dry)', 0.5),
+            createFoodItem('fruits', 'Blueberries', 0.5),
+            createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5)
+          ]
+        },
+        firstSnack: {
+          time: "10:00 AM",
+          items: [
+            createFoodItem('fruits', 'Apple', 1),
+            createFoodItem('fat', 'Almonds', 0.5)
+          ]
+        },
+        lunch: {
+          time: "12:30 PM",
+          items: [
+            createFoodItem('protein', 'Turkey Breast', 1),
+            createFoodItem('carbohydrate', 'Quinoa (cooked)', 1),
+            createFoodItem('vegetables', 'Spinach', 1)
+          ]
+        },
+        midAfternoon: {
+          time: "3:30 PM",
+          items: [
+            createFoodItem('protein', 'String Cheese', 1),
+            createFoodItem('fruits', 'Grapes', 0.5)
+          ]
+        },
+        dinner: {
+          time: "6:30 PM",
+          items: [
+            createFoodItem('protein', 'Lean Beef (90/10)', 1),
+            createFoodItem('carbohydrate', 'Sweet Potato', 1),
+            createFoodItem('vegetables', 'Green Beans', 1),
+            createFoodItem('fat', 'Avocado', 0.5)
+          ]
+        }
+      }
+    },
+    6: {
+      title: "6 Meals (Athlete)",
+      description: "High performance meal timing",
+      icon: "🏃‍♂️",
+      meals: {
+        breakfast: {
+          time: "6:30 AM",
+          items: [
+            createFoodItem('carbohydrate', 'Oats (dry)', 0.75),
+            createFoodItem('fruits', 'Banana', 1),
+            createFoodItem('protein', 'Whey Protein (generic)', 1)
+          ]
+        },
+        firstSnack: {
+          time: "9:30 AM",
+          items: [
+            createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5),
+            createFoodItem('fruits', 'Strawberries', 0.5)
+          ]
+        },
+        lunch: {
+          time: "12:00 PM",
+          items: [
+            createFoodItem('protein', 'Chicken Breast', 1.25),
+            createFoodItem('carbohydrate', 'Brown Rice (cooked)', 1.5),
+            createFoodItem('vegetables', 'Bell Peppers', 1)
+          ]
+        },
+        midAfternoon: {
+          time: "3:00 PM",
+          items: [
+            createFoodItem('fat', 'Almonds', 0.5),
+            createFoodItem('fruits', 'Apple', 1)
+          ]
+        },
+        postWorkout: {
+          time: "5:30 PM",
+          items: [
+            createFoodItem('protein', 'Whey Protein (generic)', 1),
+            createFoodItem('fruits', 'Banana', 1)
+          ]
+        },
+        dinner: {
+          time: "7:30 PM",
+          items: [
+            createFoodItem('protein', 'Salmon', 1.25),
+            createFoodItem('carbohydrate', 'Quinoa (cooked)', 1),
+            createFoodItem('vegetables', 'Broccoli', 1),
+            createFoodItem('fat', 'Olive Oil', 0.5)
+          ]
+        }
+      }
+    }
+  };
+
+  const handleSelectPlan = (planType) => {
+    setSelectedPlan(planType);
+  };
+
+  const handleConfirmPlan = () => {
+    if (selectedPlan && mealPlans[selectedPlan]) {
+      const plan = mealPlans[selectedPlan];
+
+      // Create the plan structure expected by the parent component
+      const weekPlanData = {
+        meals: plan.meals,
+        fruitCount: 2 // Estimated fruit servings
+      };
+
+      onAddWeekPlan(weekPlanData);
+      onClose();
+      setSelectedPlan(null);
+    }
+  };
+
+  const targetCalories = calorieData?.targetCalories || 2200;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <span>📅</span>
+            Plan My Week - Meal Structure
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {userProfile.firstName && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2">
+              Hey {userProfile.firstName}! 👋
+            </h4>
+            <p className="text-blue-700 text-sm">
+              Choose a meal structure that fits your lifestyle. Your target is {targetCalories} calories per day.
+              {userProfile.goal && ` Goal: ${userProfile.goal.replace('-', ' ')}.`}
+            </p>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Object.entries(mealPlans).map(([planType, plan]) => (
+              <div
+                key={planType}
+                onClick={() => handleSelectPlan(planType)}
+                className={`cursor-pointer rounded-lg border-2 transition-all duration-300 transform hover:scale-105 p-6 ${selectedPlan === planType
+                    ? 'border-blue-500 bg-blue-50 shadow-lg'
+                    : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                  }`}
+              >
+                <div className="text-center">
+                  <div className="text-4xl mb-3">{plan.icon}</div>
+                  <h4 className="text-xl font-bold text-gray-800 mb-2">
+                    {plan.title}
+                  </h4>
+                  <p className="text-base text-gray-600 mb-4">
+                    {plan.description}
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-700">
+                      <Clock size={16} />
+                      <span>{Object.keys(plan.meals).length} meals per day</span>
+                    </div>
+
+                    {planType === '3' && (
+                      <div className="text-xs text-gray-500">
+                        Perfect for busy schedules
+                      </div>
+                    )}
+                    {planType === '5' && (
+                      <div className="text-xs text-gray-500">
+                        Great for weight management
+                      </div>
+                    )}
+                    {planType === '6' && (
+                      <div className="text-xs text-gray-500">
+                        Ideal for athletes & muscle gain
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedPlan === planType && (
+                    <div className="mt-4 p-3 bg-white rounded-md border">
+                      <h5 className="font-semibold text-blue-800 mb-2 text-sm">Sample Meals:</h5>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        {Object.entries(plan.meals).map(([mealType, meal]) => (
+                          <div key={mealType} className="flex justify-between">
+                            <span className="capitalize">{mealType === 'firstSnack' ? 'Morning Snack' : mealType === 'midAfternoon' ? 'Afternoon Snack' : mealType === 'postWorkout' ? 'Post-Workout' : mealType}:</span>
+                            <span>{meal.time}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedPlan && (
+            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="font-bold text-green-800 mb-2 flex items-center gap-2">
+                <Target size={18} />
+                Ready to Start!
+              </h4>
+              <p className="text-green-700 text-sm mb-3">
+                This will replace your current meal plan with the {mealPlans[selectedPlan].title} structure.
+                You can always customize individual meals afterward.
+              </p>
+              <div className="text-xs text-green-600">
+                💡 Tip: These are starter templates - adjust portions and foods based on your preferences and goals!
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 pt-4 border-t flex gap-3">
+          <button
+            onClick={onClose}
+            className="py-2 px-6 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmPlan}
+            disabled={!selectedPlan}
+            className={`py-2 px-6 rounded-md font-medium transition-colors ${selectedPlan
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+          >
+            Apply Plan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const WeeklyPlan = () => {
   // ========================
@@ -32,9 +335,14 @@ const WeeklyPlan = () => {
   });
 
   // ========================
+  // WEEK PLAN MODAL STATE
+  // ========================
+  const [isWeekPlanModalOpen, setIsWeekPlanModalOpen] = useState(false);
+
+  // ========================
   // ALL MEAL STATES
   // ========================
-  
+
   // Breakfast State
   const [breakfastTime, setBreakfastTime] = useState('7:00 AM');
   const [breakfastItems, setBreakfastItems] = useState([
@@ -94,10 +402,10 @@ const WeeklyPlan = () => {
   // ========================
   // CALCULATIONS
   // ========================
-  
+
   // Calculate TDEE data
   const calorieData = calculateTDEE(userProfile);
-  
+
   // Calculate totals for each meal
   const breakfastTotals = calculateTotals(breakfastItems);
   const firstSnackTotals = calculateTotals(firstSnackItems);
@@ -130,21 +438,21 @@ const WeeklyPlan = () => {
 
   // Calculate combined daily totals
   const dailyTotals = {
-    protein: breakfastTotals.protein + firstSnackTotals.protein + secondSnackTotals.protein + 
-             lunchTotals.protein + midAfternoonTotals.protein + dinnerTotals.protein + 
-             lateSnackTotals.protein + postWorkoutTotals.protein,
-    carbs: breakfastTotals.carbs + firstSnackTotals.carbs + secondSnackTotals.carbs + 
-           lunchTotals.carbs + midAfternoonTotals.carbs + dinnerTotals.carbs + 
-           lateSnackTotals.carbs + postWorkoutTotals.carbs,
-    fat: breakfastTotals.fat + firstSnackTotals.fat + secondSnackTotals.fat + 
-         lunchTotals.fat + midAfternoonTotals.fat + dinnerTotals.fat + 
-         lateSnackTotals.fat + postWorkoutTotals.fat,
-    sugar: breakfastTotals.sugar + firstSnackTotals.sugar + secondSnackTotals.sugar + 
-           lunchTotals.sugar + midAfternoonTotals.sugar + dinnerTotals.sugar + 
-           lateSnackTotals.sugar + postWorkoutTotals.sugar,
-    calories: breakfastTotals.calories + firstSnackTotals.calories + secondSnackTotals.calories + 
-              lunchTotals.calories + midAfternoonTotals.calories + dinnerTotals.calories + 
-              lateSnackTotals.calories + postWorkoutTotals.calories
+    protein: breakfastTotals.protein + firstSnackTotals.protein + secondSnackTotals.protein +
+      lunchTotals.protein + midAfternoonTotals.protein + dinnerTotals.protein +
+      lateSnackTotals.protein + postWorkoutTotals.protein,
+    carbs: breakfastTotals.carbs + firstSnackTotals.carbs + secondSnackTotals.carbs +
+      lunchTotals.carbs + midAfternoonTotals.carbs + dinnerTotals.carbs +
+      lateSnackTotals.carbs + postWorkoutTotals.carbs,
+    fat: breakfastTotals.fat + firstSnackTotals.fat + secondSnackTotals.fat +
+      lunchTotals.fat + midAfternoonTotals.fat + dinnerTotals.fat +
+      lateSnackTotals.fat + postWorkoutTotals.fat,
+    sugar: breakfastTotals.sugar + firstSnackTotals.sugar + secondSnackTotals.sugar +
+      lunchTotals.sugar + midAfternoonTotals.sugar + dinnerTotals.sugar +
+      lateSnackTotals.sugar + postWorkoutTotals.sugar,
+    calories: breakfastTotals.calories + firstSnackTotals.calories + secondSnackTotals.calories +
+      lunchTotals.calories + midAfternoonTotals.calories + dinnerTotals.calories +
+      lateSnackTotals.calories + postWorkoutTotals.calories
   };
 
   const dailyPieData = preparePieData(dailyTotals);
@@ -159,7 +467,7 @@ const WeeklyPlan = () => {
 
   // Universal meal management functions
   const getMealState = (mealType) => {
-    switch(mealType) {
+    switch (mealType) {
       case 'breakfast': return { items: breakfastItems, setItems: setBreakfastItems };
       case 'firstSnack': return { items: firstSnackItems, setItems: setFirstSnackItems };
       case 'secondSnack': return { items: secondSnackItems, setItems: setSecondSnackItems };
@@ -168,17 +476,17 @@ const WeeklyPlan = () => {
       case 'dinner': return { items: dinnerItems, setItems: setDinnerItems };
       case 'lateSnack': return { items: lateSnackItems, setItems: setLateSnackItems };
       case 'postWorkout': return { items: postWorkoutItems, setItems: setPostWorkoutItems };
-      default: return { items: [], setItems: () => {} };
+      default: return { items: [], setItems: () => { } };
     }
   };
 
   const addFoodItem = (mealType) => {
     const { items, setItems } = getMealState(mealType);
     const maxItems = ['breakfast', 'lunch', 'dinner'].includes(mealType) ? 4 : 2;
-    
+
     if (items.length < maxItems) {
       const newId = Math.max(...items.map(item => item.id)) + 1;
-      setItems([...items, { 
+      setItems([...items, {
         id: newId, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings'
       }]);
     }
@@ -193,8 +501,8 @@ const WeeklyPlan = () => {
 
   const updateFoodItem = (mealType, id, field, value) => {
     const { items, setItems } = getMealState(mealType);
-    setItems(items.map(item => 
-      item.id === id 
+    setItems(items.map(item =>
+      item.id === id
         ? { ...item, [field]: value, ...(field === 'category' ? { food: '' } : {}) }
         : item
     ));
@@ -217,7 +525,7 @@ const WeeklyPlan = () => {
   const applyCustomServing = () => {
     if (modalFoodItem && modalMealType) {
       let finalServing = customServing.amount;
-      
+
       // Convert different units to serving multiplier
       if (customServing.unit === 'grams' && modalFoodItem.category && modalFoodItem.food) {
         const baseGrams = servingSizeConversions[modalFoodItem.category]?.[modalFoodItem.food]?.grams || 100;
@@ -231,26 +539,68 @@ const WeeklyPlan = () => {
       }
 
       const { items, setItems } = getMealState(modalMealType);
-      const updatedItems = items.map(item => 
-        item.id === modalFoodItem.id 
-          ? { 
-              ...item, 
-              serving: finalServing,
-              displayServing: customServing.amount.toString(),
-              displayUnit: customServing.unit
-            }
+      const updatedItems = items.map(item =>
+        item.id === modalFoodItem.id
+          ? {
+            ...item,
+            serving: finalServing,
+            displayServing: customServing.amount.toString(),
+            displayUnit: customServing.unit
+          }
           : item
       );
-      
+
       setItems(updatedItems);
       closeServingModal();
     }
   };
 
+  // Week Plan Functions
+  const handleAddWeekPlan = (weekPlan) => {
+    const meals = weekPlan.meals;
+
+    // Update meal states based on what's provided in the plan
+    if (meals.breakfast) {
+      setBreakfastTime(meals.breakfast.time);
+      setBreakfastItems(meals.breakfast.items);
+    }
+    if (meals.firstSnack) {
+      setFirstSnackTime(meals.firstSnack.time);
+      setFirstSnackItems(meals.firstSnack.items);
+    }
+    if (meals.secondSnack) {
+      setSecondSnackTime(meals.secondSnack.time);
+      setSecondSnackItems(meals.secondSnack.items);
+    }
+    if (meals.lunch) {
+      setLunchTime(meals.lunch.time);
+      setLunchItems(meals.lunch.items);
+    }
+    if (meals.midAfternoon) {
+      setMidAfternoonTime(meals.midAfternoon.time);
+      setMidAfternoonItems(meals.midAfternoon.items);
+    }
+    if (meals.dinner) {
+      setDinnerTime(meals.dinner.time);
+      setDinnerItems(meals.dinner.items);
+    }
+    if (meals.lateSnack) {
+      setLateSnackTime(meals.lateSnack.time);
+      setLateSnackItems(meals.lateSnack.items);
+    }
+    if (meals.postWorkout) {
+      setPostWorkoutTime(meals.postWorkout.time);
+      setPostWorkoutItems(meals.postWorkout.items);
+    }
+
+    // Close modal
+    setIsWeekPlanModalOpen(false);
+  };
+
   // ========================
   // PREVIOUS MEALS DATA FOR MESSAGING
   // ========================
-  
+
   const getPreviousMeals = (currentMealType) => {
     const allMeals = {
       breakfast: { time: breakfastTime, totals: breakfastTotals, items: breakfastItems, pieData: breakfastPieData },
@@ -270,43 +620,43 @@ const WeeklyPlan = () => {
 
   // Create timeline data for the bar chart
   const timelineData = [
-    { 
-      name: `Breakfast\n${breakfastTime}`, 
+    {
+      name: `Breakfast\n${breakfastTime}`,
       calories: Math.round(breakfastTotals.calories),
       sugar: Math.round(breakfastTotals.sugar) * 10
     },
-    { 
-      name: `Snack 1\n${firstSnackTime}`, 
+    {
+      name: `Snack 1\n${firstSnackTime}`,
       calories: Math.round(firstSnackTotals.calories),
       sugar: Math.round(firstSnackTotals.sugar) * 10
     },
-    { 
-      name: `Snack 2\n${secondSnackTime}`, 
+    {
+      name: `Snack 2\n${secondSnackTime}`,
       calories: Math.round(secondSnackTotals.calories),
       sugar: Math.round(secondSnackTotals.sugar) * 10
     },
-    { 
-      name: `Lunch\n${lunchTime}`, 
+    {
+      name: `Lunch\n${lunchTime}`,
       calories: Math.round(lunchTotals.calories),
       sugar: Math.round(lunchTotals.sugar) * 10
     },
-    { 
-      name: `Mid-Aft\n${midAfternoonTime}`, 
+    {
+      name: `Mid-Aft\n${midAfternoonTime}`,
       calories: Math.round(midAfternoonTotals.calories),
       sugar: Math.round(midAfternoonTotals.sugar) * 10
     },
-    { 
-      name: `Dinner\n${dinnerTime}`, 
+    {
+      name: `Dinner\n${dinnerTime}`,
       calories: Math.round(dinnerTotals.calories),
       sugar: Math.round(dinnerTotals.sugar) * 10
     },
-    { 
-      name: `Late Snack\n${lateSnackTime}`, 
+    {
+      name: `Late Snack\n${lateSnackTime}`,
       calories: Math.round(lateSnackTotals.calories),
       sugar: Math.round(lateSnackTotals.sugar) * 10
     },
-    { 
-      name: `Post-WO\n${postWorkoutTime}`, 
+    {
+      name: `Post-WO\n${postWorkoutTime}`,
       calories: Math.round(postWorkoutTotals.calories),
       sugar: Math.round(postWorkoutTotals.sugar) * 10
     }
@@ -317,7 +667,7 @@ const WeeklyPlan = () => {
       {/* User Profile Section */}
       <div className="mb-8 p-6 bg-gray-50 rounded-lg border">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Your Profile & Goals</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Personal Info */}
           <div className="space-y-4">
@@ -338,7 +688,7 @@ const WeeklyPlan = () => {
                 className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
-            
+
             <div className="grid grid-cols-3 gap-2">
               <select
                 value={userProfile.heightFeet}
@@ -368,7 +718,7 @@ const WeeklyPlan = () => {
                 className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
-            
+
             <select
               value={userProfile.exerciseLevel}
               onChange={(e) => updateUserProfile('exerciseLevel', e.target.value)}
@@ -382,7 +732,7 @@ const WeeklyPlan = () => {
               <option value="very-active">Very Active (2x/day, intense)</option>
             </select>
           </div>
-          
+
           {/* Goal Selection */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-700">Your Goal</h3>
@@ -396,18 +746,26 @@ const WeeklyPlan = () => {
                 <button
                   key={goal.value}
                   onClick={() => updateUserProfile('goal', goal.value)}
-                  className={`p-3 text-sm font-medium rounded-md border-2 transition-colors ${
-                    userProfile.goal === goal.value
+                  className={`p-3 text-sm font-medium rounded-md border-2 transition-colors ${userProfile.goal === goal.value
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
                       : `border-gray-200 ${goal.color} text-gray-700`
-                  }`}
+                    }`}
                 >
                   {goal.label}
                 </button>
               ))}
             </div>
+
+            {/* Plan My Week Button */}
+            <button
+              onClick={() => setIsWeekPlanModalOpen(true)}
+              className="w-full py-3 px-6 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-md hover:opacity-90 transition-all duration-300 transform hover:scale-105 font-medium flex items-center justify-center gap-2 shadow-lg"
+            >
+              <span>📅</span>
+              Plan My Week
+            </button>
           </div>
-          
+
           {/* TDEE Results */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-700">Your Numbers</h3>
@@ -592,12 +950,12 @@ const WeeklyPlan = () => {
       {/* Daily Summary Section */}
       <div className="mt-12 p-6 bg-purple-50 rounded-lg border-2 border-purple-200">
         <h2 className="text-3xl font-bold text-purple-800 mb-6 text-center">📈 Daily Totals</h2>
-        
+
         <div className="text-center mb-6">
           <div className="text-lg font-bold text-purple-600">
             Daily Totals: Protein {dailyPieData[0]?.percentage || 0}% • Carbs {dailyPieData[1]?.percentage || 0}% • Fat {dailyPieData[2]?.percentage || 0}%
           </div>
-          
+
           {/* Highlighted Calorie Total Box */}
           <div className="mt-4 mx-auto max-w-md">
             <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg p-4 shadow-lg transform hover:scale-105 transition-transform duration-200">
@@ -606,7 +964,7 @@ const WeeklyPlan = () => {
                 <div className="text-4xl font-bold mt-1">{Math.round(dailyTotals.calories)}</div>
                 {calorieData && (
                   <div className="text-sm opacity-90 mt-2">
-                    Target: {calorieData.targetCalories} cal • 
+                    Target: {calorieData.targetCalories} cal •
                     {(() => {
                       const progress = getCalorieProgressMessage(dailyTotals, calorieData);
                       return progress ? (
@@ -645,7 +1003,7 @@ const WeeklyPlan = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value, name, props) => [
                       `${value}g (${props.payload.percentage}%)`,
                       name
@@ -692,20 +1050,20 @@ const WeeklyPlan = () => {
           <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Daily Timeline: Calories vs Sugar by Meal</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
+              <BarChart
                 data={timelineData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
+                <XAxis
+                  dataKey="name"
                   tick={{ fontSize: 10 }}
                   interval={0}
                 />
-                <YAxis 
+                <YAxis
                   label={{ value: 'Calories', angle: -90, position: 'insideLeft' }}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value, name) => {
                     if (name === 'sugar') {
                       return [`${Math.round(value / 10)}g (scaled x10 for visibility)`, 'Sugar'];
@@ -713,14 +1071,14 @@ const WeeklyPlan = () => {
                     return [value, name === 'calories' ? 'Calories' : name];
                   }}
                 />
-                <Bar 
-                  dataKey="calories" 
-                  fill="#8B5CF6" 
+                <Bar
+                  dataKey="calories"
+                  fill="#8B5CF6"
                   name="calories"
                 />
-                <Bar 
-                  dataKey="sugar" 
-                  fill="#EF4444" 
+                <Bar
+                  dataKey="sugar"
+                  fill="#EF4444"
                   name="sugar"
                 />
               </BarChart>
@@ -744,6 +1102,15 @@ const WeeklyPlan = () => {
         </div>
       </div>
 
+      {/* Week Plan Modal */}
+      <WeekPlanModal
+        isOpen={isWeekPlanModalOpen}
+        onClose={() => setIsWeekPlanModalOpen(false)}
+        onAddWeekPlan={handleAddWeekPlan}
+        userProfile={userProfile}
+        calorieData={calorieData}
+      />
+
       {/* Serving Size Modal */}
       {showServingModal && modalFoodItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -759,7 +1126,7 @@ const WeeklyPlan = () => {
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -774,7 +1141,7 @@ const WeeklyPlan = () => {
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Unit
