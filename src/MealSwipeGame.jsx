@@ -423,10 +423,146 @@ const MealSwipeGame = ({
   };
 
   if (gameCards.length === 0) {
+    // Create fun demo game with strategic macro profiles
+    const demoCards = [
+      {
+        id: 'demo-balance-1',
+        mealType: 'breakfast',
+        time: '8:00 AM',
+        totals: {
+          calories: 420,
+          protein: 42, // 40% of calories
+          carbs: 42,   // 40% of calories  
+          fat: 9,      // 20% of calories
+          sugar: 12,
+          cholesterol: 75,
+          glycemicIndex: 35
+        },
+        pieData: [
+          { name: 'Protein', value: 42, percentage: 40, color: '#3B82F6' },
+          { name: 'Carbs', value: 42, percentage: 40, color: '#10B981' },
+          { name: 'Fat', value: 9, percentage: 20, color: '#F59E0B' }
+        ],
+        items: ['Grilled chicken breast', 'Sweet potato', 'Mixed greens'],
+        isRealMeal: false,
+        demoName: "Grilled Chicken & Sweet Potato Power Bowl"
+      },
+      {
+        id: 'demo-fatburn-1',
+        mealType: 'lunch',
+        time: '12:30 PM',
+        totals: {
+          calories: 350,
+          protein: 53, // 60% of calories
+          carbs: 18,   // 20% of calories
+          fat: 8,      // 20% of calories
+          sugar: 6,
+          cholesterol: 65,
+          glycemicIndex: 25
+        },
+        pieData: [
+          { name: 'Protein', value: 53, percentage: 60, color: '#3B82F6' },
+          { name: 'Carbs', value: 18, percentage: 20, color: '#10B981' },
+          { name: 'Fat', value: 8, percentage: 20, color: '#F59E0B' }
+        ],
+        items: ['Lean ground turkey', 'Asparagus', 'Bell peppers'],
+        isRealMeal: false,
+        demoName: "Lean Turkey & Veggie Stack"
+      },
+      {
+        id: 'demo-balance-2',
+        mealType: 'dinner',
+        time: '6:00 PM',
+        totals: {
+          calories: 400,
+          protein: 40, // 40% of calories
+          carbs: 40,   // 40% of calories
+          fat: 9,      // 20% of calories
+          sugar: 8,
+          cholesterol: 45,
+          glycemicIndex: 30
+        },
+        pieData: [
+          { name: 'Protein', value: 40, percentage: 40, color: '#3B82F6' },
+          { name: 'Carbs', value: 40, percentage: 40, color: '#10B981' },
+          { name: 'Fat', value: 9, percentage: 20, color: '#F59E0B' }
+        ],
+        items: ['Wild salmon fillet', 'Quinoa', 'Roasted vegetables'],
+        isRealMeal: false,
+        demoName: "Wild Salmon & Quinoa Perfection"
+      },
+      {
+        id: 'demo-keto-1',
+        mealType: 'firstSnack',
+        time: '10:00 AM',
+        totals: {
+          calories: 580,
+          protein: 38, // 25% of calories
+          carbs: 8,    // 5% of calories
+          fat: 48,     // 70% of calories
+          sugar: 3,
+          cholesterol: 420, // HIGH for warning!
+          glycemicIndex: 15
+        },
+        pieData: [
+          { name: 'Protein', value: 38, percentage: 25, color: '#3B82F6' },
+          { name: 'Carbs', value: 8, percentage: 5, color: '#10B981' },
+          { name: 'Fat', value: 48, percentage: 70, color: '#F59E0B' }
+        ],
+        items: ['Thick-cut bacon', 'Aged cheddar', 'Avocado'],
+        isRealMeal: false,
+        demoName: "Bacon & Cheese Keto Bomb"
+      },
+      {
+        id: 'demo-holiday-1',
+        mealType: 'lateSnack',
+        time: '8:30 PM',
+        totals: {
+          calories: 750,
+          protein: 18, // 10% of calories
+          carbs: 125,  // 65% of calories
+          fat: 22,     // 25% of calories
+          sugar: 89,   // SUGAR BOMB!
+          cholesterol: 95,
+          glycemicIndex: 85 // HIGH GI!
+        },
+        pieData: [
+          { name: 'Protein', value: 18, percentage: 10, color: '#3B82F6' },
+          { name: 'Carbs', value: 125, percentage: 65, color: '#10B981' },
+          { name: 'Fat', value: 22, percentage: 25, color: '#F59E0B' }
+        ],
+        items: ['Christmas cookies', 'Vanilla ice cream', 'Chocolate sauce'],
+        isRealMeal: false,
+        demoName: "Christmas Cookie Milkshake Madness"
+      }
+    ];
+
     return (
       <div className="max-w-md mx-auto bg-gradient-to-br from-green-800 via-green-900 to-green-800 rounded-xl shadow-lg p-6 text-center">
-        <h2 className="text-xl font-bold text-white mb-4">🍽️ No Meals to Rate!</h2>
-        <p className="text-green-200 mb-4">Add meals first, then you can rate them and see your calorie burn in action!</p>
+        <h2 className="text-xl font-bold text-white mb-2">🎮 Try Our Demo Game!</h2>
+        <p className="text-green-200 mb-4">No meals yet? No problem! Test your macro vision with our strategic nutrition challenges!</p>
+        <div className="text-xs text-green-300 mb-4">
+          • 40-40-20 Balance Masters<br/>
+          • 60-20-20 Fat Burning Beast<br/>
+          • Keto Cholesterol Challenge<br/>
+          • Holiday Sugar Bomb Alert
+        </div>
+        <button
+          onClick={() => {
+            setGameCards(demoCards);
+            setCurrentCardIndex(0);
+            setSwipeResults([]);
+            setGameComplete(false);
+            setShowingReaction(false);
+            setOverallGrade('Demo');
+          }}
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+        >
+          🔥 Start Demo Dating Game
+        </button>
+        <div className="text-xs text-green-400 mt-3">
+          Perfect for learning macro ratios before tracking real meals!
+        </div>
       </div>
     );
   }
@@ -440,8 +576,12 @@ const MealSwipeGame = ({
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex flex-col items-center justify-center p-4">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white mb-2">Your Dating Hand: {correctCount}/{gameCards.length}</h2>
-          <div className="text-xl text-green-200">Nutrition Dating Score: {finalScore}%</div>
+          <h2 className="text-3xl font-bold text-white mb-2">
+            {gameCards[0]?.demoName ? 'Demo Dating Results!' : 'Your Dating Hand:'} {correctCount}/{gameCards.length}
+          </h2>
+          <div className="text-xl text-green-200">
+            {gameCards[0]?.demoName ? 'Demo' : 'Nutrition Dating'} Score: {finalScore}%
+          </div>
         </div>
 
         <div className="bg-green-700 rounded-3xl p-6 mb-6 shadow-2xl border-4 border-green-600">
@@ -454,7 +594,7 @@ const MealSwipeGame = ({
                   <div key={index} className="bg-white rounded-lg shadow-lg border-2 border-gray-300 p-2 w-20 h-28 flex flex-col">
                     <div className="text-lg text-center">❤️</div>
                     <div className="text-xs font-bold text-center text-gray-800 leading-tight mb-1">
-                      {getMealTypeDisplayName(card.mealType)}
+                      {card.demoName ? card.demoName.split(' ').slice(0, 2).join(' ') : getMealTypeDisplayName(card.mealType)}
                     </div>
                     <div className="text-xs text-center text-gray-600 mb-1">
                       {Math.round(card.totals.calories)} cal
@@ -482,22 +622,48 @@ const MealSwipeGame = ({
         </div>
 
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 max-w-lg text-center shadow-xl">
-          <h3 className="text-lg font-bold text-gray-800 mb-3">Dating Coach Final Verdict:</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-3">
+            {gameCards[0]?.demoName ? 'Demo Coach Analysis:' : 'Dating Coach Final Verdict:'}
+          </h3>
           <p className="text-gray-700 text-sm leading-relaxed mb-4">
-            {finalScore >= 80 ? `🏆 DATING LEGEND! ${userProfile.firstName}, you've got excellent nutrition taste! You know quality metabolism fuel when you see it!` :
-             finalScore >= 60 ? `💪 SOLID INSTINCTS! ${userProfile.firstName}, you're learning to spot good nutrition dates!` :
-             finalScore >= 40 ? `🤔 RISKY CHOICES! ${userProfile.firstName}, your nutrition dating game needs work!` :
-             `😅 DISASTER ZONE! ${userProfile.firstName}, you got rejected by your own meals! Time to learn what quality looks like!`}
+            {gameCards[0]?.demoName ? 
+              // Demo-specific feedback
+              (finalScore >= 80 ? `🏆 MACRO MASTER! You crushed our strategic challenges! You've got the vision to spot 40-40-20 balance, fat-burning ratios, and avoid sugar/cholesterol bombs! Ready for real meal tracking!` :
+               finalScore >= 60 ? `💪 SOLID INSTINCTS! You're learning the macro game! You spotted some quality ratios but maybe got tricked by our keto cholesterol bomb or holiday sugar trap. Practice makes perfect!` :
+               finalScore >= 40 ? `🤔 LEARNING MODE! Our demo challenges revealed some gaps in your macro knowledge. Focus on 40-40-20 balance, watch for sugar bombs over 25g, and cholesterol over 300mg!` :
+               `😅 TRAINING NEEDED! Don't worry - our demo challenges are designed to teach! The 40-40-20 "sweetheart" ratios are your friends, and anything with 70+ sugar or 300+ cholesterol is a dating disaster!`) :
+              // Original real meal feedback
+              (finalScore >= 80 ? `🏆 DATING LEGEND! ${userProfile.firstName}, you've got excellent nutrition taste! You know quality metabolism fuel when you see it!` :
+               finalScore >= 60 ? `💪 SOLID INSTINCTS! ${userProfile.firstName}, you're learning to spot good nutrition dates!` :
+               finalScore >= 40 ? `🤔 RISKY CHOICES! ${userProfile.firstName}, your nutrition dating game needs work!` :
+               `😅 DISASTER ZONE! ${userProfile.firstName}, you got rejected by your own meals! Time to learn what quality looks like!`)
+            }
           </p>
           
           {!isIntegrated && (
-            <button
-              onClick={resetGame}
-              className="bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
-            >
-              <RotateCcw size={18} />
-              Date Again
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={resetGame}
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                <RotateCcw size={16} />
+                {gameCards[0]?.demoName ? 'Try Again' : 'Date Again'}
+              </button>
+              {gameCards[0]?.demoName && (
+                <button
+                  onClick={() => {
+                    setGameCards([]);
+                    setCurrentCardIndex(0);
+                    setSwipeResults([]);
+                    setGameComplete(false);
+                    setShowingReaction(false);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-sm"
+                >
+                  🍽️ Track Real Meals
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -518,13 +684,18 @@ const MealSwipeGame = ({
             onClick={handleNextCard}
           >
             <div className="bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl p-3 mb-6 text-center border border-gray-200">
-              <h3 className="text-sm font-medium text-gray-600 mb-1">{getMealTypeDisplayName(currentCard.mealType)}</h3>
+              <h3 className="text-sm font-medium text-gray-600 mb-1">
+                {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
+              </h3>
               <div className="flex justify-center gap-4 text-xs text-gray-500 mb-2">
                 <span>Cal: {Math.round(currentCard.totals.calories)}</span>
                 <span>P: {Math.round(currentCard.totals.protein)}g</span>
                 <span>C: {Math.round(currentCard.totals.carbs)}g</span>
                 <span>F: {Math.round(currentCard.totals.fat)}g</span>
               </div>
+              {currentCard.demoName && (
+                <div className="text-xs text-purple-600 font-medium">DEMO CHALLENGE</div>
+              )}
             </div>
 
             {/* Warnings */}
@@ -638,9 +809,12 @@ const MealSwipeGame = ({
           {/* Meal content */}
           <div className="text-center pt-16 pb-20 pointer-events-none">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {getMealTypeDisplayName(currentCard.mealType)}
+              {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
             </h2>
-            <div className="text-sm text-gray-600 mb-6">⏰ {currentCard.time}</div>
+            <div className="text-sm text-gray-600 mb-6">
+              ⏰ {currentCard.time}
+              {currentCard.demoName && <span className="ml-2 text-purple-600 font-medium">• DEMO</span>}
+            </div>
             
             {/* Nutrition Display */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 mb-6 border border-gray-200">
