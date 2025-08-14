@@ -1,6 +1,6 @@
-// WeeklyPlan.js - Main Component with Week Plan Modal Integration
+// WeeklyPlan.js - Main Component with Goal-Based Week Plan Modal
 import React, { useState } from 'react';
-import { X, Scale, Coffee, Hand, Users, Clock, Target } from 'lucide-react';
+import { X, Scale, Coffee, Hand, Users, Clock, Target, CheckCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 // Import our modular components
@@ -17,9 +17,10 @@ import {
 import { MealMessages } from './MealMessages.js';
 import MealTracker from './MealTracker.js';
 
-// Week Plan Modal Component
+// Goal-Based Week Plan Modal Component
 const WeekPlanModal = ({ isOpen, onClose, onAddWeekPlan, userProfile, calorieData, isMobile = false }) => {
-  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedEatingStyle, setSelectedEatingStyle] = useState(null);
+  const [selectedMealFrequency, setSelectedMealFrequency] = useState(null);
 
   if (!isOpen) return null;
 
@@ -34,158 +35,283 @@ const WeekPlanModal = ({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
     displayUnit: 'servings'
   });
 
-  // Pre-defined meal plans
-  const mealPlans = {
-    3: {
-      title: "3 Meals (Classic)",
-      description: "Traditional breakfast, lunch, dinner",
-      icon: "🍽️",
-      meals: {
-        breakfast: {
-          time: "7:00 AM",
-          items: [
-            createFoodItem('carbohydrate', 'Oats (dry)', 0.5),
-            createFoodItem('fruits', 'Banana', 1),
-            createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5)
-          ]
-        },
-        lunch: {
-          time: "12:30 PM",
-          items: [
-            createFoodItem('protein', 'Chicken Breast', 1),
-            createFoodItem('carbohydrate', 'Brown Rice (cooked)', 1),
-            createFoodItem('vegetables', 'Broccoli', 1)
-          ]
-        },
-        dinner: {
-          time: "6:30 PM",
-          items: [
-            createFoodItem('protein', 'Salmon', 1),
-            createFoodItem('carbohydrate', 'Sweet Potato', 1),
-            createFoodItem('vegetables', 'Asparagus', 1),
-            createFoodItem('fat', 'Olive Oil', 0.5)
-          ]
-        }
-      }
-    },
-    5: {
-      title: "5 Meals (Balanced)",
-      description: "3 main meals + 2 healthy snacks",
-      icon: "⚖️",
-      meals: {
-        breakfast: {
-          time: "7:00 AM",
-          items: [
-            createFoodItem('carbohydrate', 'Oats (dry)', 0.5),
-            createFoodItem('fruits', 'Blueberries', 0.5),
-            createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5)
-          ]
-        },
-        firstSnack: {
-          time: "10:00 AM",
-          items: [
-            createFoodItem('fruits', 'Apple', 1),
-            createFoodItem('fat', 'Almonds', 0.5)
-          ]
-        },
-        lunch: {
-          time: "12:30 PM",
-          items: [
-            createFoodItem('protein', 'Turkey Breast', 1),
-            createFoodItem('carbohydrate', 'Quinoa (cooked)', 1),
-            createFoodItem('vegetables', 'Spinach', 1)
-          ]
-        },
-        midAfternoon: {
-          time: "3:30 PM",
-          items: [
-            createFoodItem('protein', 'String Cheese', 1),
-            createFoodItem('fruits', 'Grapes', 0.5)
-          ]
-        },
-        dinner: {
-          time: "6:30 PM",
-          items: [
-            createFoodItem('protein', 'Lean Beef (90/10)', 1),
-            createFoodItem('carbohydrate', 'Sweet Potato', 1),
-            createFoodItem('vegetables', 'Green Beans', 1),
-            createFoodItem('fat', 'Avocado', 0.5)
-          ]
-        }
-      }
-    },
-    6: {
-      title: "6 Meals (Athlete)",
-      description: "High performance meal timing",
-      icon: "🏃‍♂️",
-      meals: {
-        breakfast: {
-          time: "6:30 AM",
-          items: [
-            createFoodItem('carbohydrate', 'Oats (dry)', 0.75),
-            createFoodItem('fruits', 'Banana', 1),
-            createFoodItem('protein', 'Whey Protein (generic)', 1)
-          ]
-        },
-        firstSnack: {
-          time: "9:30 AM",
-          items: [
-            createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5),
-            createFoodItem('fruits', 'Strawberries', 0.5)
-          ]
-        },
-        lunch: {
-          time: "12:00 PM",
-          items: [
-            createFoodItem('protein', 'Chicken Breast', 1.25),
-            createFoodItem('carbohydrate', 'Brown Rice (cooked)', 1.5),
-            createFoodItem('vegetables', 'Bell Peppers', 1)
-          ]
-        },
-        midAfternoon: {
-          time: "3:00 PM",
-          items: [
-            createFoodItem('fat', 'Almonds', 0.5),
-            createFoodItem('fruits', 'Apple', 1)
-          ]
-        },
-        postWorkout: {
-          time: "5:30 PM",
-          items: [
-            createFoodItem('protein', 'Whey Protein (generic)', 1),
-            createFoodItem('fruits', 'Banana', 1)
-          ]
-        },
-        dinner: {
-          time: "7:30 PM",
-          items: [
-            createFoodItem('protein', 'Salmon', 1.25),
-            createFoodItem('carbohydrate', 'Quinoa (cooked)', 1),
-            createFoodItem('vegetables', 'Broccoli', 1),
-            createFoodItem('fat', 'Olive Oil', 0.5)
-          ]
-        }
-      }
-    }
+  // Check if profile is complete
+  const isProfileComplete = userProfile.firstName && userProfile.weight && userProfile.goal && userProfile.exerciseLevel;
+
+  // Calculate portion multiplier based on calorie target
+  const getPortionMultiplier = () => {
+    if (!calorieData?.targetCalories) return 1;
+
+    const baseCalories = 2200; // Reference point
+    return calorieData.targetCalories / baseCalories;
   };
 
-  const handleSelectPlan = (planType) => {
-    setSelectedPlan(planType);
+  const portionMultiplier = getPortionMultiplier();
+
+  // Predefined meal plans based on eating style and goals
+  const getMealPlan = (eatingStyle, mealFrequency, goal) => {
+    const plans = {
+      balanced: {
+        3: {
+          breakfast: {
+            time: "7:00 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Oats (dry)', 0.5 * portionMultiplier),
+              createFoodItem('fruits', 'Banana', 1 * portionMultiplier),
+              createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5 * portionMultiplier),
+              createFoodItem('fat', 'Almonds', 0.3 * portionMultiplier)
+            ]
+          },
+          lunch: {
+            time: "12:30 PM",
+            items: [
+              createFoodItem('protein', goal === 'lose' ? 'Chicken Breast' : 'Turkey Breast', 1 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Brown Rice (cooked)', 0.8 * portionMultiplier),
+              createFoodItem('vegetables', 'Broccoli', 1 * portionMultiplier),
+              createFoodItem('fat', 'Olive Oil', 0.5 * portionMultiplier)
+            ]
+          },
+          dinner: {
+            time: "6:30 PM",
+            items: [
+              createFoodItem('protein', 'Salmon', 1 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Sweet Potato', 0.8 * portionMultiplier),
+              createFoodItem('vegetables', 'Asparagus', 1 * portionMultiplier),
+              createFoodItem('vegetables', 'Spinach', 0.5 * portionMultiplier)
+            ]
+          }
+        },
+        5: {
+          breakfast: {
+            time: "7:00 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Oats (dry)', 0.4 * portionMultiplier),
+              createFoodItem('fruits', 'Blueberries', 0.5 * portionMultiplier),
+              createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5 * portionMultiplier)
+            ]
+          },
+          firstSnack: {
+            time: "10:00 AM",
+            items: [
+              createFoodItem('fruits', 'Apple', 1 * portionMultiplier),
+              createFoodItem('fat', goal === 'dirty-bulk' ? 'Peanut Butter' : 'Almonds', 0.5 * portionMultiplier)
+            ]
+          },
+          lunch: {
+            time: "12:30 PM",
+            items: [
+              createFoodItem('protein', 'Turkey Breast', 1 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Quinoa (cooked)', 0.8 * portionMultiplier),
+              createFoodItem('vegetables', 'Bell Peppers', 1 * portionMultiplier)
+            ]
+          },
+          midAfternoon: {
+            time: "3:30 PM",
+            items: [
+              createFoodItem('protein', 'String Cheese', 1 * portionMultiplier),
+              createFoodItem('fruits', 'Grapes', 0.5 * portionMultiplier)
+            ]
+          },
+          dinner: {
+            time: "6:30 PM",
+            items: [
+              createFoodItem('protein', goal === 'lose' ? 'Cod' : 'Lean Beef (90/10)', 1 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Sweet Potato', 0.6 * portionMultiplier),
+              createFoodItem('vegetables', 'Green Beans', 1 * portionMultiplier),
+              createFoodItem('fat', 'Avocado', 0.5 * portionMultiplier)
+            ]
+          }
+        },
+        6: {
+          breakfast: {
+            time: "6:30 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Oats (dry)', 0.4 * portionMultiplier),
+              createFoodItem('fruits', 'Banana', 0.8 * portionMultiplier),
+              createFoodItem('protein', 'Eggs (whole)', 1.5 * portionMultiplier)
+            ]
+          },
+          firstSnack: {
+            time: "9:30 AM",
+            items: [
+              createFoodItem('protein', 'Greek Yogurt (non-fat)', 0.5 * portionMultiplier),
+              createFoodItem('fruits', 'Strawberries', 0.5 * portionMultiplier)
+            ]
+          },
+          lunch: {
+            time: "12:00 PM",
+            items: [
+              createFoodItem('protein', 'Chicken Breast', 1.2 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Brown Rice (cooked)', 1 * portionMultiplier),
+              createFoodItem('vegetables', 'Broccoli', 1 * portionMultiplier)
+            ]
+          },
+          midAfternoon: {
+            time: "3:00 PM",
+            items: [
+              createFoodItem('fat', 'Almonds', 0.5 * portionMultiplier),
+              createFoodItem('fruits', 'Apple', 1 * portionMultiplier)
+            ]
+          },
+          postWorkout: {
+            time: "5:30 PM",
+            items: [
+              createFoodItem('protein', 'Whey Protein (generic)', 1 * portionMultiplier),
+              createFoodItem('fruits', 'Banana', 1 * portionMultiplier)
+            ]
+          },
+          dinner: {
+            time: "7:30 PM",
+            items: [
+              createFoodItem('protein', 'Salmon', 1.2 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Quinoa (cooked)', 0.8 * portionMultiplier),
+              createFoodItem('vegetables', 'Asparagus', 1 * portionMultiplier),
+              createFoodItem('fat', 'Olive Oil', 0.5 * portionMultiplier)
+            ]
+          }
+        }
+      },
+      performance: {
+        3: {
+          breakfast: {
+            time: "6:00 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Oats (dry)', 0.75 * portionMultiplier),
+              createFoodItem('fruits', 'Banana', 1.5 * portionMultiplier),
+              createFoodItem('protein', 'Whey Protein (generic)', 1 * portionMultiplier),
+              createFoodItem('fat', 'Peanut Butter', 0.5 * portionMultiplier)
+            ]
+          },
+          lunch: {
+            time: "12:00 PM",
+            items: [
+              createFoodItem('protein', 'Chicken Breast', 1.5 * portionMultiplier),
+              createFoodItem('carbohydrate', 'White Rice (cooked)', 1.2 * portionMultiplier),
+              createFoodItem('vegetables', 'Broccoli', 1 * portionMultiplier),
+              createFoodItem('fat', 'Olive Oil', 0.5 * portionMultiplier)
+            ]
+          },
+          dinner: {
+            time: "7:00 PM",
+            items: [
+              createFoodItem('protein', 'Lean Beef (90/10)', 1.5 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Sweet Potato', 1.2 * portionMultiplier),
+              createFoodItem('vegetables', 'Spinach', 1 * portionMultiplier),
+              createFoodItem('fat', 'Avocado', 0.8 * portionMultiplier)
+            ]
+          }
+        },
+        5: {
+          breakfast: {
+            time: "6:00 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Oats (dry)', 0.6 * portionMultiplier),
+              createFoodItem('fruits', 'Banana', 1 * portionMultiplier),
+              createFoodItem('protein', 'Whey Protein (generic)', 1 * portionMultiplier)
+            ]
+          },
+          firstSnack: {
+            time: "9:00 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Rice Cakes', 3 * portionMultiplier),
+              createFoodItem('fat', 'Peanut Butter', 0.5 * portionMultiplier)
+            ]
+          },
+          lunch: {
+            time: "12:00 PM",
+            items: [
+              createFoodItem('protein', 'Chicken Breast', 1.5 * portionMultiplier),
+              createFoodItem('carbohydrate', 'White Rice (cooked)', 1.2 * portionMultiplier),
+              createFoodItem('vegetables', 'Bell Peppers', 1 * portionMultiplier)
+            ]
+          },
+          midAfternoon: {
+            time: "3:00 PM",
+            items: [
+              createFoodItem('protein', 'Greek Yogurt (non-fat)', 1 * portionMultiplier),
+              createFoodItem('fruits', 'Strawberries', 0.8 * portionMultiplier)
+            ]
+          },
+          dinner: {
+            time: "6:30 PM",
+            items: [
+              createFoodItem('protein', 'Salmon', 1.5 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Sweet Potato', 1 * portionMultiplier),
+              createFoodItem('vegetables', 'Green Beans', 1 * portionMultiplier),
+              createFoodItem('fat', 'Olive Oil', 0.5 * portionMultiplier)
+            ]
+          }
+        },
+        6: {
+          breakfast: {
+            time: "5:30 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Oats (dry)', 0.6 * portionMultiplier),
+              createFoodItem('fruits', 'Banana', 1 * portionMultiplier),
+              createFoodItem('protein', 'Whey Protein (generic)', 1 * portionMultiplier)
+            ]
+          },
+          firstSnack: {
+            time: "8:30 AM",
+            items: [
+              createFoodItem('carbohydrate', 'Rice Cakes', 2 * portionMultiplier),
+              createFoodItem('fat', 'Almonds', 0.5 * portionMultiplier)
+            ]
+          },
+          lunch: {
+            time: "11:30 AM",
+            items: [
+              createFoodItem('protein', 'Chicken Breast', 1.5 * portionMultiplier),
+              createFoodItem('carbohydrate', 'White Rice (cooked)', 1.5 * portionMultiplier),
+              createFoodItem('vegetables', 'Broccoli', 1 * portionMultiplier)
+            ]
+          },
+          midAfternoon: {
+            time: "2:30 PM",
+            items: [
+              createFoodItem('protein', 'Greek Yogurt (non-fat)', 1 * portionMultiplier),
+              createFoodItem('fruits', 'Blueberries', 0.8 * portionMultiplier)
+            ]
+          },
+          postWorkout: {
+            time: "5:00 PM",
+            items: [
+              createFoodItem('protein', 'Whey Protein (generic)', 1.5 * portionMultiplier),
+              createFoodItem('fruits', 'Banana', 1.5 * portionMultiplier),
+              createFoodItem('carbohydrate', 'White Rice (cooked)', 0.8 * portionMultiplier)
+            ]
+          },
+          dinner: {
+            time: "7:30 PM",
+            items: [
+              createFoodItem('protein', 'Lean Beef (90/10)', 1.5 * portionMultiplier),
+              createFoodItem('carbohydrate', 'Sweet Potato', 1 * portionMultiplier),
+              createFoodItem('vegetables', 'Asparagus', 1 * portionMultiplier),
+              createFoodItem('fat', 'Avocado', 0.8 * portionMultiplier)
+            ]
+          }
+        }
+      }
+    };
+
+    return plans[eatingStyle]?.[mealFrequency] || {};
   };
 
-  const handleConfirmPlan = () => {
-    if (selectedPlan && mealPlans[selectedPlan]) {
-      const plan = mealPlans[selectedPlan];
+  const handleCreatePlan = () => {
+    if (!isProfileComplete) return;
 
-      // Create the plan structure expected by the parent component
+    if (selectedEatingStyle && selectedMealFrequency) {
+      const mealPlan = getMealPlan(selectedEatingStyle, selectedMealFrequency, userProfile.goal);
+
       const weekPlanData = {
-        meals: plan.meals,
+        meals: mealPlan,
         fruitCount: 2 // Estimated fruit servings
       };
 
       onAddWeekPlan(weekPlanData);
       onClose();
-      setSelectedPlan(null);
+      setSelectedEatingStyle(null);
+      setSelectedMealFrequency(null);
     }
   };
 
@@ -193,11 +319,11 @@ const WeekPlanModal = ({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
             <span>📅</span>
-            Plan My Week - Meal Structure
+            Plan My Week
           </h3>
           <button
             onClick={onClose}
@@ -207,96 +333,163 @@ const WeekPlanModal = ({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
           </button>
         </div>
 
-        {userProfile.firstName && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-800 mb-2">
-              Hey {userProfile.firstName}! 👋
-            </h4>
-            <p className="text-blue-700 text-sm">
-              Choose a meal structure that fits your lifestyle. Your target is {targetCalories} calories per day.
-              {userProfile.goal && ` Goal: ${userProfile.goal.replace('-', ' ')}.`}
-            </p>
-          </div>
-        )}
-
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {Object.entries(mealPlans).map(([planType, plan]) => (
+          {/* Your Goal from Profile */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+              <Target size={18} />
+              Your Goal from Profile
+            </h4>
+            {isProfileComplete ? (
+              <div className="text-blue-700">
+                <div className="font-medium capitalize mb-1">
+                  {userProfile.goal?.replace('-', ' ') || 'Not Set'}
+                </div>
+                <div className="text-sm">
+                  Target: {targetCalories} calories per day for {userProfile.firstName}
+                </div>
+              </div>
+            ) : (
+              <div className="text-orange-700 font-medium">
+                ⚠️ Complete your profile to get personalized meal plans
+              </div>
+            )}
+          </div>
+
+          {/* Step 1: Choose Eating Style */}
+          <div className="mb-6">
+            <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+              Choose Your Eating Style
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div
-                key={planType}
-                onClick={() => handleSelectPlan(planType)}
-                className={`cursor-pointer rounded-lg border-2 transition-all duration-300 transform hover:scale-105 p-6 ${selectedPlan === planType
-                    ? 'border-blue-500 bg-blue-50 shadow-lg'
-                    : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                onClick={() => setSelectedEatingStyle('balanced')}
+                className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${selectedEatingStyle === 'balanced'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
                   }`}
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-3">{plan.icon}</div>
-                  <h4 className="text-xl font-bold text-gray-800 mb-2">
-                    {plan.title}
-                  </h4>
-                  <p className="text-base text-gray-600 mb-4">
-                    {plan.description}
+                  <div className="text-3xl mb-2">⚖️</div>
+                  <h5 className="font-bold text-gray-800 mb-2">Balanced Eater</h5>
+                  <p className="text-sm text-gray-600">
+                    Wholesome, sustainable nutrition with variety and balance. Perfect for long-term health.
                   </p>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-700">
-                      <Clock size={16} />
-                      <span>{Object.keys(plan.meals).length} meals per day</span>
-                    </div>
-
-                    {planType === '3' && (
-                      <div className="text-xs text-gray-500">
-                        Perfect for busy schedules
-                      </div>
-                    )}
-                    {planType === '5' && (
-                      <div className="text-xs text-gray-500">
-                        Great for weight management
-                      </div>
-                    )}
-                    {planType === '6' && (
-                      <div className="text-xs text-gray-500">
-                        Ideal for athletes & muscle gain
-                      </div>
-                    )}
+                  <div className="mt-2 text-xs text-gray-500">
+                    Focus: Whole foods, moderate portions, sustainable habits
                   </div>
-
-                  {selectedPlan === planType && (
-                    <div className="mt-4 p-3 bg-white rounded-md border">
-                      <h5 className="font-semibold text-blue-800 mb-2 text-sm">Sample Meals:</h5>
-                      <div className="space-y-1 text-xs text-gray-600">
-                        {Object.entries(plan.meals).map(([mealType, meal]) => (
-                          <div key={mealType} className="flex justify-between">
-                            <span className="capitalize">{mealType === 'firstSnack' ? 'Morning Snack' : mealType === 'midAfternoon' ? 'Afternoon Snack' : mealType === 'postWorkout' ? 'Post-Workout' : mealType}:</span>
-                            <span>{meal.time}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
-            ))}
+
+              <div
+                onClick={() => setSelectedEatingStyle('performance')}
+                className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${selectedEatingStyle === 'performance'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                  }`}
+              >
+                <div className="text-center">
+                  <div className="text-3xl mb-2">🏃‍♂️</div>
+                  <h5 className="font-bold text-gray-800 mb-2">Performance Eater</h5>
+                  <p className="text-sm text-gray-600">
+                    Optimized nutrition for athletes and active individuals. Higher protein and strategic carbs.
+                  </p>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Focus: High protein, strategic carbs, performance optimization
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {selectedPlan && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          {/* Step 2: Choose Meal Frequency */}
+          <div className="mb-6">
+            <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
+              Choose Meal Frequency
+            </h4>
+            <div className="space-y-3">
+              <button
+                onClick={() => setSelectedMealFrequency(3)}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left ${selectedMealFrequency === 3
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                  }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-gray-800 flex items-center gap-2">
+                      <span>🍽️</span>
+                      3 Meals/Day
+                    </div>
+                    <div className="text-sm text-gray-600">Breakfast, Lunch, Dinner</div>
+                  </div>
+                  <div className="text-xs text-gray-500">Traditional</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setSelectedMealFrequency(5)}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left ${selectedMealFrequency === 5
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                  }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-gray-800 flex items-center gap-2">
+                      <span>🍎</span>
+                      5 Meals/Day
+                    </div>
+                    <div className="text-sm text-gray-600">Main meals + 2 snack meals</div>
+                  </div>
+                  <div className="text-xs text-gray-500">Balanced</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setSelectedMealFrequency(6)}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left ${selectedMealFrequency === 6
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                  }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-gray-800 flex items-center gap-2">
+                      <span>💪</span>
+                      6 Meals/Day
+                    </div>
+                    <div className="text-sm text-gray-600">Main meals + 2 snacks + post-workout meal</div>
+                  </div>
+                  <div className="text-xs text-gray-500">Performance</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Preview Section */}
+          {selectedEatingStyle && selectedMealFrequency && isProfileComplete && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <h4 className="font-bold text-green-800 mb-2 flex items-center gap-2">
-                <Target size={18} />
-                Ready to Start!
+                <CheckCircle size={18} />
+                Plan Preview
               </h4>
-              <p className="text-green-700 text-sm mb-3">
-                This will replace your current meal plan with the {mealPlans[selectedPlan].title} structure.
-                You can always customize individual meals afterward.
-              </p>
-              <div className="text-xs text-green-600">
-                💡 Tip: These are starter templates - adjust portions and foods based on your preferences and goals!
+              <div className="text-green-700 text-sm space-y-1">
+                <div>Style: <span className="font-medium capitalize">{selectedEatingStyle} Eater</span></div>
+                <div>Frequency: <span className="font-medium">{selectedMealFrequency} meals per day</span></div>
+                <div>Target: <span className="font-medium">{targetCalories} calories</span></div>
+                <div>Goal: <span className="font-medium capitalize">{userProfile.goal?.replace('-', ' ')}</span></div>
+              </div>
+              <div className="mt-3 text-xs text-green-600">
+                ✨ This plan will replace your current meals with optimized portions for your goals
               </div>
             </div>
           )}
         </div>
 
+        {/* Action Buttons */}
         <div className="mt-6 pt-4 border-t flex gap-3">
           <button
             onClick={onClose}
@@ -305,14 +498,14 @@ const WeekPlanModal = ({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
             Cancel
           </button>
           <button
-            onClick={handleConfirmPlan}
-            disabled={!selectedPlan}
-            className={`py-2 px-6 rounded-md font-medium transition-colors ${selectedPlan
+            onClick={handleCreatePlan}
+            disabled={!isProfileComplete || !selectedEatingStyle || !selectedMealFrequency}
+            className={`flex-1 py-2 px-6 rounded-md font-medium transition-colors ${isProfileComplete && selectedEatingStyle && selectedMealFrequency
                 ? 'bg-blue-500 text-white hover:bg-blue-600'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
           >
-            Apply Plan
+            {!isProfileComplete ? 'Complete Profile First' : 'Create Plan'}
           </button>
         </div>
       </div>
@@ -558,6 +751,16 @@ const WeeklyPlan = () => {
   // Week Plan Functions
   const handleAddWeekPlan = (weekPlan) => {
     const meals = weekPlan.meals;
+
+    // Clear all meals first by resetting to empty state
+    setBreakfastItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
+    setFirstSnackItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
+    setSecondSnackItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
+    setLunchItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
+    setMidAfternoonItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
+    setDinnerItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
+    setLateSnackItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
+    setPostWorkoutItems([{ id: 1, category: '', food: '', serving: 1, displayServing: '1', displayUnit: 'servings' }]);
 
     // Update meal states based on what's provided in the plan
     if (meals.breakfast) {
