@@ -4,18 +4,17 @@ import { USDAMealCreator } from './USDAMealCreator.jsx';
 import { WelcomeScreen } from './WelcomeScreen.jsx';
 import MealSwipeGame from './MealSwipeGame.jsx';
 import DailyMealPlannerModule from './DailyMealPlannerModule';
-import MealIdeas from './MealIdeas.jsx';
+// Temporarily comment out MealIdeas to test basic functionality
+// import MealIdeas from './MealIdeas.jsx';
 
-// Mock the messaging system for now - remove when real import is used
+// Mock the messaging system for now
 const MealMessages = {
   getTimeAwareMessage: (allMeals, currentMealType, currentMealTotals, currentMealItems, userProfile, calorieData, selectedTime, pieData) => {
-    // Mock implementation - replace with real import
     if (currentMealTotals.calories < 50) return null;
 
     const proteinPercent = pieData[0]?.percentage || 0;
     const carbPercent = pieData[1]?.percentage || 0;
 
-    // Simple mock logic
     if (proteinPercent >= 40) {
       return `${userProfile.firstName}, excellent protein focus at ${proteinPercent}%! This supports your ${userProfile.goal} goals perfectly.`;
     } else if (carbPercent > 60 && proteinPercent < 25) {
@@ -159,7 +158,7 @@ function MealMessageSection({ meal, profile, getMealMessage }) {
 }
 
 // Enhanced Food Category Grid with meal ideas button
-function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onOpenMealIdeas }) {
+function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
   const source = mealSources[mealName];
   const isUSDAOwned = source === 'usda';
   const supportsMealIdeas = ['Breakfast', 'Lunch', 'Dinner'].includes(mealName);
@@ -221,10 +220,11 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onO
     <div className="space-y-3">
       <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Add Foods</h3>
 
+      {/* MEAL IDEAS BUTTON - This is where it should appear! */}
       {supportsMealIdeas && (
         <div className="mb-4">
           <button
-            onClick={() => onOpenMealIdeas(mealName.toLowerCase())}
+            onClick={() => alert(`${mealName} Ideas would open here! (MealIdeas component needs to be imported)`)}
             className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
           >
             <span className="text-xl">💡</span>
@@ -403,8 +403,7 @@ function FullScreenSwipeInterface({
   profile,
   getMealMessage,
   mealSources,
-  onClaimMeal,
-  onOpenMealIdeas
+  onClaimMeal
 }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMealForTime, setSelectedMealForTime] = useState(null);
@@ -524,12 +523,12 @@ function FullScreenSwipeInterface({
 
                   <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
                     <div className="space-y-6">
+                      {/* THE MEAL IDEAS BUTTON WILL APPEAR HERE! */}
                       <FoodCategoryGrid
                         mealId={meal.id}
                         onSelectCategory={openFoodSelection}
                         mealSources={mealSources}
                         mealName={meal.name}
-                        onOpenMealIdeas={onOpenMealIdeas}
                       />
 
                       <MealFoodList
@@ -609,8 +608,6 @@ const MealSwipeApp = () => {
   const [showGame, setShowGame] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
-  const [showMealIdeas, setShowMealIdeas] = useState(false);
-  const [selectedMealTypeForIdeas, setSelectedMealTypeForIdeas] = useState(null);
   const dragRef = useRef({ startX: 0, startY: 0 });
 
   const claimMeal = (mealName, source) => {
@@ -769,70 +766,6 @@ const MealSwipeApp = () => {
   const closeFoodSelection = () => {
     setSelectedCategory(null);
     setSelectedMealForFood(null);
-  };
-
-  const openMealIdeas = (mealType) => {
-    setSelectedMealTypeForIdeas(mealType);
-    setShowMealIdeas(true);
-  };
-
-  const closeMealIdeas = () => {
-    setShowMealIdeas(false);
-    setSelectedMealTypeForIdeas(null);
-  };
-
-  const addMealFromIdeas = (mealData) => {
-    const mealTypeMapping = { 'breakfast': 'Breakfast', 'lunch': 'Lunch', 'dinner': 'Dinner' };
-    const mealName = mealTypeMapping[selectedMealTypeForIdeas];
-    const targetMeal = meals.find(m => m.name === mealName);
-    if (!targetMeal) return;
-
-    claimMeal(mealName, 'quickview');
-
-    setMeals(prev => prev.map(meal => {
-      if (meal.name === mealName) {
-        let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalCalories = 0;
-        const newItems = mealData.items.map(item => {
-          const foodData = FoodDatabase[item.category]?.[item.food];
-          if (foodData) {
-            const itemProtein = Math.round(foodData.protein * item.serving);
-            const itemCarbs = Math.round(foodData.carbs * item.serving);
-            const itemFat = Math.round(foodData.fat * item.serving);
-            const itemCalories = Math.round(foodData.calories * item.serving);
-
-            totalProtein += itemProtein;
-            totalCarbs += itemCarbs;
-            totalFat += itemFat;
-            totalCalories += itemCalories;
-
-            return {
-              food: item.food,
-              category: item.category,
-              servings: item.serving,
-              protein: itemProtein,
-              carbs: itemCarbs,
-              fat: itemFat,
-              calories: itemCalories,
-              source: 'quickview'
-            };
-          }
-          return null;
-        }).filter(Boolean);
-
-        return { ...meal, items: newItems, protein: totalProtein, carbs: totalCarbs, fat: totalFat, calories: totalCalories };
-      }
-      return meal;
-    }));
-  };
-
-  const calculateFruitBudget = () => {
-    let usedFruit = 0;
-    meals.forEach(meal => {
-      meal.items?.forEach(item => {
-        if (item.category === 'fruits') usedFruit += item.servings || 0;
-      });
-    });
-    return Math.max(0, 3 - Math.round(usedFruit));
   };
 
   const enterSwipeMode = () => {
@@ -1077,7 +1010,6 @@ const MealSwipeApp = () => {
             getMealMessage={getMealMessage}
             mealSources={mealSources}
             onClaimMeal={claimMeal}
-            onOpenMealIdeas={openMealIdeas}
           />
         )}
 
@@ -1142,21 +1074,6 @@ const MealSwipeApp = () => {
             </div>
           </div>
         )}
-
-        <MealIdeas
-          isOpen={showMealIdeas}
-          onClose={closeMealIdeas}
-          onAddMeal={addMealFromIdeas}
-          userProfile={{
-            firstName: profile.name || 'Champion',
-            goal: profile.goal || 'gain-muscle',
-            weight: profile.weight
-          }}
-          calorieData={calorieData}
-          isMobile={true}
-          mealType={selectedMealTypeForIdeas}
-          fruitBudgetRemaining={calculateFruitBudget()}
-        />
       </div>
     </div>
   );
