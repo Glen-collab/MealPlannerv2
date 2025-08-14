@@ -3,6 +3,7 @@ import { FoodDatabase, getFoodsInCategory, getServingInfo } from './FoodDatabase
 import { USDAMealCreator } from './USDAMealCreator.jsx';
 import { WelcomeScreen } from './WelcomeScreen.jsx';
 import MealSwipeGame from './MealSwipeGame.jsx';
+import DailyMealPlannerModule from './DailyMealPlannerModule';
 
 // Import the meal messaging system (uncomment when files are available)
 // import { MealMessages } from './src/MealMessages/index.js';
@@ -12,10 +13,10 @@ const MealMessages = {
   getTimeAwareMessage: (allMeals, currentMealType, currentMealTotals, currentMealItems, userProfile, calorieData, selectedTime, pieData) => {
     // Mock implementation - replace with real import
     if (currentMealTotals.calories < 50) return null;
-    
+
     const proteinPercent = pieData[0]?.percentage || 0;
     const carbPercent = pieData[1]?.percentage || 0;
-    
+
     // Simple mock logic
     if (proteinPercent >= 40) {
       return `${userProfile.firstName}, excellent protein focus at ${proteinPercent}%! This supports your ${userProfile.goal} goals perfectly.`;
@@ -71,7 +72,7 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
             ×
           </button>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-3 gap-6 mb-6">
             {/* Hours Column */}
@@ -82,11 +83,10 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
                   <button
                     key={hour}
                     onClick={() => setSelectedHour(hour)}
-                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedHour === hour
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedHour === hour
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     {hour}
                   </button>
@@ -102,11 +102,10 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
                   <button
                     key={minute}
                     onClick={() => setSelectedMinute(minute)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedMinute === minute
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedMinute === minute
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     :{minute}
                   </button>
@@ -122,11 +121,10 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
                   <button
                     key={period}
                     onClick={() => setSelectedPeriod(period)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedPeriod === period
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedPeriod === period
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     {period}
                   </button>
@@ -194,10 +192,10 @@ function MealMessageSection({ meal, profile, getMealMessage }) {
 
 function MealMessageDisplay({ meal, profile, getMealMessage }) {
   if (!meal || meal.calories === 0) return null;
-  
+
   const message = getMealMessage(meal);
   if (!message) return null;
-  
+
   return (
     <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4 shadow-sm">
       <div className="flex items-start gap-3">
@@ -215,7 +213,7 @@ function MealMessageDisplay({ meal, profile, getMealMessage }) {
 function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
   const source = mealSources[mealName];
   const isUSDAOwned = source === 'usda';
-  
+
   // Get representative serving references from the database
   const getServingReferenceForCategory = (categoryName) => {
     const categoryMapping = {
@@ -228,18 +226,18 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
       'Condiments': 'condiments',
       'Junk/Drink': 'snacks'
     };
-    
+
     const dbCategory = categoryMapping[categoryName];
     if (!dbCategory) return '1 serving';
-    
+
     // Get first food from category as representative
     const foods = getFoodsInCategory(dbCategory);
     if (foods.length === 0) return '1 serving';
-    
+
     const servingInfo = getServingInfo(dbCategory, foods[0]);
     return servingInfo.palm;
   };
-  
+
   const categories = [
     [
       { name: 'Protein', icon: '🍗', color: 'bg-blue-500' },
@@ -295,7 +293,7 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
           ))}
         </div>
       ))}
-      
+
       {/* Quick Reference Guide */}
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mt-4">
         <div className="text-xs text-gray-600 text-center">
@@ -312,7 +310,7 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName }) {
 function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
   const [selectedFood, setSelectedFood] = useState('');
   const [servings, setServings] = useState(1);
-  
+
   // Map UI food categories to database categories
   const foodCategoryMapping = {
     'Protein': 'protein',
@@ -324,10 +322,10 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
     'Condiments': 'condiments',
     'Junk/Drink': 'snacks'
   };
-  
+
   const dbCategory = foodCategoryMapping[category];
   const foods = getFoodsInCategory(dbCategory);
-  
+
   const handleAddFood = () => {
     if (selectedFood && servings > 0) {
       onAddFood(mealId, dbCategory, selectedFood, servings);
@@ -347,7 +345,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
             ×
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-3">
             {foods.map((food) => {
@@ -356,11 +354,10 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
                 <button
                   key={food}
                   onClick={() => setSelectedFood(food)}
-                  className={`w-full p-3 rounded-lg border-2 text-left transition-colors ${
-                    selectedFood === food 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`w-full p-3 rounded-lg border-2 text-left transition-colors ${selectedFood === food
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                    }`}
                 >
                   <div className="font-medium text-gray-800">{food}</div>
                   <div className="text-sm text-gray-600">
@@ -374,7 +371,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
             })}
           </div>
         </div>
-        
+
         {selectedFood && (
           <div className="p-4 border-t border-gray-200">
             <div className="mb-3">
@@ -421,7 +418,7 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
       {meal.items.map((item, index) => {
         // Get serving info from database for quick-view items
         const servingInfo = item.category ? getServingInfo(item.category, item.food) : null;
-        
+
         return (
           <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
             <div className="flex-1">
@@ -457,21 +454,21 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
 }
 
 // Full Screen Swipe Interface Component
-function FullScreenSwipeInterface({ 
-  meals, 
-  currentCard, 
-  setCurrentCard, 
-  cardPositions, 
-  isDragging, 
-  handleMouseDown, 
-  handleMouseMove, 
-  handleMouseUp, 
-  onExit, 
-  openFoodSelection, 
-  removeFoodFromMeal, 
-  updateMeal, 
-  setMeals, 
-  profile, 
+function FullScreenSwipeInterface({
+  meals,
+  currentCard,
+  setCurrentCard,
+  cardPositions,
+  isDragging,
+  handleMouseDown,
+  handleMouseMove,
+  handleMouseUp,
+  onExit,
+  openFoodSelection,
+  removeFoodFromMeal,
+  updateMeal,
+  setMeals,
+  profile,
   getMealMessage,
   mealSources,
   onClaimMeal
@@ -482,12 +479,12 @@ function FullScreenSwipeInterface({
   const openTimePicker = (mealId) => {
     const meal = meals.find(m => m.id === mealId);
     const source = mealSources[meal?.name];
-    
+
     // Prevent time changes for USDA-owned meals
     if (source === 'usda') {
       return;
     }
-    
+
     setSelectedMealForTime(mealId);
     setShowTimePicker(true);
   };
@@ -500,11 +497,11 @@ function FullScreenSwipeInterface({
   const handleTimeSelection = (newTime) => {
     if (selectedMealForTime) {
       const meal = meals.find(m => m.id === selectedMealForTime);
-      
+
       // Claim meal for quickview when time is changed
       onClaimMeal(meal.name, 'quickview');
-      
-      setMeals(prev => prev.map(m => 
+
+      setMeals(prev => prev.map(m =>
         m.id === selectedMealForTime ? { ...m, time: newTime } : m
       ));
     }
@@ -541,7 +538,7 @@ function FullScreenSwipeInterface({
             const opacity = isActive ? 1 : 0.7;
             const source = mealSources[meal.name];
             const isUSDAOwned = source === 'usda';
-            
+
             return (
               <div
                 key={meal.id}
@@ -574,7 +571,7 @@ function FullScreenSwipeInterface({
                           </span>
                         )}
                       </div>
-                      
+
                       {/* Second Line: Emoji + Calories + Time Button */}
                       <div className="flex items-center justify-center gap-4">
                         <div className="text-4xl">
@@ -598,11 +595,10 @@ function FullScreenSwipeInterface({
                           onMouseDown={(e) => e.stopPropagation()}
                           onTouchStart={(e) => e.stopPropagation()}
                           disabled={isUSDAOwned}
-                          className={`px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${
-                            isUSDAOwned 
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                              : 'bg-blue-500 text-white hover:bg-blue-600'
-                          }`}
+                          className={`px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${isUSDAOwned
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                            }`}
                         >
                           🕐 {meal.time}
                           {isUSDAOwned && <span className="text-xs">🔒</span>}
@@ -621,18 +617,18 @@ function FullScreenSwipeInterface({
                   {/* Scrollable Content */}
                   <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
                     <div className="space-y-6">
-                      
+
                       {/* Food Selection Grid */}
-                      <FoodCategoryGrid 
-                        mealId={meal.id} 
+                      <FoodCategoryGrid
+                        mealId={meal.id}
                         onSelectCategory={openFoodSelection}
                         mealSources={mealSources}
                         mealName={meal.name}
                       />
-                      
+
                       {/* Added Foods List */}
-                      <MealFoodList 
-                        meal={meal} 
+                      <MealFoodList
+                        meal={meal}
                         onRemoveFood={removeFoodFromMeal}
                         mealSources={mealSources}
                       />
@@ -682,7 +678,7 @@ const MealSwipeApp = () => {
   // Map meal names to messaging system types
   const mealTypeMapping = {
     'Breakfast': 'breakfast',
-    'FirstSnack': 'firstSnack', 
+    'FirstSnack': 'firstSnack',
     'SecondSnack': 'secondSnack',
     'Lunch': 'lunch',
     'MidAfternoon Snack': 'midAfternoon',
@@ -704,82 +700,82 @@ const MealSwipeApp = () => {
   };
 
   const [meals, setMeals] = useState([
-    { 
-      id: 1, 
-      name: 'Breakfast', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 1,
+      name: 'Breakfast',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '7:00 AM',
       items: []
     },
-    { 
-      id: 2, 
-      name: 'FirstSnack', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 2,
+      name: 'FirstSnack',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '9:30 AM',
       items: []
     },
-    { 
-      id: 3, 
-      name: 'SecondSnack', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 3,
+      name: 'SecondSnack',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '11:00 AM',
       items: []
     },
-    { 
-      id: 4, 
-      name: 'Lunch', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 4,
+      name: 'Lunch',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '12:30 PM',
       items: []
     },
-    { 
-      id: 5, 
-      name: 'MidAfternoon Snack', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 5,
+      name: 'MidAfternoon Snack',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '3:30 PM',
       items: []
     },
-    { 
-      id: 6, 
-      name: 'Dinner', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 6,
+      name: 'Dinner',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '6:30 PM',
       items: []
     },
-    { 
-      id: 7, 
-      name: 'Late Snack', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 7,
+      name: 'Late Snack',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '8:30 PM',
       items: []
     },
-    { 
-      id: 8, 
-      name: 'PostWorkout', 
-      protein: 0, 
-      carbs: 0, 
-      fat: 0, 
+    {
+      id: 8,
+      name: 'PostWorkout',
+      protein: 0,
+      carbs: 0,
+      fat: 0,
       calories: 0,
       time: '5:00 PM',
       items: []
@@ -828,15 +824,15 @@ const MealSwipeApp = () => {
     if (typeof field === 'object') {
       // Handle USDA updates (object format)
       const updateData = field;
-      
+
       setMeals(prev => prev.map(meal => {
         if (meal.id === mealId || meal.name === mealId) {
           const updated = { ...meal };
-          
+
           if (updateData.time) {
             updated.time = updateData.time;
           }
-          
+
           if (updateData.addItem) {
             const item = updateData.addItem;
             updated.items = [...(updated.items || []), item];
@@ -845,7 +841,7 @@ const MealSwipeApp = () => {
             updated.fat = updated.fat + Math.round(parseFloat(item.fat));
             updated.calories = updated.calories + Math.round(parseInt(item.calories));
           }
-          
+
           return updated;
         }
         return meal;
@@ -861,7 +857,7 @@ const MealSwipeApp = () => {
         }
         return meal;
       }));
-      
+
       // Claim meal for quickview when manually edited
       const meal = meals.find(m => m.id === mealId);
       if (meal && mealSources[meal.name] !== 'quickview') {
@@ -917,7 +913,7 @@ const MealSwipeApp = () => {
       if (meal.id === mealId) {
         const itemToRemove = meal.items[itemIndex];
         const updatedItems = meal.items.filter((_, index) => index !== itemIndex);
-        
+
         const newProtein = meal.protein - itemToRemove.protein;
         const newCarbs = meal.carbs - itemToRemove.carbs;
         const newFat = meal.fat - itemToRemove.fat;
@@ -942,9 +938,9 @@ const MealSwipeApp = () => {
     const carbCals = meal.carbs * 4;
     const fatCals = meal.fat * 9;
     const totalCals = proteinCals + carbCals + fatCals;
-    
+
     if (totalCals === 0) return [];
-    
+
     return [
       { name: 'Protein', value: proteinCals, percentage: Math.round((proteinCals / totalCals) * 100) },
       { name: 'Carbs', value: carbCals, percentage: Math.round((carbCals / totalCals) * 100) },
@@ -960,7 +956,7 @@ const MealSwipeApp = () => {
       if (mealType) {
         // Estimate sugar as 30% of carbs for the game
         const estimatedSugar = Math.round(meal.carbs * 0.3);
-        
+
         allMeals[mealType] = {
           time: meal.time,
           totals: {
@@ -980,21 +976,21 @@ const MealSwipeApp = () => {
 
   // Mock calorie data - replace with real TDEE calculation
   const calorieData = {
-    targetCalories: profile.goal === 'dirty-bulk' ? 3200 : 
-                   profile.goal === 'gain-muscle' ? 2800 :
-                   profile.goal === 'lose' ? 2000 : 2500,
+    targetCalories: profile.goal === 'dirty-bulk' ? 3200 :
+      profile.goal === 'gain-muscle' ? 2800 :
+        profile.goal === 'lose' ? 2000 : 2500,
     tdee: profile.weight ? Math.round(profile.weight * 15 + (profile.goal === 'dirty-bulk' ? 500 : 0)) : 2500
   };
 
   // Generate message for current meal
   const getMealMessage = (meal) => {
     if (!meal || meal.calories < 25) return null;
-    
+
     const allMeals = formatMealsForMessaging();
     const currentMealType = mealTypeMapping[meal.name];
-    
+
     if (!currentMealType) return null;
-    
+
     const currentMealTotals = {
       calories: meal.calories,
       protein: meal.protein,
@@ -1002,15 +998,15 @@ const MealSwipeApp = () => {
       fat: meal.fat,
       sugar: 0
     };
-    
+
     const pieData = calculatePieData(meal);
-    
+
     const userProfileForMessages = {
       firstName: profile.name || 'Champion',
       goal: profile.goal || 'gain-muscle',
       weight: profile.weight
     };
-    
+
     return MealMessages.getTimeAwareMessage(
       allMeals,
       currentMealType,
@@ -1029,7 +1025,7 @@ const MealSwipeApp = () => {
     if (meal && mealSources[meal.name] === 'usda') {
       return; // Prevent opening for USDA meals
     }
-    
+
     setSelectedCategory(category);
     setSelectedMealForFood(mealId);
   };
@@ -1078,10 +1074,10 @@ const MealSwipeApp = () => {
 
   const handleMouseDown = (e) => {
     if (!isSwipeMode && !isFullScreenSwipe) return;
-    
+
     // Only allow swiping on specific areas, not the scrollable content
     if (e.target.closest('.no-swipe-zone')) return;
-    
+
     setIsDragging(true);
     dragRef.current = {
       startX: e.clientX || e.touches?.[0]?.clientX || 0,
@@ -1091,20 +1087,20 @@ const MealSwipeApp = () => {
 
   const handleMouseMove = (e) => {
     if (!isDragging || (!isSwipeMode && !isFullScreenSwipe)) return;
-    
+
     const currentX = e.clientX || e.touches?.[0]?.clientX || 0;
     const currentY = e.clientY || e.touches?.[0]?.clientY || 0;
-    
+
     const deltaX = currentX - dragRef.current.startX;
     const deltaY = currentY - dragRef.current.startY;
-    
+
     // Only process as swipe if horizontal movement is significant
     if (Math.abs(deltaX) > 15) {
       e.preventDefault();
       const rotation = deltaX * 0.1;
 
-      setCardPositions(prev => prev.map((pos, index) => 
-        index === currentCard 
+      setCardPositions(prev => prev.map((pos, index) =>
+        index === currentCard
           ? { x: deltaX, y: deltaY, rotation }
           : pos
       ));
@@ -1113,26 +1109,26 @@ const MealSwipeApp = () => {
 
   const handleMouseUp = (e) => {
     if (!isDragging || (!isSwipeMode && !isFullScreenSwipe)) return;
-    
+
     e?.preventDefault?.();
     e?.stopPropagation?.();
-    
+
     setIsDragging(false);
-    
+
     const currentPos = cardPositions[currentCard];
     const swipeThreshold = 100;
-    
+
     if (Math.abs(currentPos.x) > swipeThreshold) {
       // Swipe detected - move to next card
       const direction = currentPos.x > 0 ? 'right' : 'left';
-      
+
       // Animate card off screen
-      setCardPositions(prev => prev.map((pos, index) => 
-        index === currentCard 
+      setCardPositions(prev => prev.map((pos, index) =>
+        index === currentCard
           ? { x: direction === 'right' ? 400 : -400, y: pos.y, rotation: direction === 'right' ? 30 : -30 }
           : pos
       ));
-      
+
       // After animation, move to next card and reset positions
       setTimeout(() => {
         setCurrentCard(prev => (prev + 1) % meals.length);
@@ -1140,8 +1136,8 @@ const MealSwipeApp = () => {
       }, 300);
     } else {
       // Snap back to center
-      setCardPositions(prev => prev.map((pos, index) => 
-        index === currentCard 
+      setCardPositions(prev => prev.map((pos, index) =>
+        index === currentCard
           ? { x: 0, y: 0, rotation: 0 }
           : pos
       ));
@@ -1204,7 +1200,7 @@ const MealSwipeApp = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Name and Goal inputs */}
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
@@ -1261,7 +1257,7 @@ const MealSwipeApp = () => {
 
         {/* Welcome Screen with Charts - Only on main screen */}
         {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
-          <WelcomeScreen 
+          <WelcomeScreen
             profile={profile}
             totalMacros={totalMacros}
             meals={meals}
@@ -1332,12 +1328,13 @@ const MealSwipeApp = () => {
         )}
       </div>
 
+      // Then replace your scroll modal with this:
       {/* Scrolling Modal */}
       {isScrollModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl w-full max-w-md h-5/6 flex flex-col">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">All Meals</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Daily Meal Plan</h2>
               <button
                 onClick={exitScrollModal}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -1345,56 +1342,18 @@ const MealSwipeApp = () => {
                 ×
               </button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {meals.map((meal, index) => {
-                const source = mealSources[meal.name];
-                const isUSDAOwned = source === 'usda';
-                
-                return (
-                  <div key={meal.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <div className="text-center mb-4">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <h3 className="text-xl font-bold text-gray-800">{meal.name}</h3>
-                        {isUSDAOwned && (
-                          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">
-                            USDA
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-2xl mt-1">
-                        {meal.name === 'Breakfast' && '🍳'}
-                        {meal.name === 'FirstSnack' && '🍎'}
-                        {meal.name === 'SecondSnack' && '🥨'}
-                        {meal.name === 'Lunch' && '🥗'}
-                        {meal.name === 'MidAfternoon Snack' && '🥜'}
-                        {meal.name === 'Dinner' && '🍽️'}
-                        {meal.name === 'Late Snack' && '🍓'}
-                        {meal.name === 'PostWorkout' && '💪'}
-                        {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
-                      </div>
-                      <div className="text-xl font-bold text-purple-600 mt-1">{Math.round(meal.calories)} cal</div>
-                    </div>
 
-                    {/* Food Selection Grid for Scroll Modal */}
-                    <FoodCategoryGrid 
-                      mealId={meal.id} 
-                      onSelectCategory={openFoodSelection}
-                      mealSources={mealSources}
-                      mealName={meal.name}
-                    />
-                    
-                    {/* Added Foods List */}
-                    <MealFoodList 
-                      meal={meal} 
-                      onRemoveFood={removeFoodFromMeal}
-                      mealSources={mealSources}
-                    />
-                  </div>
-                );
-              })}
+            {/* Replace the entire flex-1 overflow-y-auto section with this: */}
+            <div className="flex-1 overflow-hidden">
+              <DailyMealPlannerModule
+                meals={meals}
+                profile={profile}
+                totalMacros={totalMacros}
+                mealSources={mealSources}
+                className="h-full"
+              />
             </div>
-            
+
             <div className="p-6 border-t border-gray-200">
               <button
                 onClick={exitScrollModal}
