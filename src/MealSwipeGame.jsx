@@ -89,6 +89,17 @@ const MealSwipeGame = ({
   const cardRef = useRef(null);
   const startPosRef = useRef({ x: 0, y: 0 });
 
+  // Add effect to control body overflow when game is active
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, []);
+
   // Enhanced meal evaluation with new warnings
   const evaluateMealQuality = (card) => {
     const { totals } = card;
@@ -342,23 +353,28 @@ const MealSwipeGame = ({
     if (!isDragging || isAnimating || showingReaction) return;
     
     const deltaX = clientX - startPosRef.current.x;
-    // Constrain to horizontal movement only, no rotation
-    const clampedDeltaX = Math.max(-150, Math.min(150, deltaX));
-    const opacity = Math.max(0.8, 1 - Math.abs(clampedDeltaX) * 0.002);
+    const deltaY = clientY - startPosRef.current.y;
     
-    setSwipeState({
-      x: clampedDeltaX,
-      rotation: 0, // No rotation for cleaner horizontal swipe
-      opacity
-    });
+    // Only process as swipe if horizontal movement is significant (like your App.jsx)
+    if (Math.abs(deltaX) > 15) {
+      // Constrain to horizontal movement only, no vertical
+      const clampedDeltaX = Math.max(-150, Math.min(150, deltaX));
+      const opacity = Math.max(0.8, 1 - Math.abs(clampedDeltaX) * 0.002);
+      
+      setSwipeState({
+        x: clampedDeltaX,
+        rotation: 0, // No rotation for stable movement
+        opacity
+      });
+    }
   };
 
   const handleEnd = () => {
     if (!isDragging || isAnimating || showingReaction) return;
     setIsDragging(false);
     
-    // Tighter threshold for more controlled swiping
-    const threshold = 50; // Reduced from 60-80
+    // Use similar threshold to your App.jsx
+    const threshold = 100;
     if (Math.abs(swipeState.x) > threshold) {
       const direction = swipeState.x > 0 ? 'right' : 'left';
       animateSwipeOut(direction);
@@ -372,8 +388,8 @@ const MealSwipeGame = ({
     const directionMultiplier = direction === 'right' ? 1 : -1;
     
     setSwipeState({
-      x: directionMultiplier * 300, // Reduced distance for cleaner animation
-      rotation: 0, // No rotation
+      x: directionMultiplier * 400, // Like your App.jsx - off screen distance
+      rotation: 0, // No rotation like your stable implementation
       opacity: 0
     });
     
@@ -381,7 +397,7 @@ const MealSwipeGame = ({
       handleSwipe(direction);
       setSwipeState({ x: 0, rotation: 0, opacity: 1 });
       setIsAnimating(false);
-    }, 250); // Faster animation
+    }, 300); // Match your App.jsx timing
   };
 
   // Mouse events
@@ -397,18 +413,25 @@ const MealSwipeGame = ({
     handleEnd();
   };
 
-  // Touch events with improved mobile handling
+  // Touch events with improved mobile handling (based on your App.jsx)
   const handleTouchStart = (e) => {
-    e.preventDefault();
+    // Don't prevent default here - let it start naturally
     const touch = e.touches[0];
     handleStart(touch.clientX, touch.clientY);
   };
 
   const handleTouchMove = (e) => {
-    e.preventDefault();
+    if (!isDragging || isAnimating || showingReaction) return;
     if (e.touches.length > 1) return; // Ignore multi-touch
+    
     const touch = e.touches[0];
-    handleMove(touch.clientX, touch.clientY);
+    const deltaX = touch.clientX - startPosRef.current.x;
+    
+    // Only prevent default for significant horizontal movement (like your App.jsx)
+    if (Math.abs(deltaX) > 15) {
+      e.preventDefault();
+      handleMove(touch.clientX, touch.clientY);
+    }
   };
 
   const handleTouchEnd = (e) => {
@@ -418,14 +441,30 @@ const MealSwipeGame = ({
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      const handleGlobalMouseMove = (e) => {
+        const deltaX = e.clientX - startPosRef.current.x;
+        // Only process horizontal movement like your App.jsx
+        if (Math.abs(deltaX) > 15) {
+          e.preventDefault();
+          handleMove(e.clientX, e.clientY);
+        }
+      };
+      
+      const handleGlobalMouseUp = (e) => {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        handleEnd();
+      };
+
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
       };
     }
-  }, [isDragging, swipeState.x]);
+  }, [isDragging]);
 
   const handleSwipe = (direction) => {
     const currentCard = gameCards[currentCardIndex];
@@ -512,7 +551,7 @@ const MealSwipeGame = ({
     ];
 
     return (
-      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-800 z-50 flex items-center justify-center p-4">
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-5 text-center">
           <h2 className="text-xl font-bold text-gray-800 mb-2">🎮 Try Our Demo Game!</h2>
           <p className="text-gray-600 mb-4">No meals yet? No problem! Test your macro vision with our strategic nutrition challenges!</p>
@@ -541,7 +580,7 @@ const MealSwipeGame = ({
     const finalScore = Math.round((correctCount / swipeResults.length) * 100);
     
     return (
-      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex flex-col justify-center p-4 overflow-y-auto">
+      <div className="fixed inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-800 z-50 flex flex-col justify-center p-4 overflow-y-auto">
         <div className="text-center mb-6 flex-shrink-0">
           <h2 className="text-3xl font-bold text-white mb-2">
             Dating Results: {correctCount}/{gameCards.length}
@@ -591,7 +630,7 @@ const MealSwipeGame = ({
 
   if (showingReaction) {
     return (
-      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-800 z-50 flex items-center justify-center p-4">
         <div className="bg-white w-full max-w-sm h-full max-h-[500px] cursor-pointer active:scale-95 transition-all duration-200 touch-manipulation"
           onClick={handleNextCard}
         >
@@ -617,7 +656,7 @@ const MealSwipeGame = ({
 
   if (!currentCard) {
     return (
-      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-800 z-50 flex items-center justify-center p-4">
         <div className="text-center text-white">
           <h2 className="text-2xl font-bold mb-4">Loading Game...</h2>
         </div>
@@ -626,9 +665,9 @@ const MealSwipeGame = ({
   }
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-800 z-50">
       {/* Main swipeable content - full screen */}
-      <div className="w-full h-full flex items-center justify-center p-4">
+      <div className="h-full flex items-center justify-center p-4">
         <div 
           ref={cardRef}
           className="bg-white w-full max-w-sm h-full max-h-[600px] relative touch-manipulation"
