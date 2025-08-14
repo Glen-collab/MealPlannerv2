@@ -490,11 +490,7 @@ const MealSwipeGame = ({
     
     if (currentCardIndex >= gameCards.length - 1) {
       setGameComplete(true);
-      setTimeout(() => {
-        if (isIntegrated) {
-          onComplete();
-        }
-      }, 3000);
+      // Removed automatic timeout - user controls when to exit
     } else {
       setCurrentCardIndex(prev => prev + 1);
     }
@@ -580,7 +576,7 @@ const MealSwipeGame = ({
     const finalScore = Math.round((correctCount / swipeResults.length) * 100);
     
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-800 z-50 flex flex-col justify-center p-4 overflow-y-auto">
+      <div className="fixed inset-0 bg-gradient-to-br from-green-800 via-green-900 to-green-800 z-50 flex flex-col justify-center p-4">
         <div className="text-center mb-6 flex-shrink-0">
           <h2 className="text-3xl font-bold text-white mb-2">
             Dating Results: {correctCount}/{gameCards.length}
@@ -590,18 +586,18 @@ const MealSwipeGame = ({
           </div>
         </div>
 
-        <div className="bg-white w-full max-w-sm mx-auto text-center shadow-xl flex-1 max-h-[600px] overflow-y-auto p-5">
+        <div className="bg-white w-full max-w-sm mx-auto text-center shadow-xl p-5 max-h-[500px] flex flex-col">
           <h3 className="text-lg font-bold text-gray-800 mb-3">Dating Coach Analysis:</h3>
-          <p className="text-gray-700 text-sm leading-relaxed mb-4">
+          <p className="text-gray-700 text-sm leading-relaxed mb-4 flex-shrink-0">
             {finalScore >= 80 ? `🏆 DATING LEGEND! You've got excellent nutrition taste!` :
              finalScore >= 60 ? `💪 SOLID INSTINCTS! You're learning to spot good nutrition dates!` :
              finalScore >= 40 ? `🤔 RISKY CHOICES! Your nutrition dating game needs work!` :
              `😅 DISASTER ZONE! Time to learn what quality looks like!`}
           </p>
           
-          <div className="mb-4">
+          <div className="mb-4 flex-1 min-h-0">
             <h4 className="font-bold text-gray-800 mb-2 text-sm">Your Swipe History:</h4>
-            <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
+            <div className="text-xs space-y-1 h-32 overflow-y-auto bg-gray-50 rounded-lg p-2">
               {swipeResults.map((result, index) => (
                 <div key={index} className={`p-2 rounded ${result.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
                   <div className="font-medium text-xs">{getMealTypeDisplayName(result.card.mealType)}</div>
@@ -614,15 +610,24 @@ const MealSwipeGame = ({
             </div>
           </div>
           
-          {!isIntegrated && (
+          <div className="flex-shrink-0 space-y-3">
+            {!isIntegrated && (
+              <button
+                onClick={resetGame}
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 touch-manipulation"
+              >
+                <RotateCcw size={16} />
+                Date Again
+              </button>
+            )}
+            
             <button
-              onClick={resetGame}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 touch-manipulation"
+              onClick={() => isIntegrated ? onComplete() : resetGame()}
+              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 touch-manipulation"
             >
-              <RotateCcw size={16} />
-              Date Again
+              ✨ Finish Game
             </button>
-          )}
+          </div>
         </div>
       </div>
     );
