@@ -1,7 +1,74 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, X, RotateCcw } from 'lucide-react';
-import { generatePersonalTrainerSummary } from './PersonalTrainerSummary.js';
 
+// Personal Trainer Summary Logic (extracted from PersonalTrainerSummary.js)
+const getUserProteinTarget = (userProfile) => {
+  const weight = Number(userProfile.weight);
+  switch(userProfile.goal) {
+    case 'dirty-bulk': return Math.round(weight * 1.2);
+    case 'gain-muscle': return Math.round(weight * 1.1);
+    case 'maintain': return Math.round(weight * 1);
+    case 'lose': return Math.round(weight * 0.8);
+    default: return 120;
+  }
+};
+
+const getSugarLimitForGoal = (goal) => {
+  switch(goal) {
+    case 'maintain': return 45;
+    case 'lose': return 25;
+    case 'gain-muscle': return 25;
+    case 'dirty-bulk': return 50;
+    default: return 25;
+  }
+};
+
+const calculateDailyTotalsFromMeals = (allMeals) => {
+  return Object.values(allMeals).reduce((totals, meal) => {
+    const mealTotals = meal.totals || { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0 };
+    return {
+      calories: totals.calories + mealTotals.calories,
+      protein: totals.protein + mealTotals.protein,
+      carbs: totals.carbs + mealTotals.carbs,
+      fat: totals.fat + mealTotals.fat,
+      sugar: totals.sugar + mealTotals.sugar
+    };
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0, sugar: 0 });
+};
+
+const calculateOverallGrade = (dailyTotals, userProfile, calorieData) => {
+  let score = 0;
+  
+  // Protein score (40 points)
+  const proteinTarget = getUserProteinTarget(userProfile);
+  const proteinScore = Math.min((dailyTotals.protein / proteinTarget) * 40, 40);
+  score += proteinScore;
+  
+  // Calorie accuracy (30 points)
+  const calorieTarget = calorieData?.targetCalories || 2500;
+  const calorieAccuracy = 1 - Math.abs(dailyTotals.calories - calorieTarget) / calorieTarget;
+  score += Math.max(calorieAccuracy * 30, 0);
+  
+  // Sugar control (20 points)
+  const sugarLimit = getSugarLimitForGoal(userProfile.goal);
+  const sugarScore = dailyTotals.sugar <= sugarLimit ? 20 : Math.max(20 - ((dailyTotals.sugar - sugarLimit) * 2), 0);
+  score += sugarScore;
+  
+  // Macro balance (10 points)
+  const totalMacros = dailyTotals.protein + dailyTotals.carbs + dailyTotals.fat;
+  const proteinPercent = totalMacros > 0 ? (dailyTotals.protein / totalMacros) * 100 : 0;
+  const macroScore = proteinPercent >= 35 ? 10 : proteinPercent >= 25 ? 7 : proteinPercent >= 20 ? 5 : 0;
+  score += macroScore;
+  
+  // Convert to letter grade
+  if (score >= 90) return { grade: 'A', score: Math.round(score) };
+  if (score >= 80) return { grade: 'B', score: Math.round(score) };
+  if (score >= 70) return { grade: 'C', score: Math.round(score) };
+  if (score >= 60) return { grade: 'D', score: Math.round(score) };
+  return { grade: 'F', score: Math.round(score) };
+};
+
+// Main Component
 const MealSwipeGame = ({ 
   allMeals = {}, 
   userProfile = {}, 
@@ -152,8 +219,9 @@ const MealSwipeGame = ({
     setGameCards(cards);
     
     // Get overall grade from personal trainer summary
-    const summary = generatePersonalTrainerSummary(allMeals, userProfile, calorieData);
-    setOverallGrade(summary.grade || 'C');
+    const dailyTotals = calculateDailyTotalsFromMeals(allMeals);
+    const gradeInfo = calculateOverallGrade(dailyTotals, userProfile, calorieData);
+    setOverallGrade(gradeInfo.grade || 'C');
   }, [allMeals, userProfile, calorieData]);
 
   // Enhanced responses with new warning types
@@ -245,16 +313,7 @@ const MealSwipeGame = ({
       return smartGlycemicMessages[Math.floor(Math.random() * smartGlycemicMessages.length)];
     }
     
-    // Fallback to original responses for other scenarios
-    return getOriginalResponse(card, swipeDirection, evaluation, firstName, pronouns);
-  };
-
-  // Original response logic for non-warning scenarios
-  const getOriginalResponse = (card, swipeDirection, evaluation, firstName, pronouns) => {
-    const { score, issues, strengths, macros, carbGrams, sugarGrams } = evaluation;
-    const swipedRight = swipeDirection === 'right';
-    const isGoodMeal = score >= 70;
-    
+    // Fallback responses
     if (!swipedRight && isGoodMeal) {
       if (strengths.includes('sweetheart_macros')) {
         return `😱 WHAT?! ${firstName}, you just rejected METABOLIC PERFECTION! That 40-40-20 was your calorie-burning soulmate!`;
@@ -297,7 +356,8 @@ const MealSwipeGame = ({
     if (!isDragging || isAnimating || showingReaction) return;
     setIsDragging(false);
     
-    const threshold = 80;
+    // Lower threshold for mobile for easier swiping
+    const threshold = window.innerWidth < 640 ? 60 : 80;
     if (Math.abs(swipeState.x) > threshold) {
       const direction = swipeState.x > 0 ? 'right' : 'left';
       animateSwipeOut(direction);
@@ -336,7 +396,7 @@ const MealSwipeGame = ({
     handleEnd();
   };
 
-  // Touch events
+  // Touch events with improved mobile handling
   const handleTouchStart = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
@@ -345,6 +405,7 @@ const MealSwipeGame = ({
 
   const handleTouchMove = (e) => {
     e.preventDefault();
+    if (e.touches.length > 1) return; // Ignore multi-touch
     const touch = e.touches[0];
     handleMove(touch.clientX, touch.clientY);
   };
@@ -423,7 +484,7 @@ const MealSwipeGame = ({
   };
 
   if (gameCards.length === 0) {
-    // Demo cards setup
+    // Demo cards setup (when no real meal data)
     const demoCards = [
       {
         id: 'demo-balance-1',
@@ -450,22 +511,24 @@ const MealSwipeGame = ({
     ];
 
     return (
-      <div className="max-w-md mx-auto bg-gradient-to-br from-green-800 via-green-900 to-green-800 rounded-xl shadow-lg border-2 border-black p-5 text-center">
-        <h2 className="text-xl font-bold text-white mb-2">🎮 Try Our Demo Game!</h2>
-        <p className="text-green-200 mb-4">No meals yet? No problem! Test your macro vision with our strategic nutrition challenges!</p>
-        <button
-          onClick={() => {
-            setGameCards(demoCards);
-            setCurrentCardIndex(0);
-            setSwipeResults([]);
-            setGameComplete(false);
-            setShowingReaction(false);
-            setOverallGrade('Demo');
-          }}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-        >
-          🔥 Start Demo Dating Game
-        </button>
+      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+        <div className="max-w-md mx-auto bg-gradient-to-br from-green-800 via-green-900 to-green-800 rounded-xl shadow-lg border-2 border-black p-5 text-center">
+          <h2 className="text-xl font-bold text-white mb-2">🎮 Try Our Demo Game!</h2>
+          <p className="text-green-200 mb-4">No meals yet? No problem! Test your macro vision with our strategic nutrition challenges!</p>
+          <button
+            onClick={() => {
+              setGameCards(demoCards);
+              setCurrentCardIndex(0);
+              setSwipeResults([]);
+              setGameComplete(false);
+              setShowingReaction(false);
+              setOverallGrade('Demo');
+            }}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 touch-manipulation"
+          >
+            🔥 Start Demo Dating Game
+          </button>
+        </div>
       </div>
     );
   }
@@ -477,18 +540,18 @@ const MealSwipeGame = ({
     const finalScore = Math.round((correctCount / swipeResults.length) * 100);
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex flex-col items-center justify-center p-4">
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white mb-2">
+      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex flex-col justify-center p-4 overflow-y-auto">
+        <div className="text-center mb-4 flex-shrink-0">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Dating Results: {correctCount}/{gameCards.length}
           </h2>
-          <div className="text-xl text-green-200">
+          <div className="text-lg sm:text-xl text-green-200">
             Final Score: {finalScore}%
           </div>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-black p-5 max-w-sm text-center shadow-xl mx-auto">
-          <h3 className="text-lg font-bold text-gray-800 mb-3">Dating Coach Analysis:</h3>
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-black p-4 sm:p-5 w-full max-w-sm mx-auto text-center shadow-xl flex-1 max-h-[600px] overflow-y-auto">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3">Dating Coach Analysis:</h3>
           <p className="text-gray-700 text-sm leading-relaxed mb-4">
             {finalScore >= 80 ? `🏆 DATING LEGEND! You've got excellent nutrition taste!` :
              finalScore >= 60 ? `💪 SOLID INSTINCTS! You're learning to spot good nutrition dates!` :
@@ -496,10 +559,25 @@ const MealSwipeGame = ({
              `😅 DISASTER ZONE! Time to learn what quality looks like!`}
           </p>
           
+          <div className="mb-4">
+            <h4 className="font-bold text-gray-800 mb-2 text-sm">Your Swipe History:</h4>
+            <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
+              {swipeResults.map((result, index) => (
+                <div key={index} className={`p-2 rounded ${result.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
+                  <div className="font-medium text-xs">{getMealTypeDisplayName(result.card.mealType)}</div>
+                  <div className="text-gray-600 text-xs">
+                    {result.direction === 'right' ? '❤️' : '❌'} • Score: {result.evaluation.score}/100 • 
+                    {result.isCorrect ? ' ✅ Correct!' : ' ❌ Wrong choice'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
           {!isIntegrated && (
             <button
               onClick={resetGame}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 touch-manipulation"
             >
               <RotateCcw size={16} />
               Date Again
@@ -512,19 +590,19 @@ const MealSwipeGame = ({
 
   if (showingReaction) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-6 cursor-pointer hover:shadow-3xl transition-all duration-200 w-full max-w-md mx-4 h-[30rem]"
+      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-black p-4 sm:p-6 cursor-pointer hover:shadow-3xl active:scale-95 transition-all duration-200 w-full max-w-sm h-full max-h-[500px] touch-manipulation"
           onClick={handleNextCard}
         >
           <div className="text-center h-full flex flex-col justify-center">
-            <div className="text-4xl mb-4">💔</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Dating Coach Says:</h2>
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 flex-1 flex items-center justify-center">
+            <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">💘</div>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Dating Coach Says:</h2>
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 sm:p-4 border border-gray-200 flex-1 flex items-center justify-center overflow-y-auto">
               <p className="text-sm text-gray-700 leading-relaxed">
                 {lastResponse}
               </p>
             </div>
-            <div className="text-center text-gray-500 text-xs p-2 rounded-xl bg-gray-50 border border-gray-200 mt-4">
+            <div className="text-center text-gray-500 text-xs p-2 rounded-xl bg-gray-50 border border-gray-200 mt-3 sm:mt-4 flex-shrink-0">
               {currentCardIndex < gameCards.length - 1 ? 
                 `Tap to continue → (${currentCardIndex + 2}/${gameCards.length})` : 
                 'Tap to see results →'
@@ -536,13 +614,35 @@ const MealSwipeGame = ({
     );
   }
 
+  if (!currentCard) {
+    return (
+      <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
+        <div className="text-center text-white">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">Loading Demo Game...</h2>
+          <button
+            onClick={() => setGameCards([...demoMeals])}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 touch-manipulation"
+          >
+            🔥 Start Demo Game
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-md mx-auto">
-        {/* Main swipeable card - INCREASED SIZE */}
+    <div className="h-screen w-screen bg-gradient-to-br from-green-800 via-green-900 to-green-800 flex flex-col justify-between overflow-hidden">
+      {/* Mobile-first header */}
+      <div className="text-center pt-4 pb-2 px-4 flex-shrink-0">
+        <h1 className="text-xl sm:text-2xl font-bold mb-1 text-white">🍽️ Meal Dating Game</h1>
+        <p className="text-xs sm:text-sm text-green-200">Swipe ❤️ for healthy meals, ❌ for nutritional disasters!</p>
+      </div>
+
+      {/* Main swipeable card - takes most of screen */}
+      <div className="flex-1 flex items-center justify-center px-4 py-2">
         <div 
           ref={cardRef}
-          className="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl border-2 border-black p-6 cursor-grab active:cursor-grabbing select-none w-full h-[30rem] relative"
+          className="bg-gradient-to-br from-white to-gray-50 rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-black p-4 sm:p-6 cursor-grab active:cursor-grabbing select-none w-full max-w-sm h-full max-h-[600px] relative touch-manipulation"
           style={{ 
             transform: `translateX(${swipeState.x}px) rotate(${swipeState.rotation}deg)`,
             opacity: swipeState.opacity,
@@ -553,42 +653,62 @@ const MealSwipeGame = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Card Content */}
+          {/* Card Content - Mobile optimized */}
           <div className="flex flex-col h-full pointer-events-none relative">
+            {/* Swipe indicators */}
+            {isDragging && (
+              <>
+                <div 
+                  className={`absolute top-1/2 left-4 transform -translate-y-1/2 text-6xl transition-opacity duration-200 ${
+                    swipeState.x > 30 ? 'opacity-80' : 'opacity-20'
+                  }`}
+                >
+                  ❤️
+                </div>
+                <div 
+                  className={`absolute top-1/2 right-4 transform -translate-y-1/2 text-6xl transition-opacity duration-200 ${
+                    swipeState.x < -30 ? 'opacity-80' : 'opacity-20'
+                  }`}
+                >
+                  ❌
+                </div>
+              </>
+            )}
+            
             {/* Header */}
-            <div className="text-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            <div className="text-center mb-3 flex-shrink-0">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
                 {currentCard.demoName || getMealTypeDisplayName(currentCard.mealType)}
               </h2>
-              <div className="text-sm text-gray-600">
-                ⏰ {currentCard.time} • Card {currentCardIndex + 1}/{gameCards.length}
-                {currentCard.demoName && <span className="ml-2 text-purple-600 font-medium">• DEMO</span>}
+              <div className="text-xs sm:text-sm text-gray-600">
+                ⏰ {currentCard.time} • {currentCardIndex + 1}/{gameCards.length}
+                {currentCard.demoName && <span className="ml-1 text-purple-600 font-medium">• DEMO</span>}
               </div>
             </div>
             
-            {/* Nutrition Display */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 mb-4 border border-gray-200 flex-shrink-0">
-              <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* Nutrition Display - Mobile grid */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 mb-3 border border-gray-200 flex-shrink-0">
+              <div className="grid grid-cols-2 gap-2 mb-2">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600">{Math.round(currentCard.totals.calories)}</div>
-                  <div className="text-sm text-gray-600">Calories</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-purple-600">{Math.round(currentCard.totals.calories)}</div>
+                  <div className="text-xs text-gray-600">Calories</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">{Math.round(currentCard.totals.protein)}g</div>
-                  <div className="text-sm text-gray-600">Protein</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{Math.round(currentCard.totals.carbs)}g</div>
-                  <div className="text-sm text-gray-600">Carbs</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-600">{Math.round(currentCard.totals.fat)}g</div>
-                  <div className="text-sm text-gray-600">Fat</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-600">{Math.round(currentCard.totals.protein)}g</div>
+                  <div className="text-xs text-gray-600">Protein</div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm text-gray-500">
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-green-600">{Math.round(currentCard.totals.carbs)}g</div>
+                  <div className="text-xs text-gray-600">Carbs</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-yellow-600">{Math.round(currentCard.totals.fat)}g</div>
+                  <div className="text-xs text-gray-600">Fat</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
                 <div className="text-center">Sugar: {Math.round(currentCard.totals.sugar)}g</div>
                 <div className="text-center">GI: {currentCard.totals.glycemicIndex}</div>
               </div>
@@ -596,9 +716,9 @@ const MealSwipeGame = ({
 
             {/* Macro Percentages */}
             {currentCard.pieData && currentCard.pieData.length > 0 && (
-              <div className="text-center mb-4 flex-shrink-0">
-                <div className="text-sm font-medium text-gray-700 mb-2">Macro Profile:</div>
-                <div className="text-sm text-gray-600 mb-2">
+              <div className="text-center mb-3 flex-shrink-0">
+                <div className="text-xs font-medium text-gray-700 mb-2">Macro Profile:</div>
+                <div className="text-xs text-gray-600 mb-2">
                   💪 {currentCard.pieData[0]?.percentage || 0}% • 
                   🌾 {currentCard.pieData[1]?.percentage || 0}% • 
                   🥑 {currentCard.pieData[2]?.percentage || 0}%
@@ -612,19 +732,28 @@ const MealSwipeGame = ({
             {/* Spacer */}
             <div className="flex-1"></div>
 
-            {/* Swipe Actions */}
-            <div className="flex justify-center gap-8 mb-2 flex-shrink-0">
+            {/* Mobile swipe hint */}
+            <div className="text-center mb-3 flex-shrink-0">
+              <div className="text-xs text-gray-400">
+                👈 Swipe or tap buttons 👉
+              </div>
+            </div>
+
+            {/* Swipe Actions - Mobile sized */}
+            <div className="flex justify-center gap-6 sm:gap-8 flex-shrink-0">
               <button
                 onClick={() => !isDragging && !isAnimating && handleSwipe('left')}
-                className="bg-red-500 hover:bg-red-600 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
+                className="bg-red-500 hover:bg-red-600 active:bg-red-700 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 shadow-lg pointer-events-auto touch-manipulation"
               >
-                <X size={28} />
+                <X size={24} className="sm:hidden" />
+                <X size={28} className="hidden sm:block" />
               </button>
               <button
                 onClick={() => !isDragging && !isAnimating && handleSwipe('right')}
-                className="bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg pointer-events-auto"
+                className="bg-green-500 hover:bg-green-600 active:bg-green-700 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 shadow-lg pointer-events-auto touch-manipulation"
               >
-                <Heart size={28} />
+                <Heart size={24} className="sm:hidden" />
+                <Heart size={28} className="hidden sm:block" />
               </button>
             </div>
           </div>
