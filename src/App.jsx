@@ -7,14 +7,13 @@ import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
 import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
-import WeeklyPlan from './WeeklyPlan.jsx';
+import WeekPlanModal from './WeekPlanModal.jsx'; // Import the standalone WeekPlanModal
 
 // Time Picker Modal Component
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   const [selectedHour, setSelectedHour] = useState(12);
   const [selectedMinute, setSelectedMinute] = useState('00');
   const [selectedPeriod, setSelectedPeriod] = useState('AM');
-  const [showWeeklyPlan, setShowWeeklyPlan] = useState(false);
 
   useEffect(() => {
     if (isOpen && currentTime) {
@@ -599,9 +598,14 @@ const MealSwipeApp = () => {
   const [showGame, setShowGame] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
+
   // State for MealIdeas
   const [showMealIdeas, setShowMealIdeas] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('breakfast');
+
+  // Add WeekPlanModal state
+  const [isWeekPlanModalOpen, setIsWeekPlanModalOpen] = useState(false);
+
   const dragRef = useRef({ startX: 0, startY: 0 });
 
   // Helper function to handle meal ideas opening
@@ -649,6 +653,82 @@ const MealSwipeApp = () => {
     });
 
     setShowMealIdeas(false);
+  };
+
+  // Add WeekPlan handler function
+  const handleAddWeekPlan = (weekPlan) => {
+    const mealTypes = ['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'];
+
+    // Create new meals object with cleared items
+    const newMeals = meals.map(meal => ({
+      ...meal,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      calories: 0,
+      items: []
+    }));
+
+    // Update meals with week plan data
+    if (weekPlan.allMeals) {
+      weekPlan.allMeals.forEach((planMeal, index) => {
+        if (index < mealTypes.length) {
+          const mealName = mealTypes[index];
+          const mealIndex = newMeals.findIndex(m => m.name === mealName);
+
+          if (mealIndex !== -1 && planMeal.items) {
+            // Calculate totals from the plan meal items
+            let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalCalories = 0;
+
+            const processedItems = planMeal.items.map(item => {
+              if (item.food && item.category) {
+                const foodData = FoodDatabase[item.category]?.[item.food];
+                if (foodData) {
+                  const serving = item.serving || 1;
+                  const protein = foodData.protein * serving;
+                  const carbs = foodData.carbs * serving;
+                  const fat = foodData.fat * serving;
+                  const calories = foodData.calories * serving;
+
+                  totalProtein += protein;
+                  totalCarbs += carbs;
+                  totalFat += fat;
+                  totalCalories += calories;
+
+                  return {
+                    food: item.food,
+                    category: item.category,
+                    servings: serving,
+                    protein: Math.round(protein),
+                    carbs: Math.round(carbs),
+                    fat: Math.round(fat),
+                    calories: Math.round(calories),
+                    source: 'weekplan'
+                  };
+                }
+              }
+              return null;
+            }).filter(item => item !== null);
+
+            newMeals[mealIndex] = {
+              ...newMeals[mealIndex],
+              time: planMeal.time || newMeals[mealIndex].time,
+              items: processedItems,
+              protein: Math.round(totalProtein),
+              carbs: Math.round(totalCarbs),
+              fat: Math.round(totalFat),
+              calories: Math.round(totalCalories)
+            };
+
+            // Claim the meal for weekplan
+            claimMeal(mealName, 'weekplan');
+          }
+        }
+      });
+    }
+
+    setMeals(newMeals);
+    setIsWeekPlanModalOpen(false);
   };
 
   const claimMeal = (mealName, source) => {
@@ -1322,6 +1402,17 @@ const MealSwipeApp = () => {
                 </div>
               )}
 
+              {/* Plan My Week Button */}
+              <div className="mb-4">
+                <button
+                  onClick={() => setIsWeekPlanModalOpen(true)}
+                  className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all flex items-center justify-center gap-2 w-full"
+                >
+                  <span>📅</span>
+                  Plan My Week
+                </button>
+              </div>
+
               <div className="flex justify-center">
                 <button
                   onClick={() => setShowGame(true)}
@@ -1372,12 +1463,6 @@ const MealSwipeApp = () => {
               mealSources={mealSources}
               className="h-full"
             />
-            <button
-              onClick={() => setShowWeeklyPlan(true)}
-              className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
-            >
-              📅 Weekly Plan
-            </button>
           </div>
         )}
 
@@ -1438,26 +1523,17 @@ const MealSwipeApp = () => {
             fruitBudgetRemaining={calculateFruitBudgetRemaining()}
           />
         )}
+
+        {/* WeekPlanModal Integration */}
+        <WeekPlanModal
+          isOpen={isWeekPlanModalOpen}
+          onClose={() => setIsWeekPlanModalOpen(false)}
+          onAddWeekPlan={handleAddWeekPlan}
+          userProfile={profile}
+          calorieData={calorieData}
+          isMobile={true}
+        />
       </div>
-      {/* Weekly Plan Modal */}
-      {showWeeklyPlan && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-bold">Weekly Meal Planner</h2>
-              <button
-                onClick={() => setShowWeeklyPlan(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="overflow-y-auto max-h-[calc(95vh-80px)]">
-              <WeeklyPlan />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
