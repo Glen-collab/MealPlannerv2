@@ -4,7 +4,7 @@ import { X, Scale, Coffee, Hand, Users, Clock, Target, CheckCircle } from 'lucid
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 // Import our modular components
-import { foodDatabase, servingSizeConversions, getServingInfo } from './foodDatabase.js';
+import { FoodDatabase, servingSizeConversions, getServingInfo } from './FoodDatabase.js';
 import {
   calculateTotals,
   preparePieData,
