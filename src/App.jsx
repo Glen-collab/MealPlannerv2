@@ -7,12 +7,14 @@ import DailyMealPlannerModule from './DailyMealPlannerModule';
 import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
+import WeeklyPlan from './WeeklyPlan.jsx';
 
 // Time Picker Modal Component
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   const [selectedHour, setSelectedHour] = useState(12);
   const [selectedMinute, setSelectedMinute] = useState('00');
   const [selectedPeriod, setSelectedPeriod] = useState('AM');
+  const [showWeeklyPlan, setShowWeeklyPlan] = useState(false);
 
   useEffect(() => {
     if (isOpen && currentTime) {
@@ -1370,6 +1372,12 @@ const MealSwipeApp = () => {
               mealSources={mealSources}
               className="h-full"
             />
+            <button
+              onClick={() => setShowWeeklyPlan(true)}
+              className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+            >
+              📅 Weekly Plan
+            </button>
           </div>
         )}
 
@@ -1431,6 +1439,25 @@ const MealSwipeApp = () => {
           />
         )}
       </div>
+      {/* Weekly Plan Modal */}
+      {showWeeklyPlan && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[95vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold">Weekly Meal Planner</h2>
+              <button
+                onClick={() => setShowWeeklyPlan(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(95vh-80px)]">
+              <WeeklyPlan />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
