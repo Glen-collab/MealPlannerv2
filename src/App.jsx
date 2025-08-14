@@ -8,24 +8,6 @@ import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
 
-// Mock the messaging system for now
-const MealMessages = {
-  getTimeAwareMessage: (allMeals, currentMealType, currentMealTotals, currentMealItems, userProfile, calorieData, selectedTime, pieData) => {
-    if (currentMealTotals.calories < 50) return null;
-
-    const proteinPercent = pieData[0]?.percentage || 0;
-    const carbPercent = pieData[1]?.percentage || 0;
-
-    if (proteinPercent >= 40) {
-      return `${userProfile.firstName || userProfile.name}, excellent protein focus at ${proteinPercent}%! This supports your ${userProfile.goal} goals perfectly.`;
-    } else if (carbPercent > 60 && proteinPercent < 25) {
-      return `${userProfile.firstName || userProfile.name}, whoa! ${carbPercent}% carbs for ${userProfile.goal}? Your muscles need more protein to build effectively!`;
-    } else {
-      return `Good nutrition choices, ${userProfile.firstName || userProfile.name}! Keep building toward your ${userProfile.goal} goals.`;
-    }
-  }
-};
-
 // Time Picker Modal Component
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   const [selectedHour, setSelectedHour] = useState(12);
