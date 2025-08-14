@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FoodDatabase, getFoodsInCategory, getServingInfo } from './FoodDatabase.js';
 import { USDAMealCreator } from './USDAMealCreator.jsx';
 import { WelcomeScreen } from './WelcomeScreen.jsx';
+import MealSwipeGame from './MealSwipeGame.jsx';
 
 // Import the meal messaging system (uncomment when files are available)
 // import { MealMessages } from './src/MealMessages/index.js';
@@ -792,6 +793,7 @@ const MealSwipeApp = () => {
   const [isScrollModal, setIsScrollModal] = useState(false);
   const [isFullScreenSwipe, setIsFullScreenSwipe] = useState(false);
   const [showCreateMeal, setShowCreateMeal] = useState(false);
+  const [showGame, setShowGame] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
   const dragRef = useRef({ startX: 0, startY: 0 });
@@ -956,6 +958,9 @@ const MealSwipeApp = () => {
     meals.forEach(meal => {
       const mealType = mealTypeMapping[meal.name];
       if (mealType) {
+        // Estimate sugar as 30% of carbs for the game
+        const estimatedSugar = Math.round(meal.carbs * 0.3);
+        
         allMeals[mealType] = {
           time: meal.time,
           totals: {
@@ -963,7 +968,7 @@ const MealSwipeApp = () => {
             protein: meal.protein,
             carbs: meal.carbs,
             fat: meal.fat,
-            sugar: 0 // Can be added later
+            sugar: estimatedSugar
           },
           items: meal.items,
           pieData: calculatePieData(meal)
@@ -1154,7 +1159,7 @@ const MealSwipeApp = () => {
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-blue-500 to-red-600 p-4">
       <div className="max-w-md mx-auto">
         {/* Profile Section - Hidden in swipe modes */}
-        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
           <div className="bg-white rounded-2xl p-6 mb-6 shadow-xl">
             <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">Your Profile</h1>
             <div className="grid grid-cols-2 gap-4">
@@ -1230,7 +1235,7 @@ const MealSwipeApp = () => {
         )}
 
         {/* Daily Totals - Always visible but smaller in swipe modes */}
-        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
           <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
             <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Totals</h2>
             <div className="grid grid-cols-4 gap-3 text-center">
@@ -1255,7 +1260,7 @@ const MealSwipeApp = () => {
         )}
 
         {/* Welcome Screen with Charts - Only on main screen */}
-        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
           <WelcomeScreen 
             profile={profile}
             totalMacros={totalMacros}
@@ -1264,7 +1269,7 @@ const MealSwipeApp = () => {
         )}
 
         {/* Mode Toggle Buttons */}
-        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
           <div className="text-center mb-6 space-y-3">
             <div className="grid grid-cols-2 gap-3 justify-center">
               <button
@@ -1290,6 +1295,14 @@ const MealSwipeApp = () => {
                 className="bg-white text-green-600 px-4 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
               >
                 🔍 Create Meal
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowGame(true)}
+                className="bg-white text-pink-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+              >
+                🎮 Rate Your Meals
               </button>
             </div>
           </div>
@@ -1414,6 +1427,37 @@ const MealSwipeApp = () => {
         mealSources={mealSources}
         onClaimMeal={claimMeal}
       />
+
+      {/* Meal Swipe Game */}
+      {showGame && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Rate Your Meals</h3>
+              <button
+                onClick={() => setShowGame(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <MealSwipeGame
+                allMeals={formatMealsForMessaging()}
+                userProfile={{
+                  firstName: profile.name || 'Champion',
+                  goal: profile.goal || 'gain-muscle',
+                  weight: profile.weight,
+                  gender: 'non-binary' // Default, could be added to profile
+                }}
+                calorieData={calorieData}
+                onComplete={() => setShowGame(false)}
+                isIntegrated={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
