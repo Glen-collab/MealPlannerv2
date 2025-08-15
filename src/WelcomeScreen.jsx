@@ -675,10 +675,11 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
 
       {/* Dynamic Chart Content */}
       <div className="min-h-[300px]">
-        {viewMode === 'burn' && <BurnAndLearnView totalMacros={totalMacros} profile={profile} />}
-        {viewMode === 'trends' && <TrendsView meals={meals} totalMacros={totalMacros} />}
-        {viewMode === 'bar' && <BarChartView meals={meals} />}
-        {viewMode === 'pie' && <PieChartView totalMacros={totalMacros} />}
+        // Then in your modals, use:
+        <BurnAndLearnView totalMacros={totalMacros} profile={profile} />
+        <TrendsView meals={meals} totalMacros={totalMacros} />
+        <BarChartView meals={meals} />
+        <PieChartView totalMacros={totalMacros} />
       </div>
     </div>
   );
