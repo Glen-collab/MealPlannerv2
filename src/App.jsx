@@ -1464,7 +1464,7 @@ const [meals, setMeals] = useState([
     }
   };
 
-  return (
+   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-blue-500 to-red-600 p-4">
       <div className="max-w-md mx-auto">
         {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
