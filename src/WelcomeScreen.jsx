@@ -358,3 +358,4 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
     </div>
   );
 }
+export { BurnAndLearnView, TrendsView, BarChartView, PieChartView };
