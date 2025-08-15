@@ -7,8 +7,243 @@ import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
+// Import chart components from WelcomeScreen module
+import {
+  ClickableBurnAndLearnView,
+  CustomTrendsView,
+  CustomBarChartView,
+  DailyPieChartView
+} from './WelcomeScreen.jsx';
 // Custom Burn & Learn View with Clickable Macro-Style Buttons
+function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
+  const calorieData = {
+    bmr: 1800,
+    tdee: 2200,
+    targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500
+  };
+
+  const burnAndLearnItems = [
+    {
+      id: 'tdee',
+      label: 'Daily Burn',
+      value: `${calorieData.tdee}`,
+      unit: 'cal',
+      subtitle: 'TDEE',
+      color: 'red',
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-800',
+      subtitleColor: 'text-red-500'
+    },
+    {
+      id: 'surplus-deficit',
+      label: totalMacros.calories > calorieData.targetCalories ? 'Surplus' : 'Deficit',
+      value: `${Math.abs(totalMacros.calories - calorieData.targetCalories)}`,
+      unit: 'cal',
+      subtitle: totalMacros.calories > calorieData.targetCalories ? 'Over target' : 'Under target',
+      color: totalMacros.calories > calorieData.targetCalories ? 'orange' : 'green',
+      bgColor: totalMacros.calories > calorieData.targetCalories ? 'bg-orange-100' : 'bg-green-100',
+      textColor: totalMacros.calories > calorieData.targetCalories ? 'text-orange-800' : 'text-green-800',
+      subtitleColor: totalMacros.calories > calorieData.targetCalories ? 'text-orange-500' : 'text-green-500'
+    },
+    {
+      id: 'protein-target',
+      label: 'Protein Goal',
+      value: profile.goal === 'dirty-bulk' ? '150' : profile.goal === 'gain-muscle' ? '130' : profile.goal === 'lose' ? '120' : '100',
+      unit: 'g',
+      subtitle: `${Math.round(totalMacros.protein)}g eaten`,
+      color: 'blue',
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-800',
+      subtitleColor: 'text-blue-500'
+    },
+    {
+      id: 'macro-balance',
+      label: 'Balance',
+      value: totalMacros.calories > 0 ? 'Good' : 'Start',
+      unit: '',
+      subtitle: totalMacros.calories > 0 ? 'Tracking' : 'Adding',
+      color: 'purple',
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-800',
+      subtitleColor: 'text-purple-500'
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">🔥 Burn & Learn</h3>
+        <p className="text-sm text-gray-600">Tap items to learn more</p>
+      </div>
+
+      {/* Clickable Cards Grid - Same as Macro Cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {burnAndLearnItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onItemClick(item)}
+            className={`${item.bgColor} rounded-lg p-3 text-center hover:shadow-md transform hover:scale-105 transition-all`}
+          >
+            <div className={`text-xs ${item.subtitleColor} font-medium mb-1`}>{item.label}</div>
+            <div className={`text-lg font-bold ${item.textColor}`}>
+              {item.value}{item.unit}
+            </div>
+            <div className={`text-xs ${item.subtitleColor} mt-1`}>
+              {item.subtitle}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Info Section */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <h4 className="font-semibold text-gray-800 mb-2 text-center">Quick Tips</h4>
+        <div className="text-sm text-gray-600 space-y-1">
+          <div>• TDEE = Total Daily Energy Expenditure</div>
+          <div>• Surplus = Eating more than you burn</div>
+          <div>• Deficit = Eating less than you burn</div>
+          <div>• Protein goal varies by fitness goal</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Custom Trends View that uses current meal data
+function CustomTrendsView({ meals, totalMacros }) {
+  const mealTrends = meals.map(meal => ({
+    name: meal.name.replace('MidAfternoon Snack', 'Mid Snack').replace('PostWorkout', 'Post-WO'),
+    calories: meal.calories,
+    protein: meal.protein,
+    carbs: meal.carbs,
+    fat: meal.fat,
+    time: meal.time
+  }));
+
+  const highestCalorieMeal = meals.reduce((prev, current) =>
+    (prev.calories > current.calories) ? prev : current
+  );
+
+  const proteinPercentage = totalMacros.calories > 0 ? Math.round((totalMacros.protein * 4 / totalMacros.calories) * 100) : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">📈 Daily Trends</h3>
+        <p className="text-lg text-gray-600">{Math.round(totalMacros.calories)} total calories</p>
+      </div>
+
+      {/* Meal Progress Bars */}
+      <div className="space-y-3">
+        <h4 className="font-semibold text-gray-800">Meal Distribution</h4>
+        {mealTrends.filter(meal => meal.calories > 0).map((meal, index) => {
+          const percentage = totalMacros.calories > 0 ? (meal.calories / totalMacros.calories) * 100 : 0;
+          return (
+            <div key={index} className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-gray-700">{meal.name}</span>
+                <span className="text-gray-600">{Math.round(meal.calories)} cal ({Math.round(percentage)}%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(percentage, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Key Insights */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <h4 className="font-semibold text-gray-800 mb-3">Daily Insights</h4>
+        <div className="space-y-2 text-sm text-gray-700">
+          {totalMacros.calories > 0 ? (
+            <>
+              <div>🍽️ <strong>Biggest meal:</strong> {highestCalorieMeal.name} ({Math.round(highestCalorieMeal.calories)} cal)</div>
+              <div>💪 <strong>Protein intake:</strong> {proteinPercentage}% of calories</div>
+              <div>🕐 <strong>Meals logged:</strong> {meals.filter(m => m.calories > 0).length} of {meals.length}</div>
+              <div>⚡ <strong>Average per meal:</strong> {Math.round(totalMacros.calories / Math.max(meals.filter(m => m.calories > 0).length, 1))} cal</div>
+            </>
+          ) : (
+            <div>Start adding foods to see your daily trends and insights!</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Custom Bar Chart View that uses current meal data  
+function CustomBarChartView({ meals }) {
+  const activeMeals = meals.filter(meal => meal.calories > 0);
+
+  if (activeMeals.length === 0) {
+    return (
+      <div className="text-center p-8">
+        <div className="text-4xl mb-4">📊</div>
+        <h3 className="text-lg font-semibold text-gray-600 mb-2">No meals to display</h3>
+        <p className="text-sm text-gray-500">Start adding foods to see your meal breakdown!</p>
+      </div>
+    );
+  }
+
+  const maxCalories = Math.max(...activeMeals.map(m => m.calories));
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">📊 Meal Breakdown</h3>
+        <p className="text-lg text-gray-600">{activeMeals.length} meals logged</p>
+      </div>
+
+      {/* Bar Chart */}
+      <div className="space-y-4">
+        {activeMeals.map((meal, index) => {
+          const heightPercentage = maxCalories > 0 ? (meal.calories / maxCalories) * 100 : 0;
+          return (
+            <div key={index} className="space-y-2">
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="font-medium text-gray-800 text-sm">{meal.name}</div>
+                  <div className="text-xs text-gray-500">{meal.time}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-gray-800">{Math.round(meal.calories)} cal</div>
+                  <div className="text-xs text-gray-600">P:{Math.round(meal.protein)} C:{Math.round(meal.carbs)} F:{Math.round(meal.fat)}</div>
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 rounded-lg h-8 flex items-end overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg transition-all duration-500 flex items-center justify-center text-white text-xs font-medium"
+                  style={{ width: `${Math.max(heightPercentage, 5)}%`, height: '100%' }}
+                >
+                  {heightPercentage > 15 ? `${Math.round(meal.calories)}` : ''}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Summary */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <h4 className="font-semibold text-gray-800 mb-2">Meal Summary</h4>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-600">Highest:</span>
+            <span className="font-medium text-gray-800 ml-1">{Math.round(maxCalories)} cal</span>
+          </div>
+          <div>
+            <span className="text-gray-600">Average:</span>
+            <span className="font-medium text-gray-800 ml-1">{Math.round(activeMeals.reduce((sum, m) => sum + m.calories, 0) / activeMeals.length)} cal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
   const calorieData = {
     bmr: 1800,
@@ -1892,7 +2127,7 @@ const MealSwipeApp = () => {
                 <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
               <div className="p-4">
-                <TrendsView meals={meals} totalMacros={totalMacros} />
+                <CustomTrendsView meals={meals} totalMacros={totalMacros} />
               </div>
             </div>
           </div>
@@ -1920,7 +2155,7 @@ const MealSwipeApp = () => {
                 <button onClick={() => setShowGraphs(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
               <div className="p-4">
-                <BarChartView meals={meals} />
+                <CustomBarChartView meals={meals} />
               </div>
             </div>
           </div>
