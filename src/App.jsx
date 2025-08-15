@@ -113,35 +113,12 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   );
 }
 
-// Add Foods Modal Component - CARD-SIZED VERSION
+// Add Foods Modal Component - CLEANED UP VERSION
 function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, onOpenMealIdeas, mealSources }) {
   if (!isOpen) return null;
 
   const source = mealSources[mealName];
   const isUSDAOwned = source === 'usda';
-  const supportsMealIdeas = ['Breakfast', 'Lunch', 'Dinner'].includes(mealName);
-
-  const getServingReferenceForCategory = (categoryName) => {
-    const categoryMapping = {
-      'Protein': 'protein',
-      'Carbs': 'carbohydrate',
-      'Healthy Fats': 'fat',
-      'Supplements': 'supplements',
-      'Fruit': 'fruits',
-      'Vegetables': 'vegetables',
-      'Condiments': 'condiments',
-      'Junk/Drink': 'snacks'
-    };
-
-    const dbCategory = categoryMapping[categoryName];
-    if (!dbCategory) return '1 serving';
-
-    const foods = getFoodsInCategory(dbCategory);
-    if (foods.length === 0) return '1 serving';
-
-    const servingInfo = getServingInfo(dbCategory, foods[0]);
-    return servingInfo.palm;
-  };
 
   const categories = [
     [
@@ -164,7 +141,7 @@ function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, on
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md" style={{ height: '600px' }}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md" style={{ height: '500px' }}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-xl font-bold text-gray-800">Add Foods to {mealName}</h3>
@@ -185,21 +162,7 @@ function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, on
               <div className="text-blue-500 text-sm">Use the USDA Create Meal to modify</div>
             </div>
           ) : (
-            <div className="space-y-4 flex-1">
-              {supportsMealIdeas && onOpenMealIdeas && (
-                <button
-                  onClick={() => {
-                    onOpenMealIdeas(mealName.toLowerCase());
-                    onClose();
-                  }}
-                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
-                >
-                  <span className="text-xl">💡</span>
-                  <span>{mealName} Ideas</span>
-                  <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">Quick</span>
-                </button>
-              )}
-
+            <div className="space-y-3 flex-1">
               {categories.map((row, rowIndex) => (
                 <div key={rowIndex} className="grid grid-cols-2 gap-3">
                   {row.map((category) => (
@@ -212,20 +175,11 @@ function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, on
                       className={`${category.color} text-white p-4 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center justify-center gap-1`}
                     >
                       <span className="text-2xl">{category.icon}</span>
-                      <span className="text-xs font-semibold text-center">{category.name}</span>
-                      <div className="text-xs opacity-80 text-center">{getServingReferenceForCategory(category.name)}</div>
+                      <span className="text-sm font-semibold text-center">{category.name}</span>
                     </button>
                   ))}
                 </div>
               ))}
-
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                <div className="text-center">
-                  <div className="text-xl mb-1">👋</div>
-                  <div className="font-semibold text-gray-800 text-xs mb-1">Hand-Based Serving Guide</div>
-                  <div className="text-xs text-gray-500">Use your hand as a visual reference</div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -342,19 +296,22 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
         </div>
 
         {/* Food List - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="space-y-2">
             {foods.map((food) => {
               const servingInfo = getServingInfo(dbCategory, food);
+              const foodData = FoodDatabase[dbCategory][food];
               return (
                 <button
                   key={food}
                   onClick={() => setSelectedFood(food)}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${selectedFood === food ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  className={`w-full p-2 rounded-lg border-2 text-left transition-colors ${selectedFood === food ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
                 >
-                  <div className="font-medium text-gray-800 text-lg mb-1">{food}</div>
-                  <div className="text-sm text-gray-600 mb-2">{Math.round(FoodDatabase[dbCategory][food].calories)} cal per serving</div>
-                  <div className="text-xs text-blue-600">{servingInfo.palm}</div>
+                  <div className="text-sm leading-tight">
+                    <span className="font-bold text-gray-800">{food}</span>
+                    <span className="text-gray-600"> - {Math.round(foodData.calories)} cal per serving - </span>
+                    <span className="text-blue-600">{servingInfo.palm}</span>
+                  </div>
                 </button>
               );
             })}
