@@ -607,16 +607,16 @@ const MealSwipeApp = () => {
     'PostWorkout': 'postWorkout'
   };
 
-const [meals, setMeals] = useState([
-  { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },
-  { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },
-  { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },
-  { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },
-  { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] },
-  { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },
-  { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] },
-  { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] }
-]);
+  const [meals, setMeals] = useState([
+    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },
+    { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },
+    { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },
+    { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },
+    { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] },
+    { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },
+    { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] },
+    { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] }
+  ]);
 
   const [currentCard, setCurrentCard] = useState(0);
   const [cardPositions, setCardPositions] = useState(meals.map(() => ({ x: 0, y: 0, rotation: 0 })));
@@ -1159,7 +1159,6 @@ const [meals, setMeals] = useState([
       return meal;
     }));
   };
-};
 
   const calculatePieData = (meal) => {
     const proteinCals = meal.protein * 4;
@@ -1464,7 +1463,7 @@ const [meals, setMeals] = useState([
     }
   };
 
-   return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-blue-500 to-red-600 p-4">
       <div className="max-w-md mx-auto">
         {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
@@ -1855,5 +1854,6 @@ const [meals, setMeals] = useState([
       </div>
     </div>
   );
+};
 
 export default MealSwipeApp;
