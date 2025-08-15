@@ -6,7 +6,9 @@ import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
 import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
-import WeekPlanModal from './WeekPlanModal.jsx'; // Import the standalone WeekPlanModal
+import WeekPlanModal from './WeekPlanModal.jsx';
+// Import individual analytics components from WelcomeScreen
+import { BurnAndLearnView, TrendsView, BarChartView, PieChartView } from './WelcomeScreen.jsx';
 
 // Time Picker Modal Component
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
@@ -604,6 +606,12 @@ const MealSwipeApp = () => {
 
   // Add WeekPlanModal state
   const [isWeekPlanModalOpen, setIsWeekPlanModalOpen] = useState(false);
+
+  // Analytics modals state
+  const [showBurnAndLearn, setShowBurnAndLearn] = useState(false);
+  const [showTrends, setShowTrends] = useState(false);
+  const [showPieChart, setShowPieChart] = useState(false);
+  const [showGraphs, setShowGraphs] = useState(false);
 
   const dragRef = useRef({ startX: 0, startY: 0 });
 
@@ -1347,28 +1355,28 @@ const MealSwipeApp = () => {
               {/* Analytics Grid - Same 4-column format */}
               <div className="grid grid-cols-4 gap-3 mb-4">
                 <button
-                  onClick={() => {/* Add Burn and Learn functionality */ }}
+                  onClick={() => setShowBurnAndLearn(true)}
                   className="bg-gradient-to-br from-red-500 to-red-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">🔥</div>
                   <div className="text-xs font-semibold">Burn & Learn</div>
                 </button>
                 <button
-                  onClick={() => {/* Add Trends functionality */ }}
+                  onClick={() => setShowTrends(true)}
                   className="bg-gradient-to-br from-teal-500 to-teal-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">📈</div>
                   <div className="text-xs font-semibold">Trends</div>
                 </button>
                 <button
-                  onClick={() => {/* Add Pie Chart functionality */ }}
+                  onClick={() => setShowPieChart(true)}
                   className="bg-gradient-to-br from-pink-500 to-pink-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">🥧</div>
                   <div className="text-xs font-semibold">Pie Chart</div>
                 </button>
                 <button
-                  onClick={() => {/* Add Graphs functionality */ }}
+                  onClick={() => setShowGraphs(true)}
                   className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">📊</div>
@@ -1566,6 +1574,63 @@ const MealSwipeApp = () => {
           calorieData={calorieData}
           isMobile={true}
         />
+
+        {/* Analytics Modals */}
+        {showBurnAndLearn && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">🔥 Burn & Learn</h3>
+                <button onClick={() => setShowBurnAndLearn(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              </div>
+              <div className="p-4">
+                <BurnAndLearnView totalMacros={totalMacros} profile={profile} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showTrends && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">📈 Daily Trends</h3>
+                <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              </div>
+              <div className="p-4">
+                <TrendsView meals={meals} totalMacros={totalMacros} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPieChart && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">🥧 Macro Distribution</h3>
+                <button onClick={() => setShowPieChart(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              </div>
+              <div className="p-4">
+                <PieChartView totalMacros={totalMacros} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showGraphs && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">📊 Meal Breakdown</h3>
+                <button onClick={() => setShowGraphs(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              </div>
+              <div className="p-4">
+                <BarChartView meals={meals} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
