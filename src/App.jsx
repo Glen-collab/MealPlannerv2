@@ -113,7 +113,7 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   );
 }
 
-// Add Foods Modal Component - NEW FULL SCREEN VERSION
+// Add Foods Modal Component - CARD-SIZED VERSION
 function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, onOpenMealIdeas, mealSources }) {
   if (!isOpen) return null;
 
@@ -163,75 +163,71 @@ function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, on
   ];
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
-      <div className="h-full flex flex-col">
-        <div className="p-4 text-center text-white flex justify-between items-center">
-          <div className="w-8"></div>
-          <div>
-            <h3 className="text-xl font-bold">Add Foods to {mealName}</h3>
-            <p className="text-sm opacity-80">Select a category to add food</p>
-          </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md" style={{ height: '600px' }}>
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800">Add Foods to {mealName}</h3>
           <button
             onClick={onClose}
-            className="text-white hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center"
+            className="text-gray-500 hover:text-gray-700 text-2xl"
           >
             ×
           </button>
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-4 pb-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
-            {isUSDAOwned ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
-                <div className="text-4xl mb-4">🔒</div>
-                <div className="text-blue-600 font-medium text-lg mb-2">This meal is managed by USDA Search</div>
-                <div className="text-blue-500 text-sm">Use the USDA Create Meal to modify</div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {supportsMealIdeas && onOpenMealIdeas && (
-                  <button
-                    onClick={() => {
-                      onOpenMealIdeas(mealName.toLowerCase());
-                      onClose();
-                    }}
-                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-3"
-                  >
-                    <span className="text-2xl">💡</span>
-                    <span className="text-lg">{mealName} Ideas</span>
-                    <span className="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">Quick</span>
-                  </button>
-                )}
+        {/* Content */}
+        <div className="p-4 h-full overflow-hidden flex flex-col">
+          {isUSDAOwned ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center flex-1 flex flex-col items-center justify-center">
+              <div className="text-4xl mb-4">🔒</div>
+              <div className="text-blue-600 font-medium text-lg mb-2">This meal is managed by USDA Search</div>
+              <div className="text-blue-500 text-sm">Use the USDA Create Meal to modify</div>
+            </div>
+          ) : (
+            <div className="space-y-4 flex-1">
+              {supportsMealIdeas && onOpenMealIdeas && (
+                <button
+                  onClick={() => {
+                    onOpenMealIdeas(mealName.toLowerCase());
+                    onClose();
+                  }}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="text-xl">💡</span>
+                  <span>{mealName} Ideas</span>
+                  <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">Quick</span>
+                </button>
+              )}
 
-                {categories.map((row, rowIndex) => (
-                  <div key={rowIndex} className="grid grid-cols-2 gap-4">
-                    {row.map((category) => (
-                      <button
-                        key={category.name}
-                        onClick={() => {
-                          onSelectCategory(category.name, mealId);
-                          onClose();
-                        }}
-                        className={`${category.color} text-white p-6 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center justify-center gap-2`}
-                      >
-                        <span className="text-3xl">{category.icon}</span>
-                        <span className="text-sm font-semibold text-center">{category.name}</span>
-                        <div className="text-xs opacity-80 text-center">{getServingReferenceForCategory(category.name)}</div>
-                      </button>
-                    ))}
-                  </div>
-                ))}
+              {categories.map((row, rowIndex) => (
+                <div key={rowIndex} className="grid grid-cols-2 gap-3">
+                  {row.map((category) => (
+                    <button
+                      key={category.name}
+                      onClick={() => {
+                        onSelectCategory(category.name, mealId);
+                        onClose();
+                      }}
+                      className={`${category.color} text-white p-4 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center justify-center gap-1`}
+                    >
+                      <span className="text-2xl">{category.icon}</span>
+                      <span className="text-xs font-semibold text-center">{category.name}</span>
+                      <div className="text-xs opacity-80 text-center">{getServingReferenceForCategory(category.name)}</div>
+                    </button>
+                  ))}
+                </div>
+              ))}
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                  <div className="text-center">
-                    <div className="text-2xl mb-2">👋</div>
-                    <div className="font-semibold text-gray-800 mb-1">Hand-Based Serving Guide</div>
-                    <div className="text-xs text-gray-500">Use your hand as a visual reference for portion sizes</div>
-                  </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                <div className="text-center">
+                  <div className="text-xl mb-1">👋</div>
+                  <div className="font-semibold text-gray-800 text-xs mb-1">Hand-Based Serving Guide</div>
+                  <div className="text-xs text-gray-500">Use your hand as a visual reference</div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -338,12 +334,14 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-96 flex flex-col">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="bg-white rounded-2xl w-full max-w-lg h-5/6 flex flex-col">
+        {/* Header - Fixed */}
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
           <h3 className="text-xl font-bold text-gray-800">{category}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
         </div>
 
+        {/* Food List - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-3">
             {foods.map((food) => {
@@ -352,22 +350,23 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
                 <button
                   key={food}
                   onClick={() => setSelectedFood(food)}
-                  className={`w-full p-3 rounded-lg border-2 text-left transition-colors ${selectedFood === food ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${selectedFood === food ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
                 >
-                  <div className="font-medium text-gray-800">{food}</div>
-                  <div className="text-sm text-gray-600">{Math.round(FoodDatabase[dbCategory][food].calories)} cal per serving</div>
-                  <div className="text-xs text-blue-600 mt-1">{servingInfo.palm}</div>
+                  <div className="font-medium text-gray-800 text-lg mb-1">{food}</div>
+                  <div className="text-sm text-gray-600 mb-2">{Math.round(FoodDatabase[dbCategory][food].calories)} cal per serving</div>
+                  <div className="text-xs text-blue-600">{servingInfo.palm}</div>
                 </button>
               );
             })}
           </div>
         </div>
 
+        {/* Bottom Section - Fixed */}
         {selectedFood && (
-          <div className="p-4 border-t border-gray-200">
-            <div className="mb-3">
-              <div className="text-sm text-gray-600 mb-2">Reference: {getServingInfo(dbCategory, selectedFood).palm}</div>
-              <div className="flex items-center gap-3">
+          <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
+            <div className="mb-4">
+              <div className="text-sm text-gray-600 mb-3 font-medium">Reference: {getServingInfo(dbCategory, selectedFood).palm}</div>
+              <div className="flex items-center gap-4">
                 <label className="text-sm font-medium text-gray-700">Servings:</label>
                 <input
                   type="number"
@@ -375,13 +374,13 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
                   onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 1))}
                   step="0.1"
                   min="0.1"
-                  className="w-20 p-2 border border-gray-300 rounded-lg text-center"
+                  className="w-24 p-3 border border-gray-300 rounded-lg text-center text-lg"
                 />
               </div>
             </div>
             <button
               onClick={handleAddFood}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors text-lg"
             >
               Add {selectedFood}
             </button>
