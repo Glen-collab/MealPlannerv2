@@ -398,11 +398,13 @@ function BarChartView({ meals }) {
   const barData = meals
     .filter(meal => meal.calories > 0)
     .map(meal => {
-      console.log(`${meal.name}: ${meal.calories} cal, ${meal.sugar}g sugar`);
+      // Calculate sugar safely - use actual sugar if available, otherwise estimate from carbs
+      const sugarValue = meal.sugar || Math.round(meal.carbs * 0.3);
+      console.log(`${meal.name}: ${meal.calories} cal, ${sugarValue}g sugar`);
       return {
         name: meal.name.length > 8 ? meal.name.substring(0, 8) + '...' : meal.name,
         calories: Math.round(meal.calories),
-        sugar: Math.round(meal.sugar * 10) // Multiply by 10 to make visible alongside calories
+        sugar: Math.round(sugarValue * 10) // Multiply by 10 to make visible alongside calories
       };
     });
 
@@ -410,7 +412,7 @@ function BarChartView({ meals }) {
     <div className="space-y-4">
       <div className="text-center mb-4">
         <h3 className="text-xl font-bold text-gray-800 mb-2">📊 Meal Breakdown</h3>
-        <p className="text-sm text-gray-600">Calories and estimated sugar per meal</p>
+        <p className="text-sm text-gray-600">Calories and sugar per meal</p>
       </div>
 
       {barData.length > 0 ? (
@@ -428,7 +430,7 @@ function BarChartView({ meals }) {
               <YAxis />
               <Tooltip
                 formatter={(value, name) => [
-                  name === 'sugar' ? `${Math.round(value / 10)}g (est)` : `${value} cal`,
+                  name === 'sugar' ? `${Math.round(value / 10)}g` : `${value} cal`,
                   name === 'sugar' ? 'Sugar' : 'Calories'
                 ]}
               />
@@ -450,7 +452,7 @@ function BarChartView({ meals }) {
       {barData.length > 0 && (
         <div className="text-center text-xs text-gray-600">
           <span className="inline-block w-3 h-3 bg-blue-500 mr-1"></span>Calories
-          <span className="inline-block w-3 h-3 bg-orange-500 mr-1 ml-4"></span>Sugar (est, x10)
+          <span className="inline-block w-3 h-3 bg-orange-500 mr-1 ml-4"></span>Sugar (x10 scale)
         </div>
       )}
     </div>
