@@ -607,16 +607,16 @@ const MealSwipeApp = () => {
     'PostWorkout': 'postWorkout'
   };
 
-  const [meals, setMeals] = useState([
-    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, calories: 0, time: '7:00 AM', items: [] },
-    { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, calories: 0, time: '9:30 AM', items: [] },
-    { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, calories: 0, time: '11:00 AM', items: [] },
-    { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, calories: 0, time: '12:30 PM', items: [] },
-    { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, calories: 0, time: '3:30 PM', items: [] },
-    { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, calories: 0, time: '6:30 PM', items: [] },
-    { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, calories: 0, time: '8:30 PM', items: [] },
-    { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, calories: 0, time: '5:00 PM', items: [] }
-  ]);
+const [meals, setMeals] = useState([
+  { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },
+  { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },
+  { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },
+  { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },
+  { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] },
+  { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },
+  { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] },
+  { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] }
+]);
 
   const [currentCard, setCurrentCard] = useState(0);
   const [cardPositions, setCardPositions] = useState(meals.map(() => ({ x: 0, y: 0, rotation: 0 })));
@@ -1015,6 +1015,7 @@ const MealSwipeApp = () => {
           protein: Math.round(foodData.protein * servings),
           carbs: Math.round(foodData.carbs * servings),
           fat: Math.round(foodData.fat * servings),
+          sugar: Math.round(foodData.sugar * servings), // ADD THIS LINE
           calories: Math.round(foodData.calories * servings),
           source: 'quickview'
         };
@@ -1025,6 +1026,7 @@ const MealSwipeApp = () => {
           protein: Math.round(meal.protein + foodData.protein * servings),
           carbs: Math.round(meal.carbs + foodData.carbs * servings),
           fat: Math.round(meal.fat + foodData.fat * servings),
+          sugar: Math.round(meal.sugar + foodData.sugar * servings), // ADD THIS LINE
           calories: Math.round(meal.calories + foodData.calories * servings)
         };
       }
@@ -1033,22 +1035,23 @@ const MealSwipeApp = () => {
   };
 
   const removeFoodFromMeal = (mealId, itemIndex) => {
-    setMeals(prev => prev.map(meal => {
-      if (meal.id === mealId) {
-        const itemToRemove = meal.items[itemIndex];
-        const updatedItems = meal.items.filter((_, index) => index !== itemIndex);
-        return {
-          ...meal,
-          items: updatedItems,
-          protein: Math.max(0, Math.round(meal.protein - itemToRemove.protein)),
-          carbs: Math.max(0, Math.round(meal.carbs - itemToRemove.carbs)),
-          fat: Math.max(0, Math.round(meal.fat - itemToRemove.fat)),
-          calories: Math.max(0, Math.round(meal.calories - itemToRemove.calories))
-        };
-      }
-      return meal;
-    }));
-  };
+  setMeals(prev => prev.map(meal => {
+    if (meal.id === mealId) {
+      const itemToRemove = meal.items[itemIndex];
+      const updatedItems = meal.items.filter((_, index) => index !== itemIndex);
+      return {
+        ...meal,
+        items: updatedItems,
+        protein: Math.max(0, Math.round(meal.protein - itemToRemove.protein)),
+        carbs: Math.max(0, Math.round(meal.carbs - itemToRemove.carbs)),
+        fat: Math.max(0, Math.round(meal.fat - itemToRemove.fat)),
+        sugar: Math.max(0, Math.round(meal.sugar - itemToRemove.sugar)), // ADD THIS LINE
+        calories: Math.max(0, Math.round(meal.calories - itemToRemove.calories))
+      };
+    }
+    return meal;
+  }));
+};
 
   const calculatePieData = (meal) => {
     const proteinCals = meal.protein * 4;
@@ -1068,10 +1071,9 @@ const MealSwipeApp = () => {
     meals.forEach(meal => {
       const mealType = mealTypeMapping[meal.name];
       if (mealType) {
-        const estimatedSugar = Math.round(meal.carbs * 0.3);
         allMeals[mealType] = {
           time: meal.time,
-          totals: { calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, sugar: estimatedSugar },
+          totals: { calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, sugar: meal.sugar },
           items: meal.items,
           pieData: calculatePieData(meal)
         };
@@ -1281,6 +1283,7 @@ const MealSwipeApp = () => {
     protein: Math.round(total.protein + meal.protein),
     carbs: Math.round(total.carbs + meal.carbs),
     fat: Math.round(total.fat + meal.fat),
+    sugar: Math.round(total.sugar + meal.sugar),
     calories: Math.round(total.calories + meal.calories)
   }), { protein: 0, carbs: 0, fat: 0, calories: 0 });
 
