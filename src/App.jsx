@@ -113,37 +113,10 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   );
 }
 
-function MealMessageSection({ meal, profile, getMealMessage }) {
-  const [message, setMessage] = useState('');
+// Add Foods Modal Component - NEW FULL SCREEN VERSION
+function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, onOpenMealIdeas, mealSources }) {
+  if (!isOpen) return null;
 
-  useEffect(() => {
-    if (meal && meal.calories > 0) {
-      const mealMessage = getMealMessage(meal);
-      setMessage(mealMessage || '');
-    } else {
-      setMessage('');
-    }
-  }, [meal, profile, getMealMessage]);
-
-  if (!message) return null;
-
-  return (
-    <div className="pt-4">
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="text-2xl">💡</div>
-          <div className="flex-1">
-            <h4 className="font-semibold text-gray-800 mb-2">Nutrition Insight</h4>
-            <p className="text-sm text-gray-700 leading-relaxed">{message}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Enhanced Food Category Grid with meal ideas button
-function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onOpenMealIdeas }) {
   const source = mealSources[mealName];
   const isUSDAOwned = source === 'usda';
   const supportsMealIdeas = ['Breakfast', 'Lunch', 'Dinner'].includes(mealName);
@@ -189,6 +162,117 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onO
     ]
   ];
 
+  return (
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
+      <div className="h-full flex flex-col">
+        <div className="p-4 text-center text-white flex justify-between items-center">
+          <div className="w-8"></div>
+          <div>
+            <h3 className="text-xl font-bold">Add Foods to {mealName}</h3>
+            <p className="text-sm opacity-80">Select a category to add food</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-4 pb-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+            {isUSDAOwned ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+                <div className="text-4xl mb-4">🔒</div>
+                <div className="text-blue-600 font-medium text-lg mb-2">This meal is managed by USDA Search</div>
+                <div className="text-blue-500 text-sm">Use the USDA Create Meal to modify</div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {supportsMealIdeas && onOpenMealIdeas && (
+                  <button
+                    onClick={() => {
+                      onOpenMealIdeas(mealName.toLowerCase());
+                      onClose();
+                    }}
+                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-3"
+                  >
+                    <span className="text-2xl">💡</span>
+                    <span className="text-lg">{mealName} Ideas</span>
+                    <span className="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">Quick</span>
+                  </button>
+                )}
+
+                {categories.map((row, rowIndex) => (
+                  <div key={rowIndex} className="grid grid-cols-2 gap-4">
+                    {row.map((category) => (
+                      <button
+                        key={category.name}
+                        onClick={() => {
+                          onSelectCategory(category.name, mealId);
+                          onClose();
+                        }}
+                        className={`${category.color} text-white p-6 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center justify-center gap-2`}
+                      >
+                        <span className="text-3xl">{category.icon}</span>
+                        <span className="text-sm font-semibold text-center">{category.name}</span>
+                        <div className="text-xs opacity-80 text-center">{getServingReferenceForCategory(category.name)}</div>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <div className="text-center">
+                    <div className="text-2xl mb-2">👋</div>
+                    <div className="font-semibold text-gray-800 mb-1">Hand-Based Serving Guide</div>
+                    <div className="text-xs text-gray-500">Use your hand as a visual reference for portion sizes</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MealMessageSection({ meal, profile, getMealMessage }) {
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (meal && meal.calories > 0) {
+      const mealMessage = getMealMessage(meal);
+      setMessage(mealMessage || '');
+    } else {
+      setMessage('');
+    }
+  }, [meal, profile, getMealMessage]);
+
+  if (!message) return null;
+
+  return (
+    <div className="pt-4">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="text-2xl">💡</div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-800 mb-2">Nutrition Insight</h4>
+            <p className="text-sm text-gray-700 leading-relaxed">{message}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// UPDATED Food Category Grid - Now just shows Add Foods button
+function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onOpenMealIdeas, onOpenAddFoodsModal }) {
+  const source = mealSources[mealName];
+  const isUSDAOwned = source === 'usda';
+  const supportsMealIdeas = ['Breakfast', 'Lunch', 'Dinner'].includes(mealName);
+
   if (isUSDAOwned) {
     return (
       <div className="space-y-3">
@@ -203,46 +287,26 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onO
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Add Foods</h3>
+      {/* ADD FOOD BUTTON */}
+      <button
+        onClick={() => onOpenAddFoodsModal(mealId, mealName)}
+        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
+      >
+        <span className="text-xl">➕</span>
+        <span>Add Foods</span>
+      </button>
 
-      {/* MEAL IDEAS BUTTON - Ready for MealIdeas integration */}
+      {/* MEAL IDEAS BUTTON - Only for main meals */}
       {supportsMealIdeas && onOpenMealIdeas && (
-        <div className="mb-4">
-          <button
-            onClick={() => onOpenMealIdeas(mealName.toLowerCase())}
-            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
-          >
-            <span className="text-xl">💡</span>
-            <span>{mealName} Ideas</span>
-            <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">Quick</span>
-          </button>
-        </div>
+        <button
+          onClick={() => onOpenMealIdeas(mealName.toLowerCase())}
+          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
+        >
+          <span className="text-xl">💡</span>
+          <span>{mealName} Ideas</span>
+          <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">Quick</span>
+        </button>
       )}
-
-      {categories.map((row, rowIndex) => (
-        <div key={rowIndex} className="grid grid-cols-2 gap-3">
-          {row.map((category) => (
-            <button
-              key={category.name}
-              onClick={() => onSelectCategory(category.name, mealId)}
-              className={`${category.color} text-white p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center justify-center gap-1`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{category.icon}</span>
-                <span className="text-sm font-semibold">{category.name}</span>
-              </div>
-              <div className="text-xs opacity-80">{getServingReferenceForCategory(category.name)}</div>
-            </button>
-          ))}
-        </div>
-      ))}
-
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mt-4">
-        <div className="text-xs text-gray-600 text-center">
-          <div className="font-semibold mb-1">👋 Hand-Based Serving Guide</div>
-          <div className="text-xs text-gray-500">Use your hand as a visual reference for portion sizes</div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -389,7 +453,8 @@ function FullScreenSwipeInterface({
   getMealMessage,
   mealSources,
   onClaimMeal,
-  onOpenMealIdeas
+  onOpenMealIdeas,
+  onOpenAddFoodsModal
 }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMealForTime, setSelectedMealForTime] = useState(null);
@@ -515,6 +580,7 @@ function FullScreenSwipeInterface({
                         mealSources={mealSources}
                         mealName={meal.name}
                         onOpenMealIdeas={onOpenMealIdeas}
+                        onOpenAddFoodsModal={onOpenAddFoodsModal}
                       />
 
                       <MealFoodList
@@ -600,6 +666,11 @@ const MealSwipeApp = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
 
+  // NEW: Add Foods Modal state
+  const [showAddFoodsModal, setShowAddFoodsModal] = useState(false);
+  const [selectedMealForAddFoods, setSelectedMealForAddFoods] = useState(null);
+  const [selectedMealNameForAddFoods, setSelectedMealNameForAddFoods] = useState('');
+
   // State for MealIdeas
   const [showMealIdeas, setShowMealIdeas] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('breakfast');
@@ -614,6 +685,19 @@ const MealSwipeApp = () => {
   const [showGraphs, setShowGraphs] = useState(false);
 
   const dragRef = useRef({ startX: 0, startY: 0 });
+
+  // NEW: Add Foods Modal handlers
+  const handleOpenAddFoodsModal = (mealId, mealName) => {
+    setSelectedMealForAddFoods(mealId);
+    setSelectedMealNameForAddFoods(mealName);
+    setShowAddFoodsModal(true);
+  };
+
+  const handleCloseAddFoodsModal = () => {
+    setShowAddFoodsModal(false);
+    setSelectedMealForAddFoods(null);
+    setSelectedMealNameForAddFoods('');
+  };
 
   // Helper function to handle meal ideas opening
   const handleOpenMealIdeas = (mealType) => {
@@ -1486,6 +1570,7 @@ const MealSwipeApp = () => {
             mealSources={mealSources}
             onClaimMeal={claimMeal}
             onOpenMealIdeas={handleOpenMealIdeas}
+            onOpenAddFoodsModal={handleOpenAddFoodsModal}
           />
         )}
 
@@ -1515,6 +1600,17 @@ const MealSwipeApp = () => {
             onClose={closeFoodSelection}
           />
         )}
+
+        {/* NEW: Add Foods Modal */}
+        <AddFoodsModal
+          isOpen={showAddFoodsModal}
+          onClose={handleCloseAddFoodsModal}
+          mealId={selectedMealForAddFoods}
+          mealName={selectedMealNameForAddFoods}
+          onSelectCategory={openFoodSelection}
+          onOpenMealIdeas={handleOpenMealIdeas}
+          mealSources={mealSources}
+        />
 
         <USDAMealCreator
           isOpen={showCreateMeal}
