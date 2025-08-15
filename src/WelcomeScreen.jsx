@@ -638,8 +638,8 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
         <button
           onClick={() => setViewMode('burn')}
           className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'burn'
-              ? 'bg-orange-500 text-white shadow-lg'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ? 'bg-orange-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
         >
           🔥 Burn
@@ -647,8 +647,8 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
         <button
           onClick={() => setViewMode('trends')}
           className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'trends'
-              ? 'bg-blue-500 text-white shadow-lg'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ? 'bg-blue-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
         >
           📈 Trends
@@ -656,8 +656,8 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
         <button
           onClick={() => setViewMode('bar')}
           className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'bar'
-              ? 'bg-green-500 text-white shadow-lg'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ? 'bg-green-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
         >
           📊 Graph
@@ -665,8 +665,8 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
         <button
           onClick={() => setViewMode('pie')}
           className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'pie'
-              ? 'bg-purple-500 text-white shadow-lg'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ? 'bg-purple-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
         >
           🥧 Pie
@@ -675,11 +675,10 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
 
       {/* Dynamic Chart Content */}
       <div className="min-h-[300px]">
-        // Then in your modals, use:
-        <BurnAndLearnView totalMacros={totalMacros} profile={profile} />
-        <TrendsView meals={meals} totalMacros={totalMacros} />
-        <BarChartView meals={meals} />
-        <PieChartView totalMacros={totalMacros} />
+        {viewMode === 'burn' && <BurnAndLearnView totalMacros={totalMacros} profile={profile} />}
+        {viewMode === 'trends' && <TrendsView meals={meals} totalMacros={totalMacros} />}
+        {viewMode === 'bar' && <BarChartView meals={meals} />}
+        {viewMode === 'pie' && <PieChartView totalMacros={totalMacros} />}
       </div>
     </div>
   );
