@@ -9,10 +9,10 @@ import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
 // Import chart components from WelcomeScreen module
 import {
-  BurnAndLearnView,  // Original working version
-  TrendsView,        // Original working version  
-  BarChartView,      // Original working version
-  PieChartView       // Original working version
+  ClickableBurnAndLearnView,
+  CustomTrendsView,
+  CustomBarChartView,
+  DailyPieChartView
 } from './WelcomeScreen.jsx';
 // Custom Burn & Learn View with Clickable Macro-Style Buttons
 function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
@@ -1066,6 +1066,8 @@ const MealSwipeApp = () => {
   const [showPieChart, setShowPieChart] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
   const [burnAndLearnDetails, setBurnAndLearnDetails] = useState(null);
+
+  const dragRef = useRef({ startX: 0, startY: 0 });
 
   const dragRef = useRef({ startX: 0, startY: 0 });
 
