@@ -397,11 +397,14 @@ function CustomBarChartView({ meals }) {
 function BarChartView({ meals }) {
   const barData = meals
     .filter(meal => meal.calories > 0)
-    .map(meal => ({
-      name: meal.name.length > 8 ? meal.name.substring(0, 8) + '...' : meal.name,
-      calories: Math.round(meal.calories),
-      sugar: Math.round(meal.sugar * 10) // Use actual Sugar x10 to make visible
-    }));
+    .map(meal => {
+      console.log(`${meal.name}: ${meal.calories} cal, ${meal.sugar}g sugar`);
+      return {
+        name: meal.name.length > 8 ? meal.name.substring(0, 8) + '...' : meal.name,
+        calories: Math.round(meal.calories),
+        sugar: Math.round(meal.sugar * 10) // Multiply by 10 to make visible alongside calories
+      };
+    });
 
   return (
     <div className="space-y-4">
