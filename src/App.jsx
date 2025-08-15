@@ -8,8 +8,100 @@ import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
-// Import individual analytics components from WelcomeScreen
-import { BurnAndLearnView, TrendsView, BarChartView, PieChartView } from './WelcomeScreen.jsx';
+// Custom Burn & Learn View with Clickable Macro-Style Buttons
+function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
+  const calorieData = {
+    bmr: 1800,
+    tdee: 2200,
+    targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500
+  };
+
+  const burnAndLearnItems = [
+    {
+      id: 'tdee',
+      label: 'Daily Burn',
+      value: `${calorieData.tdee}`,
+      unit: 'cal',
+      subtitle: 'TDEE',
+      color: 'red',
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-800',
+      subtitleColor: 'text-red-500'
+    },
+    {
+      id: 'surplus-deficit',
+      label: totalMacros.calories > calorieData.targetCalories ? 'Surplus' : 'Deficit',
+      value: `${Math.abs(totalMacros.calories - calorieData.targetCalories)}`,
+      unit: 'cal',
+      subtitle: totalMacros.calories > calorieData.targetCalories ? 'Over target' : 'Under target',
+      color: totalMacros.calories > calorieData.targetCalories ? 'orange' : 'green',
+      bgColor: totalMacros.calories > calorieData.targetCalories ? 'bg-orange-100' : 'bg-green-100',
+      textColor: totalMacros.calories > calorieData.targetCalories ? 'text-orange-800' : 'text-green-800',
+      subtitleColor: totalMacros.calories > calorieData.targetCalories ? 'text-orange-500' : 'text-green-500'
+    },
+    {
+      id: 'protein-target',
+      label: 'Protein Goal',
+      value: profile.goal === 'dirty-bulk' ? '150' : profile.goal === 'gain-muscle' ? '130' : profile.goal === 'lose' ? '120' : '100',
+      unit: 'g',
+      subtitle: `${Math.round(totalMacros.protein)}g eaten`,
+      color: 'blue',
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-800',
+      subtitleColor: 'text-blue-500'
+    },
+    {
+      id: 'macro-balance',
+      label: 'Balance',
+      value: totalMacros.calories > 0 ? 'Good' : 'Start',
+      unit: '',
+      subtitle: totalMacros.calories > 0 ? 'Tracking' : 'Adding',
+      color: 'purple',
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-800',
+      subtitleColor: 'text-purple-500'
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">🔥 Burn & Learn</h3>
+        <p className="text-sm text-gray-600">Tap items to learn more</p>
+      </div>
+
+      {/* Clickable Cards Grid - Same as Macro Cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {burnAndLearnItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onItemClick(item)}
+            className={`${item.bgColor} rounded-lg p-3 text-center hover:shadow-md transform hover:scale-105 transition-all`}
+          >
+            <div className={`text-xs ${item.subtitleColor} font-medium mb-1`}>{item.label}</div>
+            <div className={`text-lg font-bold ${item.textColor}`}>
+              {item.value}{item.unit}
+            </div>
+            <div className={`text-xs ${item.subtitleColor} mt-1`}>
+              {item.subtitle}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Info Section */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <h4 className="font-semibold text-gray-800 mb-2 text-center">Quick Tips</h4>
+        <div className="text-sm text-gray-600 space-y-1">
+          <div>• TDEE = Total Daily Energy Expenditure</div>
+          <div>• Surplus = Eating more than you burn</div>
+          <div>• Deficit = Eating less than you burn</div>
+          <div>• Protein goal varies by fitness goal</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Time Picker Modal Component
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
@@ -738,8 +830,37 @@ const MealSwipeApp = () => {
   const [showTrends, setShowTrends] = useState(false);
   const [showPieChart, setShowPieChart] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
+  const [burnAndLearnDetails, setBurnAndLearnDetails] = useState(null);
 
   const dragRef = useRef({ startX: 0, startY: 0 });
+
+  // Handle Burn & Learn item clicks
+  const handleBurnAndLearnClick = (item) => {
+    const currentCalorieData = calculateTDEE(profile);
+    const details = {
+      'tdee': {
+        title: '🔥 Total Daily Energy Expenditure',
+        content: `Your TDEE of ${currentCalorieData.tdee} calories represents how much energy your body burns in a full day, including exercise. This is calculated from your BMR (${currentCalorieData.bmr} cal) plus activity level (${profile.exerciseLevel}).`
+      },
+      'surplus-deficit': {
+        title: totalMacros.calories > currentCalorieData.targetCalories ? '📈 Caloric Surplus' : '📉 Caloric Deficit',
+        content: totalMacros.calories > currentCalorieData.targetCalories
+          ? `You're eating ${Math.abs(totalMacros.calories - currentCalorieData.targetCalories)} calories above your target. This surplus will contribute to weight gain - perfect for ${profile.goal === 'dirty-bulk' ? 'dirty bulking' : 'muscle building'} goals!`
+          : `You're eating ${Math.abs(totalMacros.calories - currentCalorieData.targetCalories)} calories below your target. This deficit will contribute to weight loss and help with ${profile.goal === 'lose' ? 'fat loss' : 'lean gains'} goals.`
+      },
+      'protein-target': {
+        title: '💪 Protein Target',
+        content: `Your protein goal of ${profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} is optimized for ${profile.goal}. You've consumed ${Math.round(totalMacros.protein)}g so far. Protein helps build muscle, keeps you full, and supports recovery.`
+      },
+      'macro-balance': {
+        title: '⚖️ Macro Balance',
+        content: totalMacros.calories > 0
+          ? `You're tracking your nutrition! Keep logging foods to maintain awareness of your intake and hit your ${profile.goal} goals consistently.`
+          : `Start adding foods to track your macro balance. Consistent tracking is key to achieving your ${profile.goal} goals!`
+      }
+    };
+    setBurnAndLearnDetails(details[item.id]);
+  };
 
   // NEW: Add Foods Modal handlers
   const handleOpenAddFoodsModal = (mealId, mealName) => {
@@ -1732,10 +1853,32 @@ const MealSwipeApp = () => {
             <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
               <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800">🔥 Burn & Learn</h3>
-                <button onClick={() => setShowBurnAndLearn(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                <button onClick={() => {
+                  setShowBurnAndLearn(false);
+                  setBurnAndLearnDetails(null);
+                }} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
               <div className="p-4">
-                <BurnAndLearnView totalMacros={totalMacros} profile={profile} />
+                {burnAndLearnDetails ? (
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => setBurnAndLearnDetails(null)}
+                      className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                    >
+                      ← Back to overview
+                    </button>
+                    <div>
+                      <h4 className="text-lg font-bold text-gray-800 mb-3">{burnAndLearnDetails.title}</h4>
+                      <p className="text-gray-700 leading-relaxed">{burnAndLearnDetails.content}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <ClickableBurnAndLearnView
+                    totalMacros={totalMacros}
+                    profile={profile}
+                    onItemClick={handleBurnAndLearnClick}
+                  />
+                )}
               </div>
             </div>
           </div>
