@@ -467,8 +467,8 @@ function DailyPieChartView({ totalMacros }) {
 
   if (totalCals === 0) {
     return (
-      <div className="text-center p-8">
-        <div className="text-4xl mb-4">🍽️</div>
+      <div className="text-center p-6">
+        <div className="text-3xl mb-3">🍽️</div>
         <h3 className="text-lg font-semibold text-gray-600 mb-2">No macros to display</h3>
         <p className="text-sm text-gray-500">Start adding foods to see your macro breakdown!</p>
       </div>
@@ -488,22 +488,22 @@ function DailyPieChartView({ totalMacros }) {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Summary Stats */}
       <div className="text-center">
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">Daily Macro Breakdown</h3>
-        <p className="text-lg text-gray-600">{Math.round(totalCals)} total calories</p>
+        <h3 className="text-xl font-bold text-gray-800 mb-1">Daily Macro Breakdown</h3>
+        <p className="text-sm text-gray-600">{Math.round(totalCals)} total calories</p>
       </div>
 
       {/* Pie Chart */}
-      <div className="h-64">
+      <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              outerRadius={80}
+              outerRadius={60}
               fill="#8884d8"
               dataKey="value"
               label={({ name, value }) => `${name}: ${value}%`}
@@ -517,38 +517,22 @@ function DailyPieChartView({ totalMacros }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Legend */}
-      <div className="flex justify-center gap-6">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-          <span className="text-sm font-medium text-gray-700">P: {proteinPercent}%</span>
+      {/* Compact Macro Details - Color Coordinated */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+          <div className="text-lg font-bold text-blue-700">{Math.round(totalMacros.protein)}g</div>
+          <div className="text-xs font-bold text-blue-600">Protein</div>
+          <div className="text-xs text-blue-500">{proteinPercent}%</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-green-500"></div>
-          <span className="text-sm font-medium text-gray-700">C: {carbPercent}%</span>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+          <div className="text-lg font-bold text-green-700">{Math.round(totalMacros.carbs)}g</div>
+          <div className="text-xs font-bold text-green-600">Carbs</div>
+          <div className="text-xs text-green-500">{carbPercent}%</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-          <span className="text-sm font-medium text-gray-700">F: {fatPercent}%</span>
-        </div>
-      </div>
-
-      {/* Detailed Breakdown */}
-      <div className="bg-gray-50 rounded-xl p-4">
-        <h4 className="font-semibold text-gray-800 mb-3 text-center">Macro Details</h4>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-600">Protein:</span>
-            <span className="text-sm font-medium text-gray-800">{Math.round(totalMacros.protein)}g ({proteinPercent}%)</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-600">Carbs:</span>
-            <span className="text-sm font-medium text-gray-800">{Math.round(totalMacros.carbs)}g ({carbPercent}%)</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-600">Fat:</span>
-            <span className="text-sm font-medium text-gray-800">{Math.round(totalMacros.fat)}g ({fatPercent}%)</span>
-          </div>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-center">
+          <div className="text-lg font-bold text-yellow-700">{Math.round(totalMacros.fat)}g</div>
+          <div className="text-xs font-bold text-yellow-600">Fat</div>
+          <div className="text-xs text-yellow-500">{fatPercent}%</div>
         </div>
       </div>
     </div>
