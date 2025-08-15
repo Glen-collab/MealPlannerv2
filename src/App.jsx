@@ -13,7 +13,8 @@ import {
   ClickableBurnAndLearnView,
   CustomTrendsView,
   CustomBarChartView,
-  DailyPieChartView
+  DailyPieChartView,
+  BarChartView
 } from './WelcomeScreen.jsx';
 
 // Time Picker Modal Component
@@ -1735,7 +1736,7 @@ const MealSwipeApp = () => {
                 <button onClick={() => setShowGraphs(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
               <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
-                <CustomBarChartView meals={meals} />
+                <BarChartView meals={meals} />
               </div>
             </div>
           </div>
