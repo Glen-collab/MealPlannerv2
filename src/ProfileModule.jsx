@@ -166,7 +166,7 @@ const calculateTDEE = (userProfile) => {
   };
 };
 
-// Profile Display Component (REMOVED Plan My Week button)
+// Profile Display Component (COMPACT VERSION - Smart buttons with embedded info)
 const ProfileDisplay = ({
   userProfile,
   calorieData,
@@ -174,65 +174,43 @@ const ProfileDisplay = ({
   onOpenProfile,
   onPersonalTrainer
 }) => {
+  // Dynamic button text based on profile completion
+  const getProfileButtonText = () => {
+    if (!userProfile.firstName) {
+      return "Setup Profile";
+    }
+    // Show name on the button after setup
+    const lastName = userProfile.lastName ? ` ${userProfile.lastName}` : '';
+    return `${userProfile.firstName}${lastName}`;
+  };
+
+  const getPersonalTrainerButtonText = () => {
+    if (!userProfile.firstName || !calorieData) {
+      return "Personal Trainer";
+    }
+    // Show goal and target calories on the button after setup
+    return `Personal Trainer - Goal: ${calorieData.targetCalories} cal`;
+  };
+
   return (
     <div className={`${isMobile ? 'mb-4' : 'mb-6'} bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200 ${isMobile ? 'p-4' : 'p-6'}`}>
-      <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'}`}>
-        <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center space-x-6'}`}>
-          <div className="text-center">
-            <div className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-blue-800 flex items-center justify-center gap-2`}>
-              <User size={isMobile ? 20 : 24} />
-              {userProfile.firstName ? `${userProfile.firstName}${userProfile.lastName ? ` ${userProfile.lastName}` : ''}` : 'Setup Your Profile'}
-            </div>
-            {userProfile.goal && (
-              <div className={`${isMobile ? 'text-sm' : 'text-base'} text-blue-600 capitalize flex items-center justify-center gap-1 mt-1`}>
-                <Target size={16} />
-                Goal: {userProfile.goal.replace('-', ' ')}
-              </div>
-            )}
-          </div>
+      {/* COMPACT: Just 2 smart buttons with all info embedded */}
+      <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'space-x-4'}`}>
+        <button
+          onClick={onOpenProfile}
+          className={`${isMobile ? 'w-full py-3' : 'flex-1 py-3 px-6'} bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium flex items-center justify-center gap-2`}
+        >
+          <User size={16} />
+          {getProfileButtonText()}
+        </button>
 
-          {calorieData && (
-            <div className={`flex ${isMobile ? 'justify-center space-x-4' : 'space-x-6'} text-center`}>
-              <div>
-                <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-green-600`}>
-                  {calorieData.bmr}
-                </div>
-                <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-green-700`}>BMR</div>
-              </div>
-              <div>
-                <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-purple-600`}>
-                  {calorieData.tdee}
-                </div>
-                <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-purple-700`}>TDEE</div>
-              </div>
-              <div>
-                <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-orange-600`}>
-                  {calorieData.targetCalories}
-                </div>
-                <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-orange-700`}>Target</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* REMOVED Plan My Week button - Only Profile and Personal Trainer buttons remain */}
-        <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-3'}`}>
-          <button
-            onClick={onOpenProfile}
-            className={`${isMobile ? 'w-full py-3' : 'py-2 px-6'} bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium flex items-center justify-center gap-2`}
-          >
-            <User size={16} />
-            {userProfile.firstName ? 'Edit Profile' : 'Setup Profile'}
-          </button>
-
-          <button
-            onClick={onPersonalTrainer}
-            className={`${isMobile ? 'w-full py-3' : 'py-2 px-6'} bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-md hover:from-green-600 hover:to-emerald-600 transition-colors font-medium flex items-center justify-center gap-2`}
-          >
-            <Dumbbell size={16} />
-            Personal Trainer
-          </button>
-        </div>
+        <button
+          onClick={onPersonalTrainer}
+          className={`${isMobile ? 'w-full py-3' : 'flex-1 py-3 px-6'} bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-md hover:from-green-600 hover:to-emerald-600 transition-colors font-medium flex items-center justify-center gap-2`}
+        >
+          <Dumbbell size={16} />
+          <span className={`${isMobile ? 'text-sm' : 'text-base'}`}>{getPersonalTrainerButtonText()}</span>
+        </button>
       </div>
     </div>
   );
