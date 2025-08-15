@@ -711,8 +711,23 @@ const [meals, setMeals] = useState([
       return;
     }
 
-    // Claim the meal for quickview
-    claimMeal(targetMeal.name, 'quickview');
+    // Claim the meal for mealideas (this overrides any existing ownership)
+    claimMeal(targetMeal.name, 'mealideas');
+
+    // Clear existing items and reset totals
+    const clearedMeal = {
+      ...targetMeal,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      sugar: 0,
+      calories: 0,
+      items: []
+    };
+
+    // Calculate totals for the new meal
+    let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
+    const processedItems = [];
 
     // Add each item from the meal idea to the target meal
     mealData.items.forEach(item => {
@@ -729,11 +744,49 @@ const [meals, setMeals] = useState([
 
       const dbCategory = categoryMapping[item.category];
       if (dbCategory && FoodDatabase[dbCategory] && FoodDatabase[dbCategory][item.food]) {
-        addFoodToMeal(targetMeal.id, dbCategory, item.food, item.serving);
+        const foodData = FoodDatabase[dbCategory][item.food];
+        const serving = item.serving || 1;
+
+        const protein = foodData.protein * serving;
+        const carbs = foodData.carbs * serving;
+        const fat = foodData.fat * serving;
+        const sugar = (foodData.sugar || 0) * serving;
+        const calories = foodData.calories * serving;
+
+        totalProtein += protein;
+        totalCarbs += carbs;
+        totalFat += fat;
+        totalSugar += sugar;
+        totalCalories += calories;
+
+        processedItems.push({
+          food: item.food,
+          category: dbCategory,
+          servings: serving,
+          protein: Math.round(protein),
+          carbs: Math.round(carbs),
+          fat: Math.round(fat),
+          sugar: Math.round(sugar),
+          calories: Math.round(calories),
+          source: 'mealideas'
+        });
       } else {
         console.warn('Food not found in database:', item.food, 'category:', item.category);
       }
     });
+
+    // Update the meal with new data
+    setMeals(prev => prev.map(meal =>
+      meal.name === targetMeal.name ? {
+        ...meal,
+        items: processedItems,
+        protein: Math.round(totalProtein),
+        carbs: Math.round(totalCarbs),
+        fat: Math.round(totalFat),
+        sugar: Math.round(totalSugar),
+        calories: Math.round(totalCalories)
+      } : meal
+    ));
 
     setShowMealIdeas(false);
   };
@@ -742,12 +795,13 @@ const [meals, setMeals] = useState([
   const handleAddWeekPlan = (weekPlan) => {
     const mealTypes = ['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'];
 
-    // Create new meals object with cleared items
+    // Create new meals object with cleared items for ALL meals (weekplan overrides everything)
     const newMeals = meals.map(meal => ({
       ...meal,
       protein: 0,
       carbs: 0,
       fat: 0,
+      sugar: 0,
       calories: 0,
       items: []
     }));
@@ -761,7 +815,7 @@ const [meals, setMeals] = useState([
 
           if (mealIndex !== -1 && planMeal.items) {
             // Calculate totals from the plan meal items
-            let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalCalories = 0;
+            let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
 
             const processedItems = planMeal.items.map(item => {
               if (item.food && item.category) {
@@ -771,11 +825,13 @@ const [meals, setMeals] = useState([
                   const protein = foodData.protein * serving;
                   const carbs = foodData.carbs * serving;
                   const fat = foodData.fat * serving;
+                  const sugar = (foodData.sugar || 0) * serving;
                   const calories = foodData.calories * serving;
 
                   totalProtein += protein;
                   totalCarbs += carbs;
                   totalFat += fat;
+                  totalSugar += sugar;
                   totalCalories += calories;
 
                   return {
@@ -785,6 +841,7 @@ const [meals, setMeals] = useState([
                     protein: Math.round(protein),
                     carbs: Math.round(carbs),
                     fat: Math.round(fat),
+                    sugar: Math.round(sugar),
                     calories: Math.round(calories),
                     source: 'weekplan'
                   };
@@ -800,10 +857,11 @@ const [meals, setMeals] = useState([
               protein: Math.round(totalProtein),
               carbs: Math.round(totalCarbs),
               fat: Math.round(totalFat),
+              sugar: Math.round(totalSugar),
               calories: Math.round(totalCalories)
             };
 
-            // Claim the meal for weekplan
+            // Claim the meal for weekplan (this overrides any existing ownership)
             claimMeal(mealName, 'weekplan');
           }
         }
@@ -815,11 +873,26 @@ const [meals, setMeals] = useState([
   };
 
   const claimMeal = (mealName, source) => {
+    console.log(`Claiming meal ${mealName} for ${source}`);
+
+    const previousSource = mealSources[mealName];
+
+    // Update meal sources
     setMealSources(prev => ({ ...prev, [mealName]: source }));
-    if (source !== mealSources[mealName]) {
+
+    // If the source is changing, clear the meal data
+    if (source !== previousSource) {
       setMeals(prev => prev.map(meal => {
         if (meal.name === mealName) {
-          return { ...meal, protein: 0, carbs: 0, fat: 0, calories: 0, items: [] };
+          return {
+            ...meal,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            sugar: 0,
+            calories: 0,
+            items: []
+          };
         }
         return meal;
       }));
@@ -839,6 +912,7 @@ const [meals, setMeals] = useState([
             updated.protein = updated.protein + Math.round(parseFloat(item.protein));
             updated.carbs = updated.carbs + Math.round(parseFloat(item.carbs));
             updated.fat = updated.fat + Math.round(parseFloat(item.fat));
+            updated.sugar = updated.sugar + Math.round(parseFloat(item.sugar || 0));
             updated.calories = updated.calories + Math.round(parseInt(item.calories));
           }
           return updated;
@@ -846,6 +920,16 @@ const [meals, setMeals] = useState([
         return meal;
       }));
     } else {
+      const meal = meals.find(m => m.id === mealId);
+      if (!meal) return;
+
+      // Check if meal is owned by another system (for manual updates)
+      const source = mealSources[meal.name];
+      if (source && source !== 'quickview') {
+        console.warn(`Cannot manually modify ${meal.name} - owned by ${source} system`);
+        return;
+      }
+
       setMeals(prev => prev.map(meal => {
         if (meal.id === mealId) {
           const updated = { ...meal, [field]: parseInt(value) || 0 };
@@ -854,8 +938,9 @@ const [meals, setMeals] = useState([
         }
         return meal;
       }));
-      const meal = meals.find(m => m.id === mealId);
-      if (meal && mealSources[meal.name] !== 'quickview') {
+
+      // Claim the meal for quickview if not already claimed
+      if (meal && (!source || source !== 'quickview')) {
         claimMeal(meal.name, 'quickview');
       }
     }
@@ -1004,7 +1089,19 @@ const [meals, setMeals] = useState([
     if (!foodData) return;
 
     const meal = meals.find(m => m.id === mealId);
-    if (meal) claimMeal(meal.name, 'quickview');
+    if (!meal) return;
+
+    // Check if meal is owned by another system
+    const source = mealSources[meal.name];
+    if (source && source !== 'quickview') {
+      console.warn(`Cannot modify ${meal.name} - owned by ${source} system`);
+      return;
+    }
+
+    // Claim the meal for quickview if not already claimed
+    if (!source) {
+      claimMeal(meal.name, 'quickview');
+    }
 
     setMeals(prev => prev.map(meal => {
       if (meal.id === mealId) {
@@ -1015,7 +1112,7 @@ const [meals, setMeals] = useState([
           protein: Math.round(foodData.protein * servings),
           carbs: Math.round(foodData.carbs * servings),
           fat: Math.round(foodData.fat * servings),
-          sugar: Math.round(foodData.sugar * servings), // ADD THIS LINE
+          sugar: Math.round((foodData.sugar || 0) * servings),
           calories: Math.round(foodData.calories * servings),
           source: 'quickview'
         };
@@ -1026,7 +1123,7 @@ const [meals, setMeals] = useState([
           protein: Math.round(meal.protein + foodData.protein * servings),
           carbs: Math.round(meal.carbs + foodData.carbs * servings),
           fat: Math.round(meal.fat + foodData.fat * servings),
-          sugar: Math.round(meal.sugar + foodData.sugar * servings), // ADD THIS LINE
+          sugar: Math.round(meal.sugar + (foodData.sugar || 0) * servings),
           calories: Math.round(meal.calories + foodData.calories * servings)
         };
       }
@@ -1035,22 +1132,33 @@ const [meals, setMeals] = useState([
   };
 
   const removeFoodFromMeal = (mealId, itemIndex) => {
-  setMeals(prev => prev.map(meal => {
-    if (meal.id === mealId) {
-      const itemToRemove = meal.items[itemIndex];
-      const updatedItems = meal.items.filter((_, index) => index !== itemIndex);
-      return {
-        ...meal,
-        items: updatedItems,
-        protein: Math.max(0, Math.round(meal.protein - itemToRemove.protein)),
-        carbs: Math.max(0, Math.round(meal.carbs - itemToRemove.carbs)),
-        fat: Math.max(0, Math.round(meal.fat - itemToRemove.fat)),
-        sugar: Math.max(0, Math.round(meal.sugar - itemToRemove.sugar)), // ADD THIS LINE
-        calories: Math.max(0, Math.round(meal.calories - itemToRemove.calories))
-      };
+    const meal = meals.find(m => m.id === mealId);
+    if (!meal) return;
+
+    // Check if meal is owned by another system
+    const source = mealSources[meal.name];
+    if (source && source !== 'quickview') {
+      console.warn(`Cannot modify ${meal.name} - owned by ${source} system`);
+      return;
     }
-    return meal;
-  }));
+
+    setMeals(prev => prev.map(meal => {
+      if (meal.id === mealId) {
+        const itemToRemove = meal.items[itemIndex];
+        const updatedItems = meal.items.filter((_, index) => index !== itemIndex);
+        return {
+          ...meal,
+          items: updatedItems,
+          protein: Math.max(0, Math.round(meal.protein - itemToRemove.protein)),
+          carbs: Math.max(0, Math.round(meal.carbs - itemToRemove.carbs)),
+          fat: Math.max(0, Math.round(meal.fat - itemToRemove.fat)),
+          sugar: Math.max(0, Math.round(meal.sugar - (itemToRemove.sugar || 0))),
+          calories: Math.max(0, Math.round(meal.calories - itemToRemove.calories))
+        };
+      }
+      return meal;
+    }));
+  };
 };
 
   const calculatePieData = (meal) => {
@@ -1283,9 +1391,9 @@ const [meals, setMeals] = useState([
     protein: Math.round(total.protein + meal.protein),
     carbs: Math.round(total.carbs + meal.carbs),
     fat: Math.round(total.fat + meal.fat),
-    sugar: Math.round(total.sugar + meal.sugar),
+    sugar: Math.round(total.sugar + (meal.sugar || 0)),
     calories: Math.round(total.calories + meal.calories)
-  }), { protein: 0, carbs: 0, fat: 0, calories: 0 });
+  }), { protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0 });
 
   // Handle profile updates from ProfileModule
   const handleProfileUpdate = (newProfile) => {
@@ -1747,6 +1855,5 @@ const [meals, setMeals] = useState([
       </div>
     </div>
   );
-};
 
 export default MealSwipeApp;
