@@ -400,7 +400,7 @@ function BarChartView({ meals }) {
     .map(meal => ({
       name: meal.name.length > 8 ? meal.name.substring(0, 8) + '...' : meal.name,
       calories: Math.round(meal.calories),
-      sugar: Math.round((meal.carbs * 0.3) * 10) // Estimate sugar as 30% of carbs, x10 to make visible
+      sugar: Math.round(meal.sugar * 10) // Use actual Sugar x10 to make visible
     }));
 
   return (
