@@ -366,14 +366,17 @@ export function USDAMealCreator({
     // Find meal by display name and convert to internal name
     const mealTypeObj = mealTypes.find(mt => mt.name === selectedMealType);
     const internalName = mealTypeObj?.internalName;
-    
+
     if (internalName) {
+      // Ensure the meal is claimed for USDA before adding food
+      onClaimMeal(internalName, 'usda');
+
       onUpdateMeal(internalName, {
         time: selectedMealTime,
         addItem: foodItem,
         source: 'usda'
       });
-      
+
       setHasAddedFoods(true);
       setShowAddedFeedback(food.description);
       setTimeout(() => setShowAddedFeedback(''), 2000);
