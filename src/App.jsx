@@ -1274,7 +1274,7 @@ const MealSwipeApp = () => {
       <div className="max-w-md mx-auto">
         {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
           <>
-            {/* Replace the old profile section with ProfileModule */}
+            {/* ProfileModule */}
             <ProfileModule
               isMobile={true}
               initialProfile={profile}
@@ -1282,9 +1282,11 @@ const MealSwipeApp = () => {
               onProfileUpdate={handleProfileUpdate}
             />
 
-            {/* Enhanced Daily Summary with Smart Messaging */}
+            {/* NEW UNIFIED Daily Nutrition Summary with Action Buttons and Analytics */}
             <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
               <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Nutrition Summary</h2>
+
+              {/* Macro Grid */}
               <div className="grid grid-cols-4 gap-3 text-center mb-4">
                 <div className="bg-blue-100 rounded-lg p-2">
                   <div className="text-xs text-blue-600 font-medium">Protein</div>
@@ -1308,6 +1310,70 @@ const MealSwipeApp = () => {
                     {calorieData.targetCalories} target
                   </div>
                 </div>
+              </div>
+
+              {/* Action Buttons - Same 4-column grid for uniformity */}
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                <button
+                  onClick={enterSwipeMode}
+                  className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">🍽️</div>
+                  <div className="text-xs font-semibold">Quick View</div>
+                </button>
+                <button
+                  onClick={enterScrollModal}
+                  className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">📋</div>
+                  <div className="text-xs font-semibold">Scroll View</div>
+                </button>
+                <button
+                  onClick={enterFullScreenSwipe}
+                  className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">🌟</div>
+                  <div className="text-xs font-semibold">Full Screen</div>
+                </button>
+                <button
+                  onClick={() => setShowCreateMeal(true)}
+                  className="bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">🔍</div>
+                  <div className="text-xs font-semibold">Create Meal</div>
+                </button>
+              </div>
+
+              {/* Analytics Grid - Same 4-column format */}
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                <button
+                  onClick={() => {/* Add Burn and Learn functionality */ }}
+                  className="bg-gradient-to-br from-red-500 to-red-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">🔥</div>
+                  <div className="text-xs font-semibold">Burn & Learn</div>
+                </button>
+                <button
+                  onClick={() => {/* Add Trends functionality */ }}
+                  className="bg-gradient-to-br from-teal-500 to-teal-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">📈</div>
+                  <div className="text-xs font-semibold">Trends</div>
+                </button>
+                <button
+                  onClick={() => {/* Add Pie Chart functionality */ }}
+                  className="bg-gradient-to-br from-pink-500 to-pink-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">🥧</div>
+                  <div className="text-xs font-semibold">Pie Chart</div>
+                </button>
+                <button
+                  onClick={() => {/* Add Graphs functionality */ }}
+                  className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                >
+                  <div className="text-lg mb-1">📊</div>
+                  <div className="text-xs font-semibold">Graphs</div>
+                </button>
               </div>
 
               {/* Smart Daily Insight */}
@@ -1352,123 +1418,42 @@ const MealSwipeApp = () => {
               </div>
             )}
 
-            <div className="text-center mb-6 space-y-3">
-              {/* Quick Action Buttons based on current state */}
-              /* Enhanced Daily Summary with Integrated Action Buttons */
-              <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
-                <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Nutrition Summary</h2>
-
-                {/* Macro Grid */}
-                <div className="grid grid-cols-4 gap-3 text-center mb-4">
-                  <div className="bg-blue-100 rounded-lg p-2">
-                    <div className="text-xs text-blue-600 font-medium">Protein</div>
-                    <div className="text-lg font-bold text-blue-800">{Math.round(totalMacros.protein)}g</div>
-                    <div className="text-xs text-blue-500">
-                      {profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} target
-                    </div>
-                  </div>
-                  <div className="bg-green-100 rounded-lg p-2">
-                    <div className="text-xs text-green-600 font-medium">Carbs</div>
-                    <div className="text-lg font-bold text-green-800">{Math.round(totalMacros.carbs)}g</div>
-                  </div>
-                  <div className="bg-yellow-100 rounded-lg p-2">
-                    <div className="text-xs text-yellow-600 font-medium">Fat</div>
-                    <div className="text-lg font-bold text-yellow-800">{Math.round(totalMacros.fat)}g</div>
-                  </div>
-                  <div className="bg-purple-100 rounded-lg p-2">
-                    <div className="text-xs text-purple-600 font-medium">Calories</div>
-                    <div className="text-lg font-bold text-purple-800">{Math.round(totalMacros.calories)}</div>
-                    <div className="text-xs text-purple-500">
-                      {calorieData.targetCalories} target
-                    </div>
-                  </div>
+            {/* Smart Action Suggestions */}
+            {profile.firstName && totalMacros.calories > 50 && (
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3 mb-4">
+                <h3 className="font-semibold text-indigo-800 text-sm mb-2">💡 Suggested Next Actions</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {getQuickActionSuggestions().map((action, index) => (
+                    <button
+                      key={index}
+                      onClick={action.onClick}
+                      className="bg-white hover:bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 hover:border-indigo-300 transition-all"
+                    >
+                      {action.icon} {action.text}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Action Buttons - Same 4-column grid for uniformity */}
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <button
-                    onClick={enterSwipeMode}
-                    className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                  >
-                    <div className="text-lg mb-1">🍽️</div>
-                    <div className="text-xs font-semibold">Quick View</div>
-                  </button>
-                  <button
-                    onClick={enterScrollModal}
-                    className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                  >
-                    <div className="text-lg mb-1">📋</div>
-                    <div className="text-xs font-semibold">Scroll View</div>
-                  </button>
-                  <button
-                    onClick={enterFullScreenSwipe}
-                    className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                  >
-                    <div className="text-lg mb-1">🌟</div>
-                    <div className="text-xs font-semibold">Full Screen</div>
-                  </button>
-                  <button
-                    onClick={() => setShowCreateMeal(true)}
-                    className="bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                  >
-                    <div className="text-lg mb-1">🔍</div>
-                    <div className="text-xs font-semibold">Create Meal</div>
-                  </button>
-                </div>
-
-                {/* Smart Daily Insight */}
-                {totalMacros.calories > 100 && (
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="text-lg">🎯</div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 text-sm mb-1">Daily Progress Insight</h4>
-                        <p className="text-xs text-gray-700 leading-relaxed">
-                          {getDailyProgressMessage()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
+            )}
 
-              {/* Smart Action Suggestions */}
-              {profile.firstName && totalMacros.calories > 50 && (
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3 mb-4">
-                  <h3 className="font-semibold text-indigo-800 text-sm mb-2">💡 Suggested Next Actions</h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {getQuickActionSuggestions().map((action, index) => (
-                      <button
-                        key={index}
-                        onClick={action.onClick}
-                        className="bg-white hover:bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 hover:border-indigo-300 transition-all"
-                      >
-                        {action.icon} {action.text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Plan My Week Button */}
+            <div className="mb-4">
+              <button
+                onClick={() => setIsWeekPlanModalOpen(true)}
+                className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all flex items-center justify-center gap-2 w-full"
+              >
+                <span>📅</span>
+                Plan My Week
+              </button>
+            </div>
 
-              {/* Plan My Week Button */}
-              <div className="mb-4">
-                <button
-                  onClick={() => setIsWeekPlanModalOpen(true)}
-                  className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all flex items-center justify-center gap-2 w-full"
-                >
-                  <span>📅</span>
-                  Plan My Week
-                </button>
-              </div>
-
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setShowGame(true)}
-                  className="bg-white text-pink-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
-                >
-                  🎮 Rate Your Meals
-                </button>
-              </div>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowGame(true)}
+                className="bg-white text-pink-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+              >
+                🎮 Rate Your Meals
+              </button>
             </div>
           </>
         )}
