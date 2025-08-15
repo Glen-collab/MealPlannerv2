@@ -7,6 +7,7 @@ import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 // Import individual analytics components from WelcomeScreen
 import { BurnAndLearnView, TrendsView, BarChartView, PieChartView } from './WelcomeScreen.jsx';
 
@@ -560,6 +561,104 @@ function FullScreenSwipeInterface({
           onSelectTime={handleTimeSelection}
           onClose={closeTimePicker}
         />
+      </div>
+    </div>
+  );
+}
+
+// Daily Pie Chart Component with Percentage Labels
+function DailyPieChartView({ totalMacros }) {
+  // Calculate total calories and percentages
+  const proteinCals = totalMacros.protein * 4;
+  const carbCals = totalMacros.carbs * 4;
+  const fatCals = totalMacros.fat * 9;
+  const totalCals = proteinCals + carbCals + fatCals;
+
+  if (totalCals === 0) {
+    return (
+      <div className="text-center p-8">
+        <div className="text-4xl mb-4">🍽️</div>
+        <h3 className="text-lg font-semibold text-gray-600 mb-2">No macros to display</h3>
+        <p className="text-sm text-gray-500">Start adding foods to see your macro breakdown!</p>
+      </div>
+    );
+  }
+
+  const proteinPercent = Math.round((proteinCals / totalCals) * 100);
+  const carbPercent = Math.round((carbCals / totalCals) * 100);
+  const fatPercent = Math.round((fatCals / totalCals) * 100);
+
+  const pieData = [
+    { name: 'P', value: proteinPercent, color: '#3B82F6' },
+    { name: 'C', value: carbPercent, color: '#10B981' },
+    { name: 'F', value: fatPercent, color: '#F59E0B' }
+  ];
+
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Stats */}
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">Daily Macro Breakdown</h3>
+        <p className="text-lg text-gray-600">{Math.round(totalCals)} total calories</p>
+      </div>
+
+      {/* Pie Chart */}
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+              label={({ name, value }) => `${name}: ${value}%`}
+              labelLine={false}
+            >
+              {pieData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Legend */}
+      <div className="flex justify-center gap-6">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+          <span className="text-sm font-medium text-gray-700">P: {proteinPercent}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-green-500"></div>
+          <span className="text-sm font-medium text-gray-700">C: {carbPercent}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+          <span className="text-sm font-medium text-gray-700">F: {fatPercent}%</span>
+        </div>
+      </div>
+
+      {/* Detailed Breakdown */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <h4 className="font-semibold text-gray-800 mb-3 text-center">Macro Details</h4>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Protein:</span>
+            <span className="text-sm font-medium text-gray-800">{Math.round(totalMacros.protein)}g ({proteinPercent}%)</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Carbs:</span>
+            <span className="text-sm font-medium text-gray-800">{Math.round(totalMacros.carbs)}g ({carbPercent}%)</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Fat:</span>
+            <span className="text-sm font-medium text-gray-800">{Math.round(totalMacros.fat)}g ({fatPercent}%)</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1664,7 +1763,7 @@ const MealSwipeApp = () => {
                 <button onClick={() => setShowPieChart(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
               <div className="p-4">
-                <PieChartView totalMacros={totalMacros} />
+                <DailyPieChartView totalMacros={totalMacros} />
               </div>
             </div>
           </div>
