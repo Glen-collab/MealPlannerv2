@@ -9,10 +9,10 @@ import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
 // Import chart components from WelcomeScreen module
 import {
-  ClickableBurnAndLearnView,
-  CustomTrendsView,
-  CustomBarChartView,
-  DailyPieChartView
+  BurnAndLearnView,  // Original working version
+  TrendsView,        // Original working version  
+  BarChartView,      // Original working version
+  PieChartView       // Original working version
 } from './WelcomeScreen.jsx';
 // Custom Burn & Learn View with Clickable Macro-Style Buttons
 function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
@@ -2121,12 +2121,12 @@ const MealSwipeApp = () => {
 
         {showTrends && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
               <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800">📈 Daily Trends</h3>
                 <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
-              <div className="p-4">
+              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
                 <CustomTrendsView meals={meals} totalMacros={totalMacros} />
               </div>
             </div>
@@ -2135,12 +2135,12 @@ const MealSwipeApp = () => {
 
         {showPieChart && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
               <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800">🥧 Macro Distribution</h3>
                 <button onClick={() => setShowPieChart(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
-              <div className="p-4">
+              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
                 <DailyPieChartView totalMacros={totalMacros} />
               </div>
             </div>
@@ -2149,12 +2149,12 @@ const MealSwipeApp = () => {
 
         {showGraphs && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
               <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800">📊 Meal Breakdown</h3>
                 <button onClick={() => setShowGraphs(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
-              <div className="p-4">
+              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
                 <CustomBarChartView meals={meals} />
               </div>
             </div>
