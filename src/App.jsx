@@ -1,739 +1,392 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { FoodDatabase, getFoodsInCategory, getServingInfo } from './FoodDatabase.js';
-import { USDAMealCreator } from './USDAMealCreator.jsx';
-import MealSwipeGame from './MealSwipeGame.jsx';
-import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
-import ProfileModule from './ProfileModule.jsx';
-import MealIdeasModal from './MealIdeas.jsx';
+import React, { useState, useEffect } from 'react';
+import { X, Scale, Coffee, Hand } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, LineChart, Line } from 'recharts';
+import MealTracker from './MealTracker.jsx';
+import { FoodDatabase, servingSizeConversions, getServingInfo, getAllCategories, getFoodsInCategory } from './FoodDatabase.js';
+import { calculateTotals, preparePieData, calculateTDEE } from './Utils.js';
 import { MealMessages } from './MealMessages/index.js';
+import { generatePersonalTrainerSummary } from './PersonalTrainerSummary.js';
+import MealIdeasModal from './MealIdeas.jsx';
 import WeekPlanModal from './WeekPlanModal.jsx';
-// Import chart components from WelcomeScreen module
-import {
-  ClickableBurnAndLearnView,
-  CustomTrendsView,
-  CustomBarChartView,
-  DailyPieChartView,
-  BarChartView
-} from './WelcomeScreen.jsx';
+import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
+import GroceryListModal from './GroceryListModal.jsx';
+import MealSwipeGame from './MealSwipeGame.jsx';
 
-// Time Picker Modal Component
-function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
-  const [selectedHour, setSelectedHour] = useState(12);
-  const [selectedMinute, setSelectedMinute] = useState('00');
-  const [selectedPeriod, setSelectedPeriod] = useState('AM');
+const defaultUserProfile = {
+  firstName: '',
+  lastName: '',
+  heightFeet: '',
+  heightInches: '',
+  weight: '',
+  exerciseLevel: '',
+  goal: '',
+  gender: ''
+};
 
-  useEffect(() => {
-    if (isOpen && currentTime) {
-      const timeParts = currentTime.split(' ');
-      if (timeParts.length === 2) {
-        const [time, period] = timeParts;
-        const [hour, minute] = time.split(':');
-        setSelectedHour(parseInt(hour));
-        setSelectedMinute(minute);
-        setSelectedPeriod(period);
-      }
-    }
-  }, [isOpen, currentTime]);
+const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  const handleConfirm = () => {
-    const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
-    onSelectTime(formattedTime);
-    onClose();
-  };
+const createFoodItem = () => ({
+  id: generateId(),
+  category: '',
+  food: '',
+  serving: 1,
+  displayServing: '1',
+  displayUnit: 'servings'
+});
 
-  if (!isOpen) return null;
-
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-  const minutes = ['00', '15', '30', '45'];
-  const periods = ['AM', 'PM'];
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-lg">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {hours.map((hour) => (
-                  <button
-                    key={hour}
-                    onClick={() => setSelectedHour(hour)}
-                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-                  >
-                    {hour}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
-              <div className="space-y-3">
-                {minutes.map((minute) => (
-                  <button
-                    key={minute}
-                    onClick={() => setSelectedMinute(minute)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-                  >
-                    :{minute}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
-              <div className="space-y-3">
-                {periods.map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => setSelectedPeriod(period)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-                  >
-                    {period}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="text-center mb-6">
-            <div className="text-2xl font-bold text-gray-800 mb-2">
-              {selectedHour}:{selectedMinute} {selectedPeriod}
-            </div>
-            <p className="text-gray-600">Selected Time</p>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
-              Cancel
-            </button>
-            <button onClick={handleConfirm} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
-              Confirm Time
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Add Foods Modal Component - CLEANED UP VERSION
-function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, onOpenMealIdeas, mealSources }) {
-  if (!isOpen) return null;
-
-  const source = mealSources[mealName];
-  const isUSDAOwned = source === 'usda';
-
-  const categories = [
-    [
-      { name: 'Protein', icon: '🍗', color: 'bg-blue-500' },
-      { name: 'Carbs', icon: '🍞', color: 'bg-green-500' }
-    ],
-    [
-      { name: 'Healthy Fats', icon: '🥑', color: 'bg-yellow-500' },
-      { name: 'Supplements', icon: '💊', color: 'bg-purple-500' }
-    ],
-    [
-      { name: 'Fruit', icon: '🍎', color: 'bg-red-500' },
-      { name: 'Vegetables', icon: '🥬', color: 'bg-green-600' }
-    ],
-    [
-      { name: 'Condiments', icon: '🧂', color: 'bg-gray-500' },
-      { name: 'Junk/Drink', icon: '🍺', color: 'bg-orange-500' }
-    ]
-  ];
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md" style={{ height: '500px' }}>
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-800">Add Foods to {mealName}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 h-full overflow-hidden flex flex-col">
-          {isUSDAOwned ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center flex-1 flex flex-col items-center justify-center">
-              <div className="text-4xl mb-4">🔒</div>
-              <div className="text-blue-600 font-medium text-lg mb-2">This meal is managed by USDA Search</div>
-              <div className="text-blue-500 text-sm">Use the USDA Create Meal to modify</div>
-            </div>
-          ) : (
-            <div className="space-y-3 flex-1">
-              {categories.map((row, rowIndex) => (
-                <div key={rowIndex} className="grid grid-cols-2 gap-3">
-                  {row.map((category) => (
-                    <button
-                      key={category.name}
-                      onClick={() => {
-                        onSelectCategory(category.name, mealId);
-                        onClose();
-                      }}
-                      className={`${category.color} text-white p-4 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex flex-col items-center justify-center gap-1`}
-                    >
-                      <span className="text-2xl">{category.icon}</span>
-                      <span className="text-sm font-semibold text-center">{category.name}</span>
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MealMessageSection({ meal, profile, getMealMessage }) {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    if (meal && meal.calories > 0) {
-      const mealMessage = getMealMessage(meal);
-      setMessage(mealMessage || '');
-    } else {
-      setMessage('');
-    }
-  }, [meal, profile, getMealMessage]);
-
-  if (!message) return null;
-
-  return (
-    <div className="pt-4">
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="text-2xl">💡</div>
-          <div className="flex-1">
-            <h4 className="font-semibold text-gray-800 mb-2">Nutrition Insight</h4>
-            <p className="text-sm text-gray-700 leading-relaxed">{message}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// UPDATED Food Category Grid - Now just shows Add Foods button
-function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onOpenMealIdeas, onOpenAddFoodsModal }) {
-  const source = mealSources[mealName];
-  const isUSDAOwned = source === 'usda';
-  const supportsMealIdeas = ['Breakfast', 'Lunch', 'Dinner'].includes(mealName);
-
-  if (isUSDAOwned) {
-    return (
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Add Foods</h3>
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-          <div className="text-blue-600 font-medium text-sm">🔒 This meal is managed by USDA Search</div>
-          <div className="text-blue-500 text-xs mt-1">Use the USDA Create Meal to modify</div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {/* ADD FOOD BUTTON */}
-      <button
-        onClick={() => onOpenAddFoodsModal(mealId, mealName)}
-        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
-      >
-        <span className="text-xl">➕</span>
-        <span>Add Foods</span>
-      </button>
-
-      {/* MEAL IDEAS BUTTON - Only for main meals */}
-      {supportsMealIdeas && onOpenMealIdeas && (
-        <button
-          onClick={() => onOpenMealIdeas(mealName.toLowerCase())}
-          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
-        >
-          <span className="text-xl">💡</span>
-          <span>{mealName} Ideas</span>
-          <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">Quick</span>
-        </button>
-      )}
-    </div>
-  );
-}
-
-function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
-  const [selectedFood, setSelectedFood] = useState('');
-  const [servings, setServings] = useState(1);
-
-  const foodCategoryMapping = {
-    'Protein': 'protein',
-    'Carbs': 'carbohydrate',
-    'Healthy Fats': 'fat',
-    'Supplements': 'supplements',
-    'Fruit': 'fruits',
-    'Vegetables': 'vegetables',
-    'Condiments': 'condiments',
-    'Junk/Drink': 'snacks'
-  };
-
-  const dbCategory = foodCategoryMapping[category];
-  const foods = getFoodsInCategory(dbCategory);
-
-  const handleAddFood = () => {
-    if (selectedFood && servings > 0) {
-      onAddFood(mealId, dbCategory, selectedFood, servings);
-      onClose();
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-lg h-5/6 flex flex-col">
-        {/* Header - Fixed */}
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
-          <h3 className="text-xl font-bold text-gray-800">{category}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-        </div>
-
-        {/* Food List - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="space-y-2">
-            {foods.map((food) => {
-              const servingInfo = getServingInfo(dbCategory, food);
-              const foodData = FoodDatabase[dbCategory][food];
-              return (
-                <button
-                  key={food}
-                  onClick={() => setSelectedFood(food)}
-                  className={`w-full p-2 rounded-lg border-2 text-left transition-colors ${selectedFood === food ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
-                >
-                  <div className="text-sm leading-tight">
-                    <span className="font-bold text-gray-800">{food}</span>
-                    <span className="text-gray-600"> - {Math.round(foodData.calories)} cal per serving - </span>
-                    <span className="text-blue-600">{servingInfo.palm}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Bottom Section - Fixed */}
-        {selectedFood && (
-          <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
-            <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-3 font-medium">Reference: {getServingInfo(dbCategory, selectedFood).palm}</div>
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-medium text-gray-700">Servings:</label>
-                <input
-                  type="number"
-                  value={servings}
-                  onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 1))}
-                  step="0.1"
-                  min="0.1"
-                  className="w-24 p-3 border border-gray-300 rounded-lg text-center text-lg"
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleAddFood}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors text-lg"
-            >
-              Add {selectedFood}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
-  if (!meal.items || meal.items.length === 0) return null;
-
-  const source = mealSources[meal.name];
-  const isUSDAOwned = source === 'usda';
-
-  return (
-    <div className="mt-4 space-y-2">
-      <h4 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
-        Added Foods:
-        {isUSDAOwned && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">USDA</span>}
-      </h4>
-      {meal.items.map((item, index) => {
-        const servingInfo = item.category ? getServingInfo(item.category, item.food) : null;
-
-        return (
-          <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
-            <div className="flex-1">
-              <div className="font-medium text-sm text-gray-800">{item.food}</div>
-              {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
-              <div className="text-xs text-gray-600">
-                {Math.round(item.servings * 10) / 10}x serving • {Math.round(item.calories)} cal
-                {item.source === 'usda' && item.servingInfo && (
-                  <div className="text-xs text-gray-500 mt-1">{item.servingInfo.description}</div>
-                )}
-                {item.source !== 'usda' && servingInfo && (
-                  <div className="text-xs text-blue-500 mt-1">{servingInfo.palm}</div>
-                )}
-                {item.source === 'usda' && <span className="ml-2 text-blue-500">USDA</span>}
-              </div>
-            </div>
-            {!readOnly && !isUSDAOwned && (
-              <button onClick={() => onRemoveFood(meal.id, index)} className="text-red-500 hover:text-red-700 text-sm ml-2">✕</button>
-            )}
-            {isUSDAOwned && <div className="text-gray-400 text-sm ml-2">🔒</div>}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// Full Screen Swipe Interface Component
-function FullScreenSwipeInterface({
-  meals,
-  currentCard,
-  setCurrentCard,
-  cardPositions,
-  isDragging,
-  handleMouseDown,
-  handleMouseMove,
-  handleMouseUp,
-  onExit,
-  openFoodSelection,
-  removeFoodFromMeal,
-  updateMeal,
-  setMeals,
-  profile,
-  getMealMessage,
-  mealSources,
-  onClaimMeal,
-  onOpenMealIdeas,
-  onOpenAddFoodsModal
-}) {
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedMealForTime, setSelectedMealForTime] = useState(null);
-
-  const openTimePicker = (mealId) => {
-    const meal = meals.find(m => m.id === mealId);
-    const source = mealSources[meal?.name];
-
-    if (source === 'usda') return;
-
-    setSelectedMealForTime(mealId);
-    setShowTimePicker(true);
-  };
-
-  const closeTimePicker = () => {
-    setShowTimePicker(false);
-    setSelectedMealForTime(null);
-  };
-
-  const handleTimeSelection = (newTime) => {
-    if (selectedMealForTime) {
-      const meal = meals.find(m => m.id === selectedMealForTime);
-      onClaimMeal(meal.name, 'quickview');
-      setMeals(prev => prev.map(m => m.id === selectedMealForTime ? { ...m, time: newTime } : m));
-    }
-  };
-
-  const getCurrentMeal = () => meals.find(m => m.id === selectedMealForTime);
-
-  return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
-      <div className="h-full flex flex-col">
-        <div className="p-4 text-center text-white">
-          <div className="flex justify-between items-center">
-            <div className="w-8"></div>
-            <div>
-              <p className="text-sm opacity-80">Swipe left or right • Meal {currentCard + 1} of {meals.length}</p>
-            </div>
-            <button onClick={onExit} className="text-white hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center">×</button>
-          </div>
-        </div>
-
-        <div className="flex-1 relative px-4 pb-4">
-          {meals.map((meal, index) => {
-            const isActive = index === currentCard;
-            const position = cardPositions[index];
-            const zIndex = isActive ? 20 : meals.length - Math.abs(index - currentCard);
-            const scale = isActive ? 1 : 0.95;
-            const opacity = isActive ? 1 : 0.7;
-            const source = mealSources[meal.name];
-            const isUSDAOwned = source === 'usda';
-
-            return (
-              <div
-                key={meal.id}
-                className="absolute inset-0 cursor-grab active:cursor-grabbing flex items-center justify-center"
-                style={{
-                  transform: `translateX(${position.x}px) translateY(${position.y}px) rotate(${position.rotation}deg) scale(${scale})`,
-                  zIndex,
-                  opacity,
-                  transition: isDragging && isActive ? 'none' : 'transform 0.3s ease-out, opacity 0.3s ease-out'
-                }}
-                onMouseDown={isActive ? handleMouseDown : undefined}
-                onMouseMove={isActive ? handleMouseMove : undefined}
-                onMouseUp={isActive ? handleMouseUp : undefined}
-                onMouseLeave={isActive ? handleMouseUp : undefined}
-                onTouchStart={isActive ? handleMouseDown : undefined}
-                onTouchMove={isActive ? handleMouseMove : undefined}
-                onTouchEnd={isActive ? handleMouseUp : undefined}
-              >
-                <div className="bg-white rounded-3xl shadow-2xl w-full h-full flex flex-col">
-                  <div className="p-4 flex-shrink-0">
-                    <div className="text-center">
-                      <div className="mb-3 flex items-center justify-center gap-2">
-                        <h2 className="text-2xl font-bold text-gray-800">{meal.name}</h2>
-                        {isUSDAOwned && (
-                          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">USDA</span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-center gap-4">
-                        <div className="text-4xl">
-                          {meal.name === 'Breakfast' && '🍳'}
-                          {meal.name === 'FirstSnack' && '🍎'}
-                          {meal.name === 'SecondSnack' && '🥨'}
-                          {meal.name === 'Lunch' && '🥗'}
-                          {meal.name === 'MidAfternoon Snack' && '🥜'}
-                          {meal.name === 'Dinner' && '🍽️'}
-                          {meal.name === 'Late Snack' && '🍓'}
-                          {meal.name === 'PostWorkout' && '💪'}
-                          {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
-                        </div>
-                        <div className="text-3xl font-bold text-purple-600">{Math.round(meal.calories)} cal</div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            openTimePicker(meal.id);
-                          }}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onTouchStart={(e) => e.stopPropagation()}
-                          disabled={isUSDAOwned}
-                          className={`px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${isUSDAOwned ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                        >
-                          🕐 {meal.time}
-                          {isUSDAOwned && <span className="text-xs">🔒</span>}
-                        </button>
-                      </div>
-
-                      <div className="mt-2 text-center">
-                        <div className="text-xs font-bold text-red-600">
-                          P: {Math.round(meal.protein)}g • C: {Math.round(meal.carbs)}g • F: {Math.round(meal.fat)}g
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
-                    <div className="space-y-6">
-                      <FoodCategoryGrid
-                        mealId={meal.id}
-                        onSelectCategory={openFoodSelection}
-                        mealSources={mealSources}
-                        mealName={meal.name}
-                        onOpenMealIdeas={onOpenMealIdeas}
-                        onOpenAddFoodsModal={onOpenAddFoodsModal}
-                      />
-
-                      <MealFoodList
-                        meal={meal}
-                        onRemoveFood={removeFoodFromMeal}
-                        mealSources={mealSources}
-                      />
-
-                      <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <TimePickerModal
-          isOpen={showTimePicker}
-          currentTime={getCurrentMeal()?.time}
-          onSelectTime={handleTimeSelection}
-          onClose={closeTimePicker}
-        />
-      </div>
-    </div>
-  );
-}
-
-const MealSwipeApp = () => {
-  // Use ProfileModule's default structure instead of simple profile
-  const [profile, setProfile] = useState({
-    firstName: '',
-    lastName: '',
-    heightFeet: '5',
-    heightInches: '8',
-    weight: '150',
-    exerciseLevel: 'moderate',
-    goal: 'gain-muscle',
-    gender: 'non-binary'
-  });
-
-  const [mealSources, setMealSources] = useState({
-    'Breakfast': null,
-    'FirstSnack': null,
-    'SecondSnack': null,
-    'Lunch': null,
-    'MidAfternoon Snack': null,
-    'Dinner': null,
-    'Late Snack': null,
-    'PostWorkout': null
-  });
-
-  const mealTypeMapping = {
-    'Breakfast': 'breakfast',
-    'FirstSnack': 'firstSnack',
-    'SecondSnack': 'secondSnack',
-    'Lunch': 'lunch',
-    'MidAfternoon Snack': 'midAfternoon',
-    'Dinner': 'dinner',
-    'Late Snack': 'lateSnack',
-    'PostWorkout': 'postWorkout'
-  };
-
-  const [meals, setMeals] = useState([
-    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },
-    { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },
-    { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },
-    { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },
-    { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] },
-    { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },
-    { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] },
-    { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] }
-  ]);
-
-  const [currentCard, setCurrentCard] = useState(0);
-  const [cardPositions, setCardPositions] = useState(meals.map(() => ({ x: 0, y: 0, rotation: 0 })));
-  const [isDragging, setIsDragging] = useState(false);
-  const [isSwipeMode, setIsSwipeMode] = useState(false);
-  const [isScrollModal, setIsScrollModal] = useState(false);
-  const [isFullScreenSwipe, setIsFullScreenSwipe] = useState(false);
-  const [showCreateMeal, setShowCreateMeal] = useState(false);
-  const [showGame, setShowGame] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedMealForFood, setSelectedMealForFood] = useState(null);
-
-  // NEW: Add Foods Modal state
-  const [showAddFoodsModal, setShowAddFoodsModal] = useState(false);
-  const [selectedMealForAddFoods, setSelectedMealForAddFoods] = useState(null);
-  const [selectedMealNameForAddFoods, setSelectedMealNameForAddFoods] = useState('');
-
-  // State for MealIdeas
+const NutritionApp = () => {
+  const [userProfile, setUserProfile] = useState(defaultUserProfile);
+  const [isMobile, setIsMobile] = useState(false);
+  const [viewMode, setViewMode] = useState('chart');
+  
+  // Enhanced Tinder swipe modal state
+  const [showTinderSwipe, setShowTinderSwipe] = useState(false);
+  const [showCardsModal, setShowCardsModal] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  
+  // Meal Ideas modal state
   const [showMealIdeas, setShowMealIdeas] = useState(false);
-  const [selectedMealType, setSelectedMealType] = useState('breakfast');
-
-  // Add WeekPlanModal state
+  const [currentMealType, setCurrentMealType] = useState('breakfast');
+  
+  // Week Plan modal state
   const [isWeekPlanModalOpen, setIsWeekPlanModalOpen] = useState(false);
+  
+  // Fruit budget tracking (max 3 servings per day for maintain goal)
+  const [dailyFruitServings, setDailyFruitServings] = useState(0);
 
-  // Analytics modals state
-  const [showBurnAndLearn, setShowBurnAndLearn] = useState(false);
-  const [showTrends, setShowTrends] = useState(false);
-  const [showPieChart, setShowPieChart] = useState(false);
-  const [showGraphs, setShowGraphs] = useState(false);
-  const [burnAndLearnDetails, setBurnAndLearnDetails] = useState(null);
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  const [meals, setMeals] = useState({
+    breakfast: {
+      time: '7:00 AM',
+      items: [createFoodItem()]
+    },
+    firstSnack: {
+      time: '9:00 AM',
+      items: [createFoodItem()]
+    },
+    secondSnack: {
+      time: '11:00 AM',
+      items: [createFoodItem()]
+    },
+    lunch: {
+      time: '12:30 PM',
+      items: [createFoodItem()]
+    },
+    midAfternoon: {
+      time: '3:00 PM',
+      items: [createFoodItem()]
+    },
+    dinner: {
+      time: '6:30 PM',
+      items: [createFoodItem()]
+    },
+    lateSnack: {
+      time: '8:30 PM',
+      items: [createFoodItem()]
+    },
+    postWorkout: {
+      time: '5:00 AM',
+      items: [createFoodItem()]
+    }
+  });
 
-  const dragRef = useRef({ startX: 0, startY: 0 });
+  const [servingModal, setServingModal] = useState({
+    isOpen: false,
+    mealType: '',
+    item: null
+  });
 
-  // Handle Burn & Learn item clicks
-  const handleBurnAndLearnClick = (item) => {
-    const currentCalorieData = calculateTDEE(profile);
-    const details = {
-      'tdee': {
-        title: '🔥 Total Daily Energy Expenditure',
-        content: `Your TDEE of ${currentCalorieData.tdee} calories represents how much energy your body burns in a full day, including exercise. This is calculated from your BMR (${currentCalorieData.bmr} cal) plus activity level (${profile.exerciseLevel}).`
+  const [foodModal, setFoodModal] = useState({
+    isOpen: false,
+    mealType: '',
+    item: null,
+    category: ''
+  });
+
+  const [profileModal, setProfileModal] = useState({
+    isOpen: false
+  });
+
+  const [personalTrainerModal, setPersonalTrainerModal] = useState({
+    isOpen: false
+  });
+
+  const [customServing, setCustomServing] = useState({ 
+    amount: 1, 
+    unit: 'servings' 
+  });
+
+  const calorieData = calculateTDEE(userProfile);
+
+  const getMealData = (mealType) => {
+    const meal = meals[mealType];
+    const totals = calculateTotals(meal.items);
+    const pieData = preparePieData(totals);
+    return { totals, pieData };
+  };
+
+  const getAllMealsData = () => {
+    return {
+      breakfast: {
+        time: meals.breakfast.time,
+        totals: getMealData('breakfast').totals,
+        items: meals.breakfast.items,
+        pieData: getMealData('breakfast').pieData
       },
-      'surplus-deficit': {
-        title: totalMacros.calories > currentCalorieData.targetCalories ? '📈 Caloric Surplus' : '📉 Caloric Deficit',
-        content: totalMacros.calories > currentCalorieData.targetCalories
-          ? `You're eating ${Math.abs(totalMacros.calories - currentCalorieData.targetCalories)} calories above your target. This surplus will contribute to weight gain - perfect for ${profile.goal === 'dirty-bulk' ? 'dirty bulking' : 'muscle building'} goals!`
-          : `You're eating ${Math.abs(totalMacros.calories - currentCalorieData.targetCalories)} calories below your target. This deficit will contribute to weight loss and help with ${profile.goal === 'lose' ? 'fat loss' : 'lean gains'} goals.`
+      firstSnack: {
+        time: meals.firstSnack.time,
+        totals: getMealData('firstSnack').totals,
+        items: meals.firstSnack.items,
+        pieData: getMealData('firstSnack').pieData
       },
-      'protein-target': {
-        title: '💪 Protein Target',
-        content: `Your protein goal of ${profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} is optimized for ${profile.goal}. You've consumed ${Math.round(totalMacros.protein)}g so far. Protein helps build muscle, keeps you full, and supports recovery.`
+      secondSnack: {
+        time: meals.secondSnack.time,
+        totals: getMealData('secondSnack').totals,
+        items: meals.secondSnack.items,
+        pieData: getMealData('secondSnack').pieData
       },
-      'macro-balance': {
-        title: '⚖️ Macro Balance',
-        content: totalMacros.calories > 0
-          ? `You're tracking your nutrition! Keep logging foods to maintain awareness of your intake and hit your ${profile.goal} goals consistently.`
-          : `Start adding foods to track your macro balance. Consistent tracking is key to achieving your ${profile.goal} goals!`
+      lunch: {
+        time: meals.lunch.time,
+        totals: getMealData('lunch').totals,
+        items: meals.lunch.items,
+        pieData: getMealData('lunch').pieData
+      },
+      midAfternoon: {
+        time: meals.midAfternoon.time,
+        totals: getMealData('midAfternoon').totals,
+        items: meals.midAfternoon.items,
+        pieData: getMealData('midAfternoon').pieData
+      },
+      dinner: {
+        time: meals.dinner.time,
+        totals: getMealData('dinner').totals,
+        items: meals.dinner.items,
+        pieData: getMealData('dinner').pieData
+      },
+      lateSnack: {
+        time: meals.lateSnack.time,
+        totals: getMealData('lateSnack').totals,
+        items: meals.lateSnack.items,
+        pieData: getMealData('lateSnack').pieData
+      },
+      postWorkout: {
+        time: meals.postWorkout.time,
+        totals: getMealData('postWorkout').totals,
+        items: meals.postWorkout.items,
+        pieData: getMealData('postWorkout').pieData
       }
     };
-    setBurnAndLearnDetails(details[item.id]);
   };
 
-  // NEW: Add Foods Modal handlers
-  const handleOpenAddFoodsModal = (mealId, mealName) => {
-    setSelectedMealForAddFoods(mealId);
-    setSelectedMealNameForAddFoods(mealName);
-    setShowAddFoodsModal(true);
+  // All your existing handler functions
+  const handleTimeChange = (mealType, newTime) => {
+    setMeals(prev => ({
+      ...prev,
+      [mealType]: {
+        ...prev[mealType],
+        time: newTime
+      }
+    }));
   };
 
-  const handleCloseAddFoodsModal = () => {
-    setShowAddFoodsModal(false);
-    setSelectedMealForAddFoods(null);
-    setSelectedMealNameForAddFoods('');
+  const handleAddFoodItem = (mealType) => {
+    setMeals(prev => ({
+      ...prev,
+      [mealType]: {
+        ...prev[mealType],
+        items: [...prev[mealType].items, createFoodItem()]
+      }
+    }));
   };
 
-  // Helper function to handle meal ideas opening
-  const handleOpenMealIdeas = (mealType) => {
-    console.log(`Opening meal ideas for ${mealType}`);
-    setSelectedMealType(mealType);
+  const handleRemoveFoodItem = (mealType, itemId) => {
+    setMeals(prev => ({
+      ...prev,
+      [mealType]: {
+        ...prev[mealType],
+        items: prev[mealType].items.filter(item => item.id !== itemId)
+      }
+    }));
+  };
+
+  const handleUpdateFoodItem = (mealType, itemId, field, value) => {
+    setMeals(prev => ({
+      ...prev,
+      [mealType]: {
+        ...prev[mealType],
+        items: prev[mealType].items.map(item => 
+          item.id === itemId 
+            ? { ...item, [field]: value }
+            : item
+        )
+      }
+    }));
+  };
+
+  const handleOpenServingModal = (mealType, item) => {
+    setServingModal({
+      isOpen: true,
+      mealType,
+      item
+    });
+    setCustomServing({ 
+      amount: parseFloat(item.displayServing) || 1, 
+      unit: item.displayUnit || 'servings' 
+    });
+  };
+
+  const handleCloseServingModal = () => {
+    setServingModal({
+      isOpen: false,
+      mealType: '',
+      item: null
+    });
+  };
+
+  const handleOpenFoodModal = (mealType, item, category) => {
+    setFoodModal({
+      isOpen: true,
+      mealType,
+      item,
+      category
+    });
+  };
+
+  const handleCloseFoodModal = () => {
+    setFoodModal({
+      isOpen: false,
+      mealType: '',
+      item: null,
+      category: ''
+    });
+  };
+
+  const handleOpenProfileModal = () => {
+    setProfileModal({ isOpen: true });
+  };
+
+  const handleCloseProfileModal = () => {
+    setProfileModal({ isOpen: false });
+  };
+
+  const handleOpenPersonalTrainerModal = () => {
+    setPersonalTrainerModal({ isOpen: true });
+  };
+
+  const handleClosePersonalTrainerModal = () => {
+    setPersonalTrainerModal({ isOpen: false });
+  };
+
+  const updateUserProfile = (field, value) => {
+    setUserProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  const setDemoMaleProfile = () => {
+    setUserProfile({
+      firstName: 'John',
+      lastName: 'Doe',
+      heightFeet: '5',
+      heightInches: '10',
+      weight: '165',
+      exerciseLevel: 'moderate',
+      goal: 'maintain',
+      gender: 'male'
+    });
+  };
+
+  const setDemoFemaleProfile = () => {
+    setUserProfile({
+      firstName: 'Jane',
+      lastName: 'Doe',
+      heightFeet: '5',
+      heightInches: '6',
+      weight: '135',
+      exerciseLevel: 'moderate',
+      goal: 'maintain',
+      gender: 'female'
+    });
+  };
+
+  const handleSelectFood = (selectedFood) => {
+    if (foodModal.item && foodModal.mealType) {
+      handleUpdateFoodItem(foodModal.mealType, foodModal.item.id, 'food', selectedFood);
+      handleCloseFoodModal();
+      
+      const updatedItem = { ...foodModal.item, food: selectedFood, category: foodModal.category };
+      setTimeout(() => {
+        handleOpenServingModal(foodModal.mealType, updatedItem);
+      }, 100);
+    }
+  };
+
+  const handleApplyCustomServing = () => {
+    if (servingModal.item && servingModal.mealType) {
+      let finalServing = customServing.amount;
+      
+      if (customServing.unit === 'grams' && servingModal.item.category && servingModal.item.food) {
+        const baseGrams = servingSizeConversions[servingModal.item.category]?.[servingModal.item.food]?.grams || 100;
+        finalServing = customServing.amount / baseGrams;
+      } else if (customServing.unit === 'ounces' && servingModal.item.category && servingModal.item.food) {
+        const baseOunces = servingSizeConversions[servingModal.item.category]?.[servingModal.item.food]?.ounces || 3.5;
+        finalServing = customServing.amount / baseOunces;
+      } else if (customServing.unit === 'cups' && servingModal.item.category && servingModal.item.food) {
+        const baseCups = servingSizeConversions[servingModal.item.category]?.[servingModal.item.food]?.cups || 0.5;
+        finalServing = customServing.amount / baseCups;
+      }
+
+      setMeals(prev => ({
+        ...prev,
+        [servingModal.mealType]: {
+          ...prev[servingModal.mealType],
+          items: prev[servingModal.mealType].items.map(item => 
+            item.id === servingModal.item.id 
+              ? { 
+                  ...item, 
+                  serving: finalServing,
+                  displayServing: customServing.amount.toString(),
+                  displayUnit: customServing.unit
+                }
+              : item
+          )
+        }
+      }));
+      
+      handleCloseServingModal();
+    }
+  };
+
+  // Meal Ideas modal functions
+  const openMealIdeas = (mealType = 'breakfast') => {
+    setCurrentMealType(mealType);
     setShowMealIdeas(true);
   };
 
-  // Helper function to add meal from MealIdeas to the actual meal
+  const closeMealIdeas = () => {
+    setShowMealIdeas(false);
+  };
+
+  // FIXED: Single, consistent handleAddMealFromIdeas function
   const handleAddMealFromIdeas = (mealData) => {
     console.log('Adding meal from ideas:', mealData);
 
-    // Find the meal to add to based on selectedMealType
-    const targetMealName = selectedMealType.charAt(0).toUpperCase() + selectedMealType.slice(1);
-    const targetMeal = meals.find(m => m.name === targetMealName);
-
-    if (!targetMeal) {
-      console.error('Target meal not found:', targetMealName);
-      return;
-    }
-
-    // Claim the meal for mealideas (this overrides any existing ownership)
-    claimMeal(targetMeal.name, 'mealideas');
-
-    // Clear existing items and reset totals
-    const clearedMeal = {
-      ...targetMeal,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      sugar: 0,
-      calories: 0,
-      items: []
-    };
-
-    // Calculate totals for the new meal
+    // Process meal data with proper fruit counting and database lookup
     let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
+    let fruitCount = 0;
     const processedItems = [];
 
-    // Add each item from the meal idea to the target meal
     mealData.items.forEach(item => {
       const categoryMapping = {
         'protein': 'protein',
-        'carbohydrate': 'carbohydrate',
+        'carbohydrate': 'carbohydrate', 
         'fat': 'fat',
         'supplements': 'supplements',
         'fruits': 'fruits',
@@ -745,7 +398,30 @@ const MealSwipeApp = () => {
       const dbCategory = categoryMapping[item.category];
       if (dbCategory && FoodDatabase[dbCategory] && FoodDatabase[dbCategory][item.food]) {
         const foodData = FoodDatabase[dbCategory][item.food];
-        const serving = item.serving || 1;
+        let serving = item.serving || 1;
+
+        // Count fruits properly with goal-based limits
+        if (dbCategory === 'fruits') {
+          fruitCount += serving;
+          
+          // Apply fruit limits based on user goal
+          const goalLimits = {
+            'maintain': 2,    // 2 fruits per meal
+            'lose': 1,        // 1 fruit per meal
+            'gain-muscle': 2, // 2 fruits per meal
+            'dirty-bulk': 999 // No limit
+          };
+          
+          const mealFruitLimit = goalLimits[userProfile.goal] || 2;
+          
+          if (fruitCount > mealFruitLimit) {
+            console.warn(`Limiting fruits to ${mealFruitLimit} per meal. Attempted: ${fruitCount}`);
+            const adjustedServing = Math.max(0, serving - (fruitCount - mealFruitLimit));
+            if (adjustedServing <= 0) return; // Skip this fruit item
+            serving = adjustedServing;
+            fruitCount = mealFruitLimit;
+          }
+        }
 
         const protein = foodData.protein * serving;
         const carbs = foodData.carbs * serving;
@@ -760,1100 +436,1362 @@ const MealSwipeApp = () => {
         totalCalories += calories;
 
         processedItems.push({
+          id: generateId(),
           food: item.food,
           category: dbCategory,
-          servings: serving,
-          protein: Math.round(protein),
-          carbs: Math.round(carbs),
-          fat: Math.round(fat),
-          sugar: Math.round(sugar),
-          calories: Math.round(calories),
-          source: 'mealideas'
+          serving: serving,
+          displayServing: serving.toString(),
+          displayUnit: 'servings'
         });
       } else {
         console.warn('Food not found in database:', item.food, 'category:', item.category);
       }
     });
 
-    // Update the meal with new data
-    setMeals(prev => prev.map(meal =>
-      meal.name === targetMeal.name ? {
-        ...meal,
-        items: processedItems,
-        protein: Math.round(totalProtein),
-        carbs: Math.round(totalCarbs),
-        fat: Math.round(totalFat),
-        sugar: Math.round(totalSugar),
-        calories: Math.round(totalCalories)
-      } : meal
-    ));
+    // Update the meal using your existing state structure
+    setMeals(prev => ({
+      ...prev,
+      [currentMealType]: {
+        ...prev[currentMealType],
+        items: processedItems
+      }
+    }));
+
+    // Update fruit budget if meal contains fruit
+    if (fruitCount > 0) {
+      const dailyLimit = {
+        'maintain': 3,
+        'lose': 1,
+        'gain-muscle': 2, 
+        'dirty-bulk': 999
+      }[userProfile.goal] || 3;
+      
+      setDailyFruitServings(prev => Math.min(dailyLimit, prev + fruitCount));
+    }
 
     setShowMealIdeas(false);
   };
 
-  // Add WeekPlan handler function
-  const handleAddWeekPlan = (weekPlan) => {
-    const mealTypes = ['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'];
-
-    // Create new meals object with cleared items for ALL meals (weekplan overrides everything)
-    const newMeals = meals.map(meal => ({
-      ...meal,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      sugar: 0,
-      calories: 0,
-      items: []
-    }));
-
-    // Update meals with week plan data
-    if (weekPlan.allMeals) {
-      weekPlan.allMeals.forEach((planMeal, index) => {
-        if (index < mealTypes.length) {
-          const mealName = mealTypes[index];
-          const mealIndex = newMeals.findIndex(m => m.name === mealName);
-
-          if (mealIndex !== -1 && planMeal.items) {
-            // Calculate totals from the plan meal items
-            let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
-
-            const processedItems = planMeal.items.map(item => {
-              if (item.food && item.category) {
-                const foodData = FoodDatabase[item.category]?.[item.food];
-                if (foodData) {
-                  const serving = item.serving || 1;
-                  const protein = foodData.protein * serving;
-                  const carbs = foodData.carbs * serving;
-                  const fat = foodData.fat * serving;
-                  const sugar = (foodData.sugar || 0) * serving;
-                  const calories = foodData.calories * serving;
-
-                  totalProtein += protein;
-                  totalCarbs += carbs;
-                  totalFat += fat;
-                  totalSugar += sugar;
-                  totalCalories += calories;
-
-                  return {
-                    food: item.food,
-                    category: item.category,
-                    servings: serving,
-                    protein: Math.round(protein),
-                    carbs: Math.round(carbs),
-                    fat: Math.round(fat),
-                    sugar: Math.round(sugar),
-                    calories: Math.round(calories),
-                    source: 'weekplan'
-                  };
-                }
-              }
-              return null;
-            }).filter(item => item !== null);
-
-            newMeals[mealIndex] = {
-              ...newMeals[mealIndex],
-              time: planMeal.time || newMeals[mealIndex].time,
-              items: processedItems,
-              protein: Math.round(totalProtein),
-              carbs: Math.round(totalCarbs),
-              fat: Math.round(totalFat),
-              sugar: Math.round(totalSugar),
-              calories: Math.round(totalCalories)
-            };
-
-            // Claim the meal for weekplan (this overrides any existing ownership)
-            claimMeal(mealName, 'weekplan');
-          }
-        }
-      });
-    }
-
-    setMeals(newMeals);
-    setIsWeekPlanModalOpen(false);
-  };
-
-  const claimMeal = (mealName, source) => {
-    console.log(`Claiming meal ${mealName} for ${source}`);
-
-    const previousSource = mealSources[mealName];
-
-    // Update meal sources
-    setMealSources(prev => ({ ...prev, [mealName]: source }));
-
-    // If the source is changing, clear the meal data
-    if (source !== previousSource) {
-      setMeals(prev => prev.map(meal => {
-        if (meal.name === mealName) {
-          return {
-            ...meal,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-            sugar: 0,
-            calories: 0,
-            items: []
-          };
-        }
-        return meal;
-      }));
-    }
-  };
-
-  const updateMeal = (mealId, field, value) => {
-    if (typeof field === 'object') {
-      const updateData = field;
-      setMeals(prev => prev.map(meal => {
-        if (meal.id === mealId || meal.name === mealId) {
-          const updated = { ...meal };
-          if (updateData.time) updated.time = updateData.time;
-          if (updateData.addItem) {
-            const item = updateData.addItem;
-            updated.items = [...(updated.items || []), item];
-            updated.protein = updated.protein + Math.round(parseFloat(item.protein));
-            updated.carbs = updated.carbs + Math.round(parseFloat(item.carbs));
-            updated.fat = updated.fat + Math.round(parseFloat(item.fat));
-            updated.sugar = updated.sugar + Math.round(parseFloat(item.sugar || 0));
-            updated.calories = updated.calories + Math.round(parseInt(item.calories));
-          }
-          return updated;
-        }
-        return meal;
-      }));
-    } else {
-      const meal = meals.find(m => m.id === mealId);
-      if (!meal) return;
-
-      // Check if meal is owned by another system (for manual updates)
-      const source = mealSources[meal.name];
-      if (source && source !== 'quickview') {
-        console.warn(`Cannot manually modify ${meal.name} - owned by ${source} system`);
-        return;
-      }
-
-      setMeals(prev => prev.map(meal => {
-        if (meal.id === mealId) {
-          const updated = { ...meal, [field]: parseInt(value) || 0 };
-          updated.calories = (updated.protein * 4) + (updated.carbs * 4) + (updated.fat * 9);
-          return updated;
-        }
-        return meal;
-      }));
-
-      // Claim the meal for quickview if not already claimed
-      if (meal && (!source || source !== 'quickview')) {
-        claimMeal(meal.name, 'quickview');
-      }
-    }
-  };
-
-  // Generate smart meal recommendations based on current progress
-  const getSmartMealRecommendations = () => {
-    if (!profile.firstName || totalMacros.calories < 50) return [];
-
-    const recommendations = [];
-    const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
-      profile.goal === 'gain-muscle' ? 130 :
-        profile.goal === 'lose' ? 120 : 100;
-
-    const proteinGap = proteinTarget - totalMacros.protein;
-    const calorieGap = calorieData.targetCalories - totalMacros.calories;
-
-    // High priority recommendations (critical gaps)
-    if (proteinGap > 50) {
-      recommendations.push({
-        priority: 'high',
-        title: 'Protein Emergency!',
-        message: `You need ${Math.round(proteinGap)}g more protein today! Consider adding protein-rich meals like chicken, fish, or protein shakes to catch up.`
-      });
-    }
-
-    if (profile.goal === 'dirty-bulk' && calorieGap > 800) {
-      recommendations.push({
-        priority: 'high',
-        title: 'Bulk Fuel Shortage!',
-        message: `You're ${Math.round(calorieGap)} calories short for dirty bulk! Add calorie-dense meals with healthy fats and complex carbs.`
-      });
-    }
-
-    // Medium priority recommendations (optimization opportunities)
-    if (proteinGap > 20 && proteinGap <= 50) {
-      recommendations.push({
-        priority: 'medium',
-        title: 'Protein Boost Needed',
-        message: `Add ${Math.round(proteinGap)}g more protein to hit your ${proteinTarget}g target. Perfect opportunity for a protein-rich snack!`
-      });
-    }
-
-    if (profile.goal === 'lose' && totalMacros.calories > calorieData.targetCalories * 1.1) {
-      recommendations.push({
-        priority: 'medium',
-        title: 'Calorie Check',
-        message: `You're ${Math.round(totalMacros.calories - calorieData.targetCalories)} calories over target. Focus on lean proteins and vegetables for remaining meals.`
-      });
-    }
-
-    // Low priority recommendations (fine-tuning)
-    if (proteinGap <= 20 && proteinGap > 0) {
-      recommendations.push({
-        priority: 'low',
-        title: 'Almost Perfect!',
-        message: `Just ${Math.round(proteinGap)}g more protein needed. You're crushing your ${profile.goal} goals today!`
-      });
-    }
-
-    if (recommendations.length === 0) {
-      recommendations.push({
-        priority: 'low',
-        title: 'Excellent Progress!',
-        message: `You're hitting your nutrition targets perfectly for ${profile.goal}. Keep this consistency going!`
-      });
-    }
-
-    // Limit to top 2 recommendations to avoid overwhelming
-    return recommendations.slice(0, 2);
-  };
-
-  // Generate quick action suggestions based on current state
-  const getQuickActionSuggestions = () => {
-    const actions = [];
-    const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
-      profile.goal === 'gain-muscle' ? 130 :
-        profile.goal === 'lose' ? 120 : 100;
-
-    const proteinGap = proteinTarget - totalMacros.protein;
-
-    // Find the meal with the least calories (most likely to need attention)
-    const emptyMeals = meals.filter(meal => meal.calories < 50);
-    const lowCalorieMeals = meals.filter(meal => meal.calories >= 50 && meal.calories < 200);
-
-    if (proteinGap > 30) {
-      actions.push({
-        icon: '💪',
-        text: 'Add Protein to Low Meals',
-        onClick: () => enterFullScreenSwipe()
-      });
-    }
-
-    if (emptyMeals.length > 0) {
-      const nextMeal = emptyMeals[0];
-      if (['Breakfast', 'Lunch', 'Dinner'].includes(nextMeal.name)) {
-        actions.push({
-          icon: '💡',
-          text: `Get ${nextMeal.name} Ideas`,
-          onClick: () => {
-            handleOpenMealIdeas(nextMeal.name.toLowerCase());
-          }
-        });
-      }
-    }
-
-    if (profile.goal === 'dirty-bulk' && totalMacros.calories < calorieData.targetCalories * 0.7) {
-      actions.push({
-        icon: '🚀',
-        text: 'Find High-Calorie Foods',
-        onClick: () => setShowCreateMeal(true)
-      });
-    }
-
-    if (lowCalorieMeals.length > 2) {
-      actions.push({
-        icon: '📈',
-        text: 'Boost Meal Sizes',
-        onClick: () => enterSwipeMode()
-      });
-    }
-
-    // Always suggest meal ideas if no specific issues
-    if (actions.length === 0) {
-      const mainMeals = ['Breakfast', 'Lunch', 'Dinner'];
-      const incompleteMeals = meals.filter(meal =>
-        mainMeals.includes(meal.name) && meal.calories < 300
-      );
-
-      if (incompleteMeals.length > 0) {
-        const targetMeal = incompleteMeals[0];
-        actions.push({
-          icon: '✨',
-          text: `Enhance ${targetMeal.name}`,
-          onClick: () => handleOpenMealIdeas(targetMeal.name.toLowerCase())
-        });
-      }
-    }
-
-    // Limit to top 3 actions
-    return actions.slice(0, 3);
-  };
-
-  const addFoodToMeal = (mealId, category, foodName, servings = 1) => {
-    const foodData = FoodDatabase[category]?.[foodName];
-    if (!foodData) return;
-
-    const meal = meals.find(m => m.id === mealId);
-    if (!meal) return;
-
-    // Check if meal is owned by another system
-    const source = mealSources[meal.name];
-    if (source && source !== 'quickview') {
-      console.warn(`Cannot modify ${meal.name} - owned by ${source} system`);
-      return;
-    }
-
-    // Claim the meal for quickview if not already claimed
-    if (!source) {
-      claimMeal(meal.name, 'quickview');
-    }
-
-    setMeals(prev => prev.map(meal => {
-      if (meal.id === mealId) {
-        const newItem = {
-          food: foodName,
-          category: category,
-          servings: servings,
-          protein: Math.round(foodData.protein * servings),
-          carbs: Math.round(foodData.carbs * servings),
-          fat: Math.round(foodData.fat * servings),
-          sugar: Math.round((foodData.sugar || 0) * servings),
-          calories: Math.round(foodData.calories * servings),
-          source: 'quickview'
-        };
-
-        return {
-          ...meal,
-          items: [...(meal.items || []), newItem],
-          protein: Math.round(meal.protein + foodData.protein * servings),
-          carbs: Math.round(meal.carbs + foodData.carbs * servings),
-          fat: Math.round(meal.fat + foodData.fat * servings),
-          sugar: Math.round(meal.sugar + (foodData.sugar || 0) * servings),
-          calories: Math.round(meal.calories + foodData.calories * servings)
-        };
-      }
-      return meal;
-    }));
-  };
-
-  const removeFoodFromMeal = (mealId, itemIndex) => {
-    const meal = meals.find(m => m.id === mealId);
-    if (!meal) return;
-
-    // Check if meal is owned by another system
-    const source = mealSources[meal.name];
-    if (source && source !== 'quickview') {
-      console.warn(`Cannot modify ${meal.name} - owned by ${source} system`);
-      return;
-    }
-
-    setMeals(prev => prev.map(meal => {
-      if (meal.id === mealId) {
-        const itemToRemove = meal.items[itemIndex];
-        const updatedItems = meal.items.filter((_, index) => index !== itemIndex);
-        return {
-          ...meal,
-          items: updatedItems,
-          protein: Math.max(0, Math.round(meal.protein - itemToRemove.protein)),
-          carbs: Math.max(0, Math.round(meal.carbs - itemToRemove.carbs)),
-          fat: Math.max(0, Math.round(meal.fat - itemToRemove.fat)),
-          sugar: Math.max(0, Math.round(meal.sugar - (itemToRemove.sugar || 0))),
-          calories: Math.max(0, Math.round(meal.calories - itemToRemove.calories))
-        };
-      }
-      return meal;
-    }));
-  };
-
-  const calculatePieData = (meal) => {
-    const proteinCals = meal.protein * 4;
-    const carbCals = meal.carbs * 4;
-    const fatCals = meal.fat * 9;
-    const totalCals = proteinCals + carbCals + fatCals;
-    if (totalCals === 0) return [];
-    return [
-      { name: 'Protein', value: proteinCals, percentage: Math.round((proteinCals / totalCals) * 100) },
-      { name: 'Carbs', value: carbCals, percentage: Math.round((carbCals / totalCals) * 100) },
-      { name: 'Fat', value: fatCals, percentage: Math.round((fatCals / totalCals) * 100) }
-    ];
-  };
-
+  // FIXED: Consistent message formatting function
   const formatMealsForMessaging = () => {
+    // Map your meal keys to message system keys
+    const messageSystemMapping = {
+      'breakfast': 'breakfast',
+      'firstSnack': 'firstSnack', 
+      'secondSnack': 'secondSnack',
+      'lunch': 'lunch',
+      'midAfternoon': 'midAfternoon',
+      'dinner': 'dinner',
+      'lateSnack': 'lateSnack',
+      'postWorkout': 'postWorkout'
+    };
+
     const allMeals = {};
-    meals.forEach(meal => {
-      const mealType = mealTypeMapping[meal.name];
-      if (mealType) {
-        allMeals[mealType] = {
-          time: meal.time,
-          totals: { calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, sugar: meal.sugar },
-          items: meal.items,
-          pieData: calculatePieData(meal)
+    
+    // Use your existing meal structure
+    Object.keys(meals).forEach(mealKey => {
+      const messageType = messageSystemMapping[mealKey];
+      if (messageType) {
+        const { totals, pieData } = getMealData(mealKey);
+        allMeals[messageType] = {
+          time: meals[mealKey].time,
+          totals: totals,
+          items: meals[mealKey].items || [],
+          pieData: pieData
         };
       }
     });
+    
     return allMeals;
   };
 
-  // Calculate calorie data from profile using ProfileModule's TDEE calculation
-  const calculateTDEE = (userProfile) => {
-    const { heightFeet, heightInches, weight, exerciseLevel, goal, gender } = userProfile;
-
-    if (!heightFeet || !heightInches || !weight || !exerciseLevel || !goal || !gender) {
-      return {
-        bmr: 1800,
-        tdee: 2200,
-        targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500
-      };
-    }
-
-    const totalHeightInches = parseInt(heightFeet) * 12 + parseInt(heightInches);
-    const heightCm = totalHeightInches * 2.54;
-    const weightKg = parseFloat(weight) * 0.453592;
-
-    // BMR calculation using Mifflin-St Jeor equation
-    let bmr;
-    if (gender === 'male') {
-      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 + 5; // Using age 25 as default
-    } else if (gender === 'female') {
-      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 - 161;
-    } else {
-      // Non-binary - use average
-      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 - 78;
-    }
-
-    // Activity multipliers
-    const activityMultipliers = {
-      'sedentary': 1.2,
-      'light': 1.375,
-      'moderate': 1.55,
-      'active': 1.725,
-      'very-active': 1.9
+  // FIXED: Fruit budget calculation using your meal structure
+  const calculateFruitBudgetRemainingFromMeals = () => {
+    const goalLimits = {
+      'maintain': 3,
+      'lose': 1,
+      'gain-muscle': 2, 
+      'dirty-bulk': 999 // No limit
     };
-
-    const tdee = bmr * activityMultipliers[exerciseLevel];
-
-    // Goal adjustments
-    let targetCalories;
-    switch (goal) {
-      case 'lose':
-        targetCalories = tdee - 500; // 500 cal deficit for 1lb/week loss
-        break;
-      case 'gain-muscle':
-        targetCalories = tdee + 300; // 300 cal surplus for lean gains
-        break;
-      case 'dirty-bulk':
-        targetCalories = tdee + 700; // 700 cal surplus for rapid gains
-        break;
-      case 'maintain':
-      default:
-        targetCalories = tdee;
-        break;
-    }
-
-    return {
-      bmr: Math.round(bmr),
-      tdee: Math.round(tdee),
-      targetCalories: Math.round(targetCalories)
-    };
-  };
-
-  const calorieData = calculateTDEE(profile);
-
-  const getMealMessage = (meal) => {
-    if (!meal || meal.calories < 25) return null;
-
-    const allMeals = formatMealsForMessaging();
-    const currentMealType = mealTypeMapping[meal.name];
-    if (!currentMealType) return null;
-
-    const currentMealTotals = {
-      calories: meal.calories,
-      protein: meal.protein,
-      carbs: meal.carbs,
-      fat: meal.fat,
-      sugar: Math.round(meal.carbs * 0.3) // Estimate sugar as 30% of carbs
-    };
-
-    const pieData = calculatePieData(meal);
-
-    // Enhanced user profile for messaging
-    const userProfileForMessages = {
-      firstName: profile.firstName || profile.name || 'Champion',
-      goal: profile.goal || 'gain-muscle',
-      weight: profile.weight || 150
-    };
-
-    // Use the comprehensive time-aware messaging system
-    return MealMessages.getTimeAwareMessage(
-      allMeals,                    // All meals with timing
-      currentMealType,             // Current meal type
-      currentMealTotals,           // Current meal totals
-      meal.items || [],            // Current meal items
-      userProfileForMessages,      // Enhanced user profile
-      calorieData,                // TDEE/BMR data
-      meal.time,                  // Current meal time
-      pieData                     // Pie chart data
-    );
-  };
-
-  const openFoodSelection = (category, mealId) => {
-    const meal = meals.find(m => m.id === mealId);
-    if (meal && mealSources[meal.name] === 'usda') return;
-    setSelectedCategory(category);
-    setSelectedMealForFood(mealId);
-  };
-
-  const closeFoodSelection = () => {
-    setSelectedCategory(null);
-    setSelectedMealForFood(null);
-  };
-
-  const enterSwipeMode = () => {
-    setIsSwipeMode(true);
-    document.body.style.overflow = 'hidden';
-  };
-
-  const exitSwipeMode = () => {
-    setIsSwipeMode(false);
-    setIsDragging(false);
-    document.body.style.overflow = '';
-    document.body.style.touchAction = '';
-    setCardPositions(prev => prev.map(() => ({ x: 0, y: 0, rotation: 0 })));
-  };
-
-  const enterScrollModal = () => {
-    setIsScrollModal(true);
-    document.body.style.overflow = 'hidden';
-  };
-
-  const exitScrollModal = () => {
-    setIsScrollModal(false);
-    document.body.style.overflow = '';
-  };
-
-  const enterFullScreenSwipe = () => {
-    setIsFullScreenSwipe(true);
-    document.body.style.overflow = 'hidden';
-  };
-
-  const exitFullScreenSwipe = () => {
-    setIsFullScreenSwipe(false);
-    setIsDragging(false);
-    document.body.style.overflow = '';
-    document.body.style.touchAction = '';
-    setCardPositions(prev => prev.map(() => ({ x: 0, y: 0, rotation: 0 })));
-  };
-
-  const handleMouseDown = (e) => {
-    if (!isSwipeMode && !isFullScreenSwipe) return;
-    if (e.target.closest('.no-swipe-zone')) return;
-    setIsDragging(true);
-    dragRef.current = {
-      startX: e.clientX || e.touches?.[0]?.clientX || 0,
-      startY: e.clientY || e.touches?.[0]?.clientY || 0
-    };
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging || (!isSwipeMode && !isFullScreenSwipe)) return;
-    const currentX = e.clientX || e.touches?.[0]?.clientX || 0;
-    const currentY = e.clientY || e.touches?.[0]?.clientY || 0;
-    const deltaX = currentX - dragRef.current.startX;
-    const deltaY = currentY - dragRef.current.startY;
-
-    if (Math.abs(deltaX) > 15) {
-      e.preventDefault();
-      const rotation = deltaX * 0.1;
-      setCardPositions(prev => prev.map((pos, index) => index === currentCard ? { x: deltaX, y: deltaY, rotation } : pos));
-    }
-  };
-
-  const handleMouseUp = (e) => {
-    if (!isDragging || (!isSwipeMode && !isFullScreenSwipe)) return;
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-    setIsDragging(false);
-
-    const currentPos = cardPositions[currentCard];
-    const swipeThreshold = 100;
-
-    if (Math.abs(currentPos.x) > swipeThreshold) {
-      const direction = currentPos.x > 0 ? 'right' : 'left';
-      setCardPositions(prev => prev.map((pos, index) =>
-        index === currentCard ? { x: direction === 'right' ? 400 : -400, y: pos.y, rotation: direction === 'right' ? 30 : -30 } : pos
-      ));
-      setTimeout(() => {
-        setCurrentCard(prev => (prev + 1) % meals.length);
-        setCardPositions(prev => prev.map(() => ({ x: 0, y: 0, rotation: 0 })));
-      }, 300);
-    } else {
-      setCardPositions(prev => prev.map((pos, index) => index === currentCard ? { x: 0, y: 0, rotation: 0 } : pos));
-    }
-  };
-
-  const totalMacros = meals.reduce((total, meal) => ({
-    protein: Math.round(total.protein + meal.protein),
-    carbs: Math.round(total.carbs + meal.carbs),
-    fat: Math.round(total.fat + meal.fat),
-    sugar: Math.round(total.sugar + (meal.sugar || 0)),
-    calories: Math.round(total.calories + meal.calories)
-  }), { protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0 });
-
-  // Handle profile updates from ProfileModule
-  const handleProfileUpdate = (newProfile) => {
-    setProfile(newProfile);
-    console.log('Profile updated:', newProfile);
-  };
-
-  // Calculate fruit budget remaining (3 fruits per day max recommended)
-  const calculateFruitBudgetRemaining = () => {
+    
+    const dailyLimit = goalLimits[userProfile.goal] || 3;
+    
     let fruitsConsumed = 0;
-    meals.forEach(meal => {
-      if (meal.items) {
-        meal.items.forEach(item => {
+    
+    // Use your existing meals object structure
+    Object.keys(meals).forEach(mealKey => {
+      if (meals[mealKey].items) {
+        meals[mealKey].items.forEach(item => {
           if (item.category === 'fruits') {
-            fruitsConsumed += item.servings;
+            fruitsConsumed += item.serving || 1;
           }
         });
       }
     });
-    return Math.max(0, 3 - fruitsConsumed);
+    
+    return Math.max(0, dailyLimit - fruitsConsumed);
   };
 
-  // Generate daily progress message using the sophisticated messaging system
-  const getDailyProgressMessage = () => {
-    if (!profile.firstName || totalMacros.calories < 100) {
-      return "Start adding meals to see personalized nutrition insights!";
+  // FIXED: Week plan handler using your meal structure
+  const handleAddWeekPlan = (weekPlan) => {
+    console.log('Adding week plan:', weekPlan);
+    
+    // Clear all existing meals and add new ones
+    const newMeals = { ...meals };
+    
+    // Reset all meals to empty
+    Object.keys(newMeals).forEach(mealKey => {
+      newMeals[mealKey] = {
+        ...newMeals[mealKey],
+        items: []
+      };
+    });
+    
+    // Map week plan meals to your meal structure
+    const mealTypeMapping = {
+      0: 'breakfast',
+      1: 'firstSnack', 
+      2: 'secondSnack',
+      3: 'lunch',
+      4: 'midAfternoon',
+      5: 'dinner',
+      6: 'lateSnack',
+      7: 'postWorkout'
+    };
+    
+    // Add meals from week plan
+    if (weekPlan.allMeals && Array.isArray(weekPlan.allMeals)) {
+      weekPlan.allMeals.forEach((planMeal, index) => {
+        const mealKey = mealTypeMapping[index];
+        if (mealKey && newMeals[mealKey]) {
+          newMeals[mealKey] = {
+            ...newMeals[mealKey],
+            items: [...(planMeal.items || [])]
+          };
+        }
+      });
     }
-
-    const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
-      profile.goal === 'gain-muscle' ? 130 :
-        profile.goal === 'lose' ? 120 : 100;
-
-    const proteinProgress = (totalMacros.protein / proteinTarget) * 100;
-    const calorieProgress = (totalMacros.calories / calorieData.targetCalories) * 100;
-
-    // Generate goal-specific insights
-    if (profile.goal === 'dirty-bulk') {
-      if (totalMacros.calories >= calorieData.targetCalories && totalMacros.protein >= proteinTarget) {
-        return `${profile.firstName}, BULK DOMINATION! ${Math.round(totalMacros.calories)} calories and ${Math.round(totalMacros.protein)}g protein - you're building SERIOUS mass today!`;
-      } else if (totalMacros.calories < calorieData.targetCalories * 0.7) {
-        return `${profile.firstName}, only ${Math.round(totalMacros.calories)} calories for dirty bulk? You need ${Math.round(calorieData.targetCalories - totalMacros.calories)} more to hit your mass-building target!`;
-      } else {
-        return `${profile.firstName}, solid bulk progress at ${Math.round(totalMacros.calories)} calories - keep feeding the machine for maximum gains!`;
-      }
-    } else if (profile.goal === 'gain-muscle') {
-      if (proteinProgress >= 85 && calorieProgress >= 80 && calorieProgress <= 120) {
-        return `${profile.firstName}, LEAN MUSCLE PERFECTION! ${Math.round(totalMacros.protein)}g protein and ${Math.round(totalMacros.calories)} calories - textbook muscle building!`;
-      } else if (proteinProgress < 60) {
-        return `${profile.firstName}, protein alert! Only ${Math.round(totalMacros.protein)}g of your ${proteinTarget}g target - lean gains need more protein focus!`;
-      } else {
-        return `${profile.firstName}, good muscle-building progress with ${Math.round(totalMacros.protein)}g protein - stay consistent for lean gains!`;
-      }
-    } else if (profile.goal === 'lose') {
-      if (proteinProgress >= 80 && totalMacros.calories <= calorieData.targetCalories) {
-        return `${profile.firstName}, FAT LOSS PRECISION! ${Math.round(totalMacros.protein)}g protein with controlled calories - perfect for preserving muscle while cutting!`;
-      } else if (totalMacros.calories > calorieData.targetCalories * 1.2) {
-        return `${profile.firstName}, calories running high at ${Math.round(totalMacros.calories)} - fat loss requires staying closer to your ${calorieData.targetCalories} target!`;
-      } else {
-        return `${profile.firstName}, steady fat loss approach with ${Math.round(totalMacros.protein)}g protein - consistency wins the race!`;
-      }
-    } else {
-      // maintain
-      if (proteinProgress >= 70 && Math.abs(calorieProgress - 100) <= 15) {
-        return `${profile.firstName}, MAINTENANCE MASTERY! ${Math.round(totalMacros.protein)}g protein and balanced calories - sustainable excellence!`;
-      } else {
-        return `${profile.firstName}, good maintenance foundation with ${Math.round(totalMacros.calories)} calories - keep building consistent habits!`;
-      }
+    
+    setMeals(newMeals);
+    
+    // Update fruit count if provided
+    if (weekPlan.fruitCount !== undefined) {
+      const dailyLimit = {
+        'maintain': 3,
+        'lose': 1,
+        'gain-muscle': 2, 
+        'dirty-bulk': 999
+      }[userProfile.goal] || 3;
+      
+      setDailyFruitServings(Math.min(dailyLimit, weekPlan.fruitCount));
     }
+    
+    setIsWeekPlanModalOpen(false);
+  };
+
+  // Calculate remaining fruit budget
+  const fruitBudgetRemaining = calculateFruitBudgetRemainingFromMeals();
+
+  // Enhanced Tinder swipe functions
+  const openTinderSwipe = () => {
+    setShowTinderSwipe(true);
+  };
+
+  const closeTinderSwipe = () => {
+    setShowTinderSwipe(false);
+  };
+
+  // Regular cards modal functions
+  const openCardsModal = () => {
+    setCurrentCardIndex(0);
+    setShowCardsModal(true);
+  };
+
+  const closeCardsModal = () => {
+    setShowCardsModal(false);
+  };
+
+  const getTimelineData = () => {
+    const mealOrder = ['breakfast', 'firstSnack', 'secondSnack', 'lunch', 'midAfternoon', 'dinner', 'lateSnack', 'postWorkout'];
+    const mealLabels = {
+      breakfast: 'Breakfast',
+      firstSnack: 'Morning Snack', 
+      secondSnack: 'Mid-Morning Snack',
+      lunch: 'Lunch',
+      midAfternoon: 'Afternoon Snack',
+      dinner: 'Dinner',
+      lateSnack: 'Evening Snack',
+      postWorkout: 'Post-Workout'
+    };
+
+    const timeToHours = (timeStr) => {
+      const [time, period] = timeStr.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      let hour24 = hours;
+      if (period === 'PM' && hours !== 12) hour24 += 12;
+      if (period === 'AM' && hours === 12) hour24 = 0;
+      return hour24 + minutes / 60;
+    };
+
+    const basicTimelineData = mealOrder.map((mealType, index) => {
+      const { totals } = getMealData(mealType);
+      return {
+        name: isMobile ? mealLabels[mealType] : `${mealLabels[mealType]}\n${meals[mealType].time}`,
+        shortName: mealLabels[mealType],
+        fullName: mealLabels[mealType],
+        time: meals[mealType].time,
+        timeHours: timeToHours(meals[mealType].time),
+        calories: Math.round(totals.calories),
+        sugar: Math.round(totals.sugar),
+        sugarScaled: Math.round(totals.sugar) * 10,
+        order: index,
+        mealType: mealType
+      };
+    });
+
+    return [...basicTimelineData].sort((a, b) => a.timeHours - b.timeHours);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-blue-500 to-red-600 p-4">
-      <div className="max-w-md mx-auto">
-        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
-          <>
-            {/* ProfileModule */}
-            <ProfileModule
-              isMobile={true}
-              initialProfile={profile}
-              allMeals={formatMealsForMessaging()}
-              onProfileUpdate={handleProfileUpdate}
-            />
+    <div className={`min-h-screen bg-gray-100 ${isMobile ? 'py-4' : 'py-8'}`}>
+      <div className={`container mx-auto ${isMobile ? 'px-3' : 'px-4'}`}>
+        <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
+          <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl'} font-bold text-gray-800 mb-2`}>
+            🥗 Nutrition Tracker
+          </h1>
+          <p className={`${isMobile ? 'text-base' : 'text-lg'} text-gray-600`}>
+            Welcome back{userProfile.firstName ? `, ${userProfile.firstName}` : ''}! Track your daily nutrition goals.
+          </p>
+        </div>
 
-            {/* NEW UNIFIED Daily Nutrition Summary with Action Buttons and Analytics */}
-            <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
-              <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Nutrition Summary</h2>
-
-              {/* Macro Grid */}
-              <div className="grid grid-cols-4 gap-3 text-center mb-4">
-                <div className="bg-blue-100 rounded-lg p-2">
-                  <div className="text-xs text-blue-600 font-medium">Protein</div>
-                  <div className="text-lg font-bold text-blue-800">{Math.round(totalMacros.protein)}g</div>
-                  <div className="text-xs text-blue-500">
-                    {profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} target
+        {/* Profile Card */}
+        <div className={`${isMobile ? 'mb-4' : 'mb-6'} bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200 ${isMobile ? 'p-4' : 'p-6'}`}>
+          <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'}`}>
+            <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center space-x-6'}`}>
+              <div className="text-center">
+                <div className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-blue-800`}>
+                  {userProfile.firstName ? `${userProfile.firstName}${userProfile.lastName ? ` ${userProfile.lastName}` : ''}` : 'Setup Your Profile'}
+                </div>
+                {userProfile.goal && (
+                  <div className={`${isMobile ? 'text-sm' : 'text-base'} text-blue-600 capitalize`}>
+                    Goal: {userProfile.goal.replace('-', ' ')}
                   </div>
-                </div>
-                <div className="bg-green-100 rounded-lg p-2">
-                  <div className="text-xs text-green-600 font-medium">Carbs</div>
-                  <div className="text-lg font-bold text-green-800">{Math.round(totalMacros.carbs)}g</div>
-                </div>
-                <div className="bg-yellow-100 rounded-lg p-2">
-                  <div className="text-xs text-yellow-600 font-medium">Fat</div>
-                  <div className="text-lg font-bold text-yellow-800">{Math.round(totalMacros.fat)}g</div>
-                </div>
-                <div className="bg-purple-100 rounded-lg p-2">
-                  <div className="text-xs text-purple-600 font-medium">Calories</div>
-                  <div className="text-lg font-bold text-purple-800">{Math.round(totalMacros.calories)}</div>
-                  <div className="text-xs text-purple-500">
-                    {calorieData.targetCalories} target
-                  </div>
-                </div>
+                )}
               </div>
-
-              {/* Action Buttons - Same 4-column grid for uniformity */}
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                <button
-                  onClick={enterSwipeMode}
-                  className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">🍽️</div>
-                  <div className="text-xs font-semibold">Quick View</div>
-                </button>
-                <button
-                  onClick={enterScrollModal}
-                  className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">📋</div>
-                  <div className="text-xs font-semibold">Scroll View</div>
-                </button>
-                <button
-                  onClick={enterFullScreenSwipe}
-                  className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">🌟</div>
-                  <div className="text-xs font-semibold">Full Screen</div>
-                </button>
-                <button
-                  onClick={() => setShowCreateMeal(true)}
-                  className="bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">🔍</div>
-                  <div className="text-xs font-semibold">Create Meal</div>
-                </button>
-              </div>
-
-              {/* Analytics Grid - Same 4-column format */}
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                <button
-                  onClick={() => setShowBurnAndLearn(true)}
-                  className="bg-gradient-to-br from-red-500 to-red-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">🔥</div>
-                  <div className="text-xs font-semibold">Burn & Learn</div>
-                </button>
-                <button
-                  onClick={() => setShowTrends(true)}
-                  className="bg-gradient-to-br from-teal-500 to-teal-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">📈</div>
-                  <div className="text-xs font-semibold">Trends</div>
-                </button>
-                <button
-                  onClick={() => setShowPieChart(true)}
-                  className="bg-gradient-to-br from-pink-500 to-pink-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">🥧</div>
-                  <div className="text-xs font-semibold">Pie Chart</div>
-                </button>
-                <button
-                  onClick={() => setShowGraphs(true)}
-                  className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
-                >
-                  <div className="text-lg mb-1">📊</div>
-                  <div className="text-xs font-semibold">Graphs</div>
-                </button>
-              </div>
-
-              {/* Smart Daily Insight */}
-              {totalMacros.calories > 100 && (
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3">
-                  <div className="flex items-start gap-2">
-                    <div className="text-lg">🎯</div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800 text-sm mb-1">Daily Progress Insight</h4>
-                      <p className="text-xs text-gray-700 leading-relaxed">
-                        {getDailyProgressMessage()}
-                      </p>
+              
+              {calorieData && (
+                <div className={`flex ${isMobile ? 'justify-center space-x-4' : 'space-x-6'} text-center`}>
+                  <div>
+                    <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-green-600`}>
+                      {calorieData.bmr}
                     </div>
+                    <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-green-700`}>BMR</div>
+                  </div>
+                  <div>
+                    <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-purple-600`}>
+                      {calorieData.tdee}
+                    </div>
+                    <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-purple-700`}>TDEE</div>
+                  </div>
+                  <div>
+                    <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-orange-600`}>
+                      {calorieData.targetCalories}
+                    </div>
+                    <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-orange-700`}>Target</div>
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Smart Next Meal Recommendations */}
-            {profile.firstName && totalMacros.calories > 50 && (
-              <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
-                <h2 className="text-lg font-bold text-gray-800 mb-3 text-center flex items-center justify-center gap-2">
-                  <span>🎯</span> Smart Recommendations
-                </h2>
-                <div className="space-y-3">
-                  {getSmartMealRecommendations().map((rec, index) => (
-                    <div key={index} className={`p-3 rounded-xl border-2 ${rec.priority === 'high' ? 'border-red-200 bg-red-50' : rec.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
-                      <div className="flex items-start gap-2">
-                        <div className="text-lg">{rec.priority === 'high' ? '🚨' : rec.priority === 'medium' ? '⚡' : '💡'}</div>
-                        <div className="flex-1">
-                          <h4 className={`font-semibold text-sm mb-1 ${rec.priority === 'high' ? 'text-red-800' : rec.priority === 'medium' ? 'text-yellow-800' : 'text-green-800'}`}>
-                            {rec.title}
-                          </h4>
-                          <p className={`text-xs leading-relaxed ${rec.priority === 'high' ? 'text-red-700' : rec.priority === 'medium' ? 'text-yellow-700' : 'text-green-700'}`}>
-                            {rec.message}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Smart Action Suggestions */}
-            {profile.firstName && totalMacros.calories > 50 && (
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3 mb-4">
-                <h3 className="font-semibold text-indigo-800 text-sm mb-2">💡 Suggested Next Actions</h3>
-                <div className="grid grid-cols-1 gap-2">
-                  {getQuickActionSuggestions().map((action, index) => (
-                    <button
-                      key={index}
-                      onClick={action.onClick}
-                      className="bg-white hover:bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 hover:border-indigo-300 transition-all"
-                    >
-                      {action.icon} {action.text}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Plan My Week Button */}
-            <div className="mb-4">
+            
+            {/* Profile, Personal Trainer, and Plan My Week Buttons */}
+            <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-3'}`}>
+              <button
+                onClick={handleOpenProfileModal}
+                className={`${isMobile ? 'w-full py-3' : 'py-2 px-6'} bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium`}
+              >
+                {userProfile.firstName ? 'Edit Profile' : 'Setup Profile'}
+              </button>
+              
+              <button
+                onClick={handleOpenPersonalTrainerModal}
+                className={`${isMobile ? 'w-full py-3' : 'py-2 px-6'} bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors font-medium flex items-center justify-center gap-2`}
+              >
+                <span>💪</span>
+                Personal Trainer
+              </button>
+              
+              {/* Plan My Week Button */}
               <button
                 onClick={() => setIsWeekPlanModalOpen(true)}
-                className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all flex items-center justify-center gap-2 w-full"
+                className={`${isMobile ? 'w-full py-3' : 'py-2 px-6'} bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-md hover:opacity-90 transition-all duration-300 transform hover:scale-105 font-medium flex items-center justify-center gap-2 shadow-lg`}
               >
                 <span>📅</span>
                 Plan My Week
               </button>
             </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={() => setShowGame(true)}
-                className="bg-white text-pink-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
-              >
-                🎮 Rate Your Meals
-              </button>
-            </div>
-          </>
-        )}
-
-        {(isSwipeMode || isFullScreenSwipe) && (
-          <FullScreenSwipeInterface
-            meals={meals}
-            currentCard={currentCard}
-            setCurrentCard={setCurrentCard}
-            cardPositions={cardPositions}
-            isDragging={isDragging}
-            handleMouseDown={handleMouseDown}
-            handleMouseMove={handleMouseMove}
-            handleMouseUp={handleMouseUp}
-            onExit={isSwipeMode ? exitSwipeMode : exitFullScreenSwipe}
-            openFoodSelection={openFoodSelection}
-            removeFoodFromMeal={removeFoodFromMeal}
-            updateMeal={updateMeal}
-            setMeals={setMeals}
-            profile={profile}
-            getMealMessage={getMealMessage}
-            mealSources={mealSources}
-            onClaimMeal={claimMeal}
-            onOpenMealIdeas={handleOpenMealIdeas}
-            onOpenAddFoodsModal={handleOpenAddFoodsModal}
-          />
-        )}
-
-        {isScrollModal && (
-          <div className="fixed inset-0 bg-white z-50">
-            <button
-              onClick={exitScrollModal}
-              className="absolute top-4 right-4 z-50 bg-gray-800 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl hover:bg-gray-700 transition-colors shadow-lg"
-            >
-              ×
-            </button>
-            <DailyMealPlannerModule
-              meals={meals}
-              profile={profile}
-              totalMacros={totalMacros}
-              mealSources={mealSources}
-              className="h-full"
-            />
           </div>
-        )}
+        </div>
 
-        {selectedCategory && selectedMealForFood && (
-          <FoodSelectionModal
-            category={selectedCategory}
-            mealId={selectedMealForFood}
-            onAddFood={addFoodToMeal}
-            onClose={closeFoodSelection}
-          />
-        )}
+        {/* Show meal trackers with special headers for breakfast, lunch, dinner */}
+        <div className={`space-y-${isMobile ? '3' : '6'}`}>
+          {Object.keys(meals).map(mealType => {
+            const { totals, pieData } = getMealData(mealType);
+            
+            // Define meal info for special headers
+            const getMealInfo = (type) => {
+              switch(type) {
+                case 'breakfast': 
+                  return { 
+                    emoji: '🌅', 
+                    name: 'Breakfast', 
+                    target: calorieData?.targetCalories ? Math.round(calorieData.targetCalories / 5) : 440,
+                    showButton: true 
+                  };
+                case 'lunch': 
+                  return { 
+                    emoji: '☀️', 
+                    name: 'Lunch', 
+                    target: calorieData?.targetCalories ? Math.round(calorieData.targetCalories / 4) : 550,
+                    showButton: true 
+                  };
+                case 'dinner': 
+                  return { 
+                    emoji: '🌙', 
+                    name: 'Dinner', 
+                    target: calorieData?.targetCalories ? Math.round(calorieData.targetCalories / 3.3) : 665,
+                    showButton: true 
+                  };
+                default: 
+                  return { emoji: '', name: '', target: 0, showButton: false };
+              }
+            };
 
-        {/* NEW: Add Foods Modal */}
-        <AddFoodsModal
-          isOpen={showAddFoodsModal}
-          onClose={handleCloseAddFoodsModal}
-          mealId={selectedMealForAddFoods}
-          mealName={selectedMealNameForAddFoods}
-          onSelectCategory={openFoodSelection}
-          onOpenMealIdeas={handleOpenMealIdeas}
-          mealSources={mealSources}
-        />
-
-        <USDAMealCreator
-          isOpen={showCreateMeal}
-          onClose={() => setShowCreateMeal(false)}
-          meals={meals}
-          onUpdateMeal={updateMeal}
-          totalMacros={totalMacros}
-          mealSources={mealSources}
-          onClaimMeal={claimMeal}
-        />
-
-        {showGame && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">Rate Your Meals</h3>
-                <button onClick={() => setShowGame(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4">
-                <MealSwipeGame
-                  allMeals={formatMealsForMessaging()}
-                  userProfile={{
-                    firstName: profile.firstName || profile.name || 'Champion',
-                    goal: profile.goal || 'gain-muscle',
-                    weight: profile.weight,
-                    gender: profile.gender || 'non-binary'
-                  }}
-                  calorieData={calorieData}
-                  onComplete={() => setShowGame(false)}
-                  isIntegrated={true}
+            const mealInfo = getMealInfo(mealType);
+            
+            return (
+              <div key={mealType}>
+                {/* Special header for main meals with Meal Ideas button */}
+                {mealInfo.showButton && (
+                  <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-4'} bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg ${isMobile ? 'p-3' : 'p-4'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{mealInfo.emoji}</span>
+                      <div>
+                        <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800`}>
+                          {mealInfo.name}
+                        </h3>
+                        <div className="flex items-center gap-4">
+                          <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600`}>
+                            Target: {mealInfo.target} calories
+                          </p>
+                          {userProfile.goal === 'maintain' && (
+                            <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-500 flex items-center gap-1`}>
+                              🍎 Fruit: {fruitBudgetRemaining}/3 remaining
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => openMealIdeas(mealType)}
+                      className={`${isMobile ? 'px-4 py-3 text-sm' : 'px-6 py-2 text-sm'} bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-md font-medium transition-all duration-300 hover:from-green-600 hover:to-teal-600 flex items-center gap-2 transform hover:scale-105 shadow-lg`}
+                    >
+                      <span>💡</span>
+                      {isMobile ? 'Ideas' : 'Meal Ideas'}
+                    </button>
+                  </div>
+                )}
+                
+                <MealTracker
+                  mealType={mealType}
+                  time={meals[mealType].time}
+                  setTime={(newTime) => handleTimeChange(mealType, newTime)}
+                  items={meals[mealType].items}
+                  totals={totals}
+                  pieData={pieData}
+                  warnings={[]}
+                  userProfile={userProfile}
+                  calorieData={calorieData || {}}
+                  allMeals={getAllMealsData()}
+                  onOpenServingModal={handleOpenServingModal}
+                  onOpenFoodModal={handleOpenFoodModal}
+                  onUpdateFoodItem={handleUpdateFoodItem}
+                  onAddFoodItem={handleAddFoodItem}
+                  onRemoveFoodItem={handleRemoveFoodItem}
+                  isMobile={isMobile}
                 />
               </div>
+            );
+          })}
+        </div>
+
+        {/* Summary and charts */}
+        <>
+          <div className={`mt-8 bg-white rounded-lg ${isMobile ? 'p-4' : 'p-6'} shadow-md`}>
+            <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-800 mb-4 text-center`}>
+              📊 Daily Summary
+            </h2>
+            {(() => {
+              const totalDailyCalories = Object.keys(meals).reduce((sum, mealType) => {
+                const { totals } = getMealData(mealType);
+                return sum + totals.calories;
+              }, 0);
+              
+              return (
+                <div className="text-center">
+                  <div className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-blue-600 mb-2`}>
+                    {Math.round(totalDailyCalories)} / {calorieData?.targetCalories || 2200} calories
+                  </div>
+                  <div className={`w-full bg-gray-200 rounded-full ${isMobile ? 'h-6' : 'h-4'} mb-4`}>
+                    <div 
+                      className={`bg-blue-600 ${isMobile ? 'h-6' : 'h-4'} rounded-full transition-all duration-500`} 
+                      style={{ 
+                        width: `${Math.min((totalDailyCalories / (calorieData?.targetCalories || 2200)) * 100, 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <p className={`text-gray-600 ${isMobile ? 'text-base' : 'text-sm'}`}>
+                    {(() => {
+                      const target = calorieData?.targetCalories || 2200;
+                      if (totalDailyCalories < target) {
+                        return `${target - Math.round(totalDailyCalories)} calories remaining`;
+                      } else if (totalDailyCalories > target) {
+                        return `${Math.round(totalDailyCalories - target)} calories over target`;
+                      } else {
+                        return "Perfect! You've hit your calorie target!";
+                      }
+                    })()}
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* ENHANCED: Charts and Timeline with TINDER SWIPE */}
+          <div className={`mt-8 bg-white rounded-lg ${isMobile ? 'p-4' : 'p-6'} shadow-md`}>
+            <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'flex-col sm:flex-row'} justify-between items-center mb-4`}>
+              <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800 ${isMobile ? 'mb-0' : 'mb-2 sm:mb-0'}`}>
+                📊 Daily Timeline: Calories & Sugar
+              </h3>
+              
+              <div className="flex gap-3">
+                {/* TINDER HOT OR NOT BUTTON Burn or Learn */}
+                <button
+                  onClick={openTinderSwipe}
+                  className={`${isMobile ? 'px-4 py-3 text-sm' : 'px-4 py-2 text-sm'} bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-md font-medium transition-all duration-300 hover:from-pink-600 hover:to-red-600 flex items-center gap-2 transform hover:scale-105 shadow-lg`}
+                >
+                  🔥 Burn or Learn
+                </button>
+                                             
+                {/* View Mode Toggle */}
+                <div className={`flex bg-gray-100 rounded-lg ${isMobile ? 'p-2' : 'p-1'}`}>
+                  <button
+                    onClick={() => setViewMode('line')}
+                    className={`${isMobile ? 'px-4 py-3 text-sm' : 'px-3 py-1 text-sm'} rounded-md font-medium transition-colors ${
+                      viewMode === 'line' 
+                        ? 'bg-blue-500 text-white' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    📈 Trends
+                  </button>
+                  <button
+                    onClick={() => setViewMode('chart')}
+                    className={`${isMobile ? 'px-4 py-3 text-sm' : 'px-3 py-1 text-sm'} rounded-md font-medium transition-colors ${
+                      viewMode === 'chart' 
+                        ? 'bg-blue-500 text-white' 
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    📊 Bars
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Chart content */}
+            {(() => {
+              const timelineData = getTimelineData();
+
+              if (viewMode === 'line') {
+                return (
+                  <div>
+                    <div className={isMobile ? "h-96" : "h-80"}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart 
+                          data={timelineData}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="shortName" 
+                            tick={{ fontSize: isMobile ? 9 : 11 }}
+                            angle={isMobile ? -45 : -30}
+                            textAnchor="end"
+                            height={isMobile ? 80 : 70}
+                          />
+                          <YAxis 
+                            label={{ value: 'Values', angle: -90, position: 'insideLeft' }}
+                          />
+                          <Tooltip />
+                          <Line 
+                            type="monotone" 
+                            dataKey="calories" 
+                            stroke="#8B5CF6" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: "#8B5CF6" }}
+                            name="calories"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="sugarScaled" 
+                            stroke="#EF4444" 
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: "#EF4444" }}
+                            name="sugarScaled"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div>
+                  <div className={isMobile ? "h-96" : "h-80"}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart 
+                        data={timelineData.filter(meal => meal.calories > 0 || meal.sugar > 0)}
+                        margin={isMobile 
+                          ? { top: 20, right: 20, left: 20, bottom: 80 }
+                          : { top: 20, right: 30, left: 20, bottom: 60 }
+                        }
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey={isMobile ? "shortName" : "name"}
+                          tick={{ fontSize: isMobile ? 9 : 10 }}
+                          angle={isMobile ? -45 : 0}
+                          textAnchor={isMobile ? "end" : "middle"}
+                          height={isMobile ? 70 : 50}
+                          interval={0}
+                        />
+                        <YAxis 
+                          label={{ value: 'Calories', angle: -90, position: 'insideLeft' }}
+                        />
+                        <Tooltip />
+                        <Bar 
+                          dataKey="calories" 
+                          fill="#8B5CF6" 
+                          name="calories" 
+                          radius={2}
+                        />
+                        <Bar 
+                          dataKey="sugarScaled" 
+                          fill="#EF4444" 
+                          name="sugarScaled" 
+                          radius={2}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </>
+
+        {/* Serving Size Modal */}
+        {servingModal.isOpen && servingModal.item && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`bg-white rounded-lg ${isMobile ? 'p-4 max-w-sm w-full' : 'p-6 max-w-md w-full mx-4'}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-800`}>
+                  {isMobile ? 'Serving Size' : `Serving Size - ${servingModal.item.food || 'Food Item'}`}
+                </h3>
+                <button
+                  onClick={handleCloseServingModal}
+                  className={`text-gray-500 hover:text-gray-700 ${isMobile ? 'p-2' : ''}`}
+                >
+                  <X size={isMobile ? 20 : 24} />
+                </button>
+              </div>
+              
+              {isMobile && servingModal.item.food && (
+                <div className="text-sm text-gray-600 mb-4 text-center font-medium">
+                  {servingModal.item.food}
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className={`block ${isMobile ? 'text-sm' : 'text-sm'} font-medium text-gray-700 mb-2`}>
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={customServing.amount}
+                    onChange={(e) => setCustomServing({ 
+                      ...customServing, 
+                      amount: parseFloat(e.target.value) || 0 
+                    })}
+                    className={`w-full ${isMobile ? 'p-3 text-base' : 'p-2'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  />
+                </div>
+                
+                <div>
+                  <label className={`block ${isMobile ? 'text-sm' : 'text-sm'} font-medium text-gray-700 mb-2`}>
+                    Unit
+                  </label>
+                  <select
+                    value={customServing.unit}
+                    onChange={(e) => setCustomServing({ 
+                      ...customServing, 
+                      unit: e.target.value 
+                    })}
+                    className={`w-full ${isMobile ? 'p-3 text-base' : 'p-2'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  >
+                    <option value="servings">Servings</option>
+                    <option value="grams">Grams</option>
+                    <option value="ounces">Ounces</option>
+                    <option value="cups">Cups</option>
+                  </select>
+                </div>
+
+                {servingModal.item.category && servingModal.item.food && (
+                  <div className={`bg-gray-50 ${isMobile ? 'p-3' : 'p-3'} rounded-md`}>
+                    <h4 className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium text-gray-700 mb-2`}>Reference Serving Size:</h4>
+                    <div className={`${isMobile ? 'text-sm' : 'text-sm'} text-gray-600 space-y-1`}>
+                      <div className="flex items-center gap-2">
+                        <Scale size={14} />
+                        <span>{getServingInfo(servingModal.item.category, servingModal.item.food).grams}g</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Coffee size={14} />
+                        <span>{getServingInfo(servingModal.item.category, servingModal.item.food).ounces} oz / {getServingInfo(servingModal.item.category, servingModal.item.food).cups} cups</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Hand size={14} />
+                        <span>{getServingInfo(servingModal.item.category, servingModal.item.food).palm}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'gap-3'} mt-6`}>
+                  <button
+                    onClick={handleApplyCustomServing}
+                    className={`${isMobile ? 'w-full py-3' : 'flex-1 py-2 px-4'} bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium`}
+                  >
+                    Apply
+                  </button>
+                  <button
+                    onClick={handleCloseServingModal}
+                    className={`${isMobile ? 'w-full py-3' : 'flex-1 py-2 px-4'} bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors font-medium`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* MealIdeas Modal Integration */}
+        {/* Food Selection Modal */}
+        {foodModal.isOpen && foodModal.category && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`bg-white rounded-lg ${isMobile ? 'p-4 max-w-sm w-full max-h-[80vh]' : 'p-6 max-w-md w-full mx-4 max-h-[70vh]'} overflow-hidden flex flex-col`}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-800`}>
+                  Select {foodModal.category.charAt(0).toUpperCase() + foodModal.category.slice(1)}
+                </h3>
+                <button
+                  onClick={handleCloseFoodModal}
+                  className={`text-gray-500 hover:text-gray-700 ${isMobile ? 'p-2' : ''}`}
+                >
+                  <X size={isMobile ? 20 : 24} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                <div className="grid grid-cols-1 gap-2">
+                  {getFoodsInCategory(foodModal.category).map(food => (
+                    <button
+                      key={food}
+                      onClick={() => handleSelectFood(food)}
+                      className={`${isMobile ? 'p-4 text-base' : 'p-3 text-sm'} text-left rounded-md transition-colors bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300`}
+                    >
+                      {food}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t">
+                <button
+                  onClick={handleCloseFoodModal}
+                  className={`${isMobile ? 'w-full py-3' : 'w-full py-2 px-4'} bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors font-medium`}
+                >
+                  Go Back
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Modal */}
+        {profileModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`bg-white rounded-lg ${isMobile ? 'p-4 w-full max-h-[90vh]' : 'p-6 max-w-2xl w-full mx-4 max-h-[80vh]'} overflow-hidden flex flex-col`}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800`}>
+                  Your Profile & Goals
+                </h3>
+                <button
+                  onClick={handleCloseProfileModal}
+                  className={`text-gray-500 hover:text-gray-700 ${isMobile ? 'p-2' : ''}`}
+                >
+                  <X size={isMobile ? 20 : 24} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                {/* Quick Demo Setup Buttons */}
+                <div className={`mb-6 p-4 bg-gray-50 rounded-lg border`}>
+                  <h4 className="font-semibold text-gray-700 mb-3 text-center">🚀 Quick Demo Setup</h4>
+                  <div className={`flex ${isMobile ? 'flex-col gap-3' : 'gap-4 justify-center'}`}>
+                    <button
+                      onClick={setDemoMaleProfile}
+                      className={`${isMobile ? 'w-full py-3' : 'px-6 py-2'} bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium`}
+                    >
+                      👨 Demo Male (John, 5'10", 165lbs)
+                    </button>
+                    <button
+                      onClick={setDemoFemaleProfile}
+                      className={`${isMobile ? 'w-full py-3' : 'px-6 py-2'} bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors font-medium`}
+                    >
+                      👩 Demo Female (Jane, 5'6", 135lbs)
+                    </button>
+                  </div>
+                  <p className={`${isMobile ? 'text-sm' : 'text-xs'} text-gray-500 text-center mt-2`}>
+                    Click for instant setup with realistic values • Both set to "Moderate" exercise & "Maintain" goal
+                  </p>
+                </div>
+
+                <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'md:grid-cols-3 gap-6'}`}>
+                  {/* Personal Info */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-700">Personal Info</h4>
+                    <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 gap-3'}`}>
+                      <input
+                        type="text"
+                        placeholder="First name"
+                        value={userProfile.firstName}
+                        onChange={(e) => updateUserProfile('firstName', e.target.value)}
+                        className={`${isMobile ? 'p-3 text-base' : 'p-2 text-sm'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Last name"
+                        value={userProfile.lastName}
+                        onChange={(e) => updateUserProfile('lastName', e.target.value)}
+                        className={`${isMobile ? 'p-3 text-base' : 'p-2 text-sm'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                      />
+                    </div>
+                    
+                    {/* Gender Selection */}
+                    <select
+                      value={userProfile.gender}
+                      onChange={(e) => updateUserProfile('gender', e.target.value)}
+                      className={`w-full ${isMobile ? 'p-3 text-base' : 'p-2 text-sm'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="non-binary">Non-binary</option>
+                    </select>
+                    
+                    <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-3 gap-2'}`}>
+                      <select
+                        value={userProfile.heightFeet}
+                        onChange={(e) => updateUserProfile('heightFeet', e.target.value)}
+                        className={`${isMobile ? 'p-3 text-base' : 'p-2 text-sm'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Feet</option>
+                        {[4, 5, 6, 7].map(feet => (
+                          <option key={feet} value={feet}>{feet} ft</option>
+                        ))}
+                      </select>
+                      <select
+                        value={userProfile.heightInches}
+                        onChange={(e) => updateUserProfile('heightInches', e.target.value)}
+                        className={`${isMobile ? 'p-3 text-base' : 'p-2 text-sm'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Inches</option>
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(inches => (
+                          <option key={inches} value={inches}>{inches} in</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        placeholder="Weight (lbs)"
+                        value={userProfile.weight}
+                        onChange={(e) => updateUserProfile('weight', e.target.value)}
+                        className={`${isMobile ? 'p-3 text-base' : 'p-2 text-sm'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                      />
+                    </div>
+                    
+                    <select
+                      value={userProfile.exerciseLevel}
+                      onChange={(e) => updateUserProfile('exerciseLevel', e.target.value)}
+                      className={`w-full ${isMobile ? 'p-3 text-base' : 'p-2 text-sm'} border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                    >
+                      <option value="">Exercise Level</option>
+                      <option value="sedentary">Sedentary (little/no exercise)</option>
+                      <option value="light">Light (1-3 days/week)</option>
+                      <option value="moderate">Moderate (3-5 days/week)</option>
+                      <option value="active">Active (6-7 days/week)</option>
+                      <option value="very-active">Very Active (2x/day, intense)</option>
+                    </select>
+                  </div>
+                  
+                  {/* Goal Selection */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-700">Your Goal</h4>
+                    <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 gap-2'}`}>
+                      {[
+                        { value: 'maintain', label: 'Maintain', color: 'bg-gray-100 hover:bg-gray-200' },
+                        { value: 'lose', label: 'Lose Weight/Fat', color: 'bg-red-100 hover:bg-red-200' },
+                        { value: 'gain-muscle', label: 'Gain Muscle', color: 'bg-blue-100 hover:bg-blue-200' },
+                        { value: 'dirty-bulk', label: 'Dirty Bulk', color: 'bg-green-100 hover:bg-green-200' }
+                      ].map((goal) => (
+                        <button
+                          key={goal.value}
+                          onClick={() => updateUserProfile('goal', goal.value)}
+                          className={`${isMobile ? 'p-4 text-base' : 'p-3 text-sm'} font-medium rounded-md border-2 transition-colors ${
+                            userProfile.goal === goal.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : `border-gray-200 ${goal.color} text-gray-700`
+                          }`}
+                        >
+                          {goal.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* TDEE Results */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-700">Your Numbers</h4>
+                    {calorieData ? (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">BMR:</span>
+                          <span className="font-medium">{calorieData.bmr} cal</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">TDEE:</span>
+                          <span className="font-medium">{calorieData.tdee} cal</span>
+                        </div>
+                        <div className="flex justify-between text-sm border-t pt-2">
+                          <span className="text-gray-600 font-medium">Target:</span>
+                          <span className="font-bold text-blue-600">{calorieData.targetCalories} cal</span>
+                        </div>
+                        {userProfile.firstName && (
+                          <div className={`${isMobile ? 'text-sm' : 'text-xs'} text-gray-500 mt-2`}>
+                            Hey {userProfile.firstName}! These are your daily calorie targets.
+                          </div>
+                        )}
+                        <div className={`${isMobile ? 'text-sm' : 'text-xs'} text-gray-500 mt-3 p-2 bg-blue-50 rounded`}>
+                          <strong>BMR:</strong> Base metabolic rate - calories burned at rest<br/>
+                          <strong>TDEE:</strong> Total daily energy expenditure - BMR + activity<br/>
+                          <strong>Target:</strong> TDEE adjusted for your goal
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`${isMobile ? 'text-base' : 'text-sm'} text-gray-500`}>
+                        Fill out your info to see your personalized calorie targets
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t">
+                <button
+                  onClick={handleCloseProfileModal}
+                  className={`${isMobile ? 'w-full py-3' : 'w-full py-2 px-4'} bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium`}
+                >
+                  Save Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Personal Trainer Summary Modal */}
+        {personalTrainerModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`bg-white rounded-lg ${isMobile ? 'p-4 w-full max-h-[90vh]' : 'p-6 max-w-4xl w-full mx-4 max-h-[80vh]'} overflow-hidden flex flex-col`}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800 flex items-center gap-2`}>
+                  <span>💪</span>
+                  Personal Trainer Analysis
+                </h3>
+                <button
+                  onClick={handleClosePersonalTrainerModal}
+                  className={`text-gray-500 hover:text-gray-700 ${isMobile ? 'p-2' : ''}`}
+                >
+                  <X size={isMobile ? 20 : 24} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                {(() => {
+                  const summary = generatePersonalTrainerSummary(getAllMealsData(), userProfile, calorieData);
+                  
+                  if (!userProfile.firstName) {
+                    return (
+                      <div className="text-center py-8">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Complete Your Profile First</h3>
+                        <p className="text-gray-600 mb-6">Please fill out your profile information to get your personalized trainer analysis!</p>
+                        <button
+                          onClick={() => {
+                            handleClosePersonalTrainerModal();
+                            handleOpenProfileModal();
+                          }}
+                          className="bg-blue-500 text-white px-6 py-3 rounded-md hover:bg-blue-600 transition-colors font-medium"
+                        >
+                          Setup Profile Now
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // Handle jumpstart message for users with profile but no food data
+                  if (summary.isJumpstart) {
+                    return (
+                      <div className="space-y-6">
+                        {/* Motivational Header */}
+                        <div className="text-center bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 border">
+                          <div className="text-4xl mb-3">🚀</div>
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">Ready to Transform?</h3>
+                          <p className="text-gray-700 font-medium">{summary.goalMotivation}</p>
+                          <div className="mt-4 text-sm text-gray-600">
+                            Target: {summary.targets.calories} calories • {summary.targets.protein}g protein daily
+                          </div>
+                        </div>
+
+                        {/* Top 3 Recommendations */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <h4 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                            <span>🎯</span> Your Top 3 Fundamentals
+                          </h4>
+                          <ol className="space-y-3">
+                            {summary.recommendations.map((rec, index) => (
+                              <li key={index} className="text-blue-700 text-sm">
+                                <span className="font-bold">{index + 1}.</span> {rec}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+
+                        {/* Pro Tips */}
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                          <h4 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                            <span>🏆</span> Wisdom from the Pros
+                          </h4>
+                          <div className="space-y-3">
+                            {summary.proTips.map((tip, index) => (
+                              <div key={index} className="text-purple-700 text-sm italic border-l-2 border-purple-300 pl-3">
+                                {tip}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Call to Action */}
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <h4 className="font-bold text-yellow-800 mb-2 flex items-center gap-2">
+                            <span>⚡</span> Your Next Steps
+                          </h4>
+                          <p className="text-yellow-700 text-sm">{summary.callToAction}</p>
+                        </div>
+
+                        {/* Bottom Line */}
+                        <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg p-4 text-center">
+                          <h4 className="font-bold mb-2">🔥 Champion Mindset</h4>
+                          <p className="text-sm">{summary.bottomLine}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Regular analysis for users with food data
+                  return (
+                    <div className="space-y-6">
+                      {/* Grade Header */}
+                      <div className="text-center bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border">
+                        <div className={`text-6xl font-bold mb-2 ${
+                          summary.grade === 'A' ? 'text-green-600' :
+                          summary.grade === 'B' ? 'text-blue-600' :
+                          summary.grade === 'C' ? 'text-yellow-600' :
+                          'text-red-600'
+                        }`}>
+                          {summary.grade}
+                        </div>
+                        <div className="text-lg text-gray-600">Daily Score: {summary.score}/100</div>
+                        <div className="text-sm text-gray-500 mt-2">
+                          Daily Totals: {summary.dailyTotals.calories} cal • {summary.dailyTotals.protein}g protein • {summary.dailyTotals.sugar}g sugar
+                        </div>
+                      </div>
+
+                      {/* Strengths */}
+                      {summary.strengths.length > 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2">
+                            <span>🏆</span> Your Strengths
+                          </h4>
+                          <ul className="space-y-2">
+                            {summary.strengths.map((strength, index) => (
+                              <li key={index} className="text-green-700 text-sm">{strength}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Critical Issues */}
+                      {summary.issues.length > 0 && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <h4 className="font-bold text-red-800 mb-3 flex items-center gap-2">
+                            <span>🚨</span> Critical Issues
+                          </h4>
+                          <ul className="space-y-2">
+                            {summary.issues.map((issue, index) => (
+                              <li key={index} className="text-red-700 text-sm">{issue}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Analysis Sections */}
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <h4 className="font-bold text-blue-800 mb-2">💪 Protein Analysis</h4>
+                          <p className="text-blue-700 text-sm">{summary.proteinAnalysis}</p>
+                        </div>
+
+                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                          <h4 className="font-bold text-orange-800 mb-2">🍞 Carb Strategy</h4>
+                          <p className="text-orange-700 text-sm">{summary.carbAnalysis}</p>
+                        </div>
+
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                          <h4 className="font-bold text-purple-800 mb-2">⏰ Meal Timing</h4>
+                          <p className="text-purple-700 text-sm">{summary.timingAnalysis}</p>
+                        </div>
+
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <h4 className="font-bold text-gray-800 mb-2">🎯 Goal Alignment</h4>
+                          <p className="text-gray-700 text-sm">{summary.goalAlignment}</p>
+                        </div>
+                      </div>
+
+                      {/* Top Recommendations */}
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 className="font-bold text-yellow-800 mb-3 flex items-center gap-2">
+                          <span>💡</span> Top 3 Recommendations
+                        </h4>
+                        <ol className="space-y-2">
+                          {summary.recommendations.map((rec, index) => (
+                            <li key={index} className="text-yellow-700 text-sm">
+                              <span className="font-medium">{index + 1}.</span> {rec}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+
+                      {/* Weekly Advice */}
+                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                        <h4 className="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                          <span>📅</span> Weekly Consistency Focus
+                        </h4>
+                        <p className="text-indigo-700 text-sm">{summary.weeklyAdvice}</p>
+                      </div>
+
+                      {/* Bottom Line */}
+                      <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg p-4 text-center">
+                        <h4 className="font-bold mb-2">🎯 Bottom Line</h4>
+                        <p className="text-sm">{summary.bottomLine}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="mt-6 pt-4 border-t">
+                <button
+                  onClick={handleClosePersonalTrainerModal}
+                  className={`${isMobile ? 'w-full py-3' : 'w-full py-2 px-4'} bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors font-medium`}
+                >
+                  Close Analysis
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Meal Ideas Modal */}
         {showMealIdeas && (
           <MealIdeasModal
             isOpen={showMealIdeas}
             onClose={() => setShowMealIdeas(false)}
-            onAddMeal={handleAddMealFromIdeas}
-            userProfile={profile}
+            onAddMeal={handleAddMealFromIdeas} 
+            userProfile={userProfile}
             calorieData={calorieData}
-            isMobile={true}
-            mealType={selectedMealType}
-            fruitBudgetRemaining={calculateFruitBudgetRemaining()}
+            isMobile={isMobile}
+            mealType={currentMealType}
+            fruitBudgetRemaining={fruitBudgetRemaining}
           />
         )}
 
-        {/* WeekPlanModal Integration */}
+        {/* Week Plan Modal */}
         <WeekPlanModal
           isOpen={isWeekPlanModalOpen}
           onClose={() => setIsWeekPlanModalOpen(false)}
           onAddWeekPlan={handleAddWeekPlan}
-          userProfile={profile}
+          userProfile={userProfile}
           calorieData={calorieData}
-          isMobile={true}
+          isMobile={isMobile}
         />
+      </div>
 
-        {/* Analytics Modals */}
-        {showBurnAndLearn && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">🔥 Burn & Learn</h3>
-                <button onClick={() => {
-                  setShowBurnAndLearn(false);
-                  setBurnAndLearnDetails(null);
-                }} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4">
-                {burnAndLearnDetails ? (
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setBurnAndLearnDetails(null)}
-                      className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-                    >
-                      ← Back to overview
-                    </button>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-800 mb-3">{burnAndLearnDetails.title}</h4>
-                      <p className="text-gray-700 leading-relaxed">{burnAndLearnDetails.content}</p>
-                    </div>
+      {/* ENHANCED: Tinder Hot or Not Burn or Learn Modal */}
+      {showTinderSwipe && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+          <div className="relative w-full max-w-md">
+            {/* Close button */}
+            <button
+              onClick={closeTinderSwipe}
+              className="absolute top-4 right-4 z-60 bg-red-600 hover:bg-red-700 text-white rounded-full p-2 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            {/* Enhanced Tinder Swipe Component */}
+            <MealSwipeGame
+              allMeals={getAllMealsData()}
+              userProfile={userProfile}
+              calorieData={calorieData}
+              onComplete={closeTinderSwipe}
+              isIntegrated={true}
+            />
+          </div>
+        </div>
+      )}
+
+     {/* Regular Cards Modal */}
+      <SwipeableCardsModal 
+        isOpen={showCardsModal}
+        onClose={closeCardsModal}
+        timelineData={getTimelineData()}
+        currentIndex={currentCardIndex}
+        setCurrentIndex={setCurrentCardIndex}
+        isMobile={isMobile}
+      />
+
+      {/* Print Functionality */}
+      <div className="mt-8">
+        <PrintableNutritionPlan
+          allMeals={getAllMealsData()}
+          userProfile={userProfile}
+          calorieData={calorieData}
+          isMobile={isMobile}
+        />
+      </div>
+
+    </div>
+  );
+};
+
+// Regular Swipeable Cards Modal Component (unchanged)
+const SwipeableCardsModal = ({ 
+  isOpen, 
+  onClose, 
+  timelineData, 
+  currentIndex, 
+  setCurrentIndex, 
+  isMobile 
+}) => {
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const filteredData = timelineData.filter(meal => meal.calories > 0 || meal.sugar > 0);
+
+  React.useEffect(() => {
+    if (currentIndex >= filteredData.length && filteredData.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [filteredData.length, currentIndex, setCurrentIndex]);
+
+  if (!isOpen || filteredData.length === 0) {
+    return null;
+  }
+
+  const handleTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentIndex < filteredData.length - 1) {
+      navigateToCard(currentIndex + 1);
+    }
+    if (isRightSwipe && currentIndex > 0) {
+      navigateToCard(currentIndex - 1);
+    }
+  };
+
+  const navigateToCard = (newIndex) => {
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setCurrentIndex(newIndex);
+    
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  const currentMeal = filteredData[currentIndex];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`bg-white rounded-lg ${isMobile ? 'w-full h-full max-w-sm' : 'w-full max-w-lg h-[600px]'} overflow-hidden flex flex-col`}>
+        
+        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+          <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold`}>
+            🃏 Meal Cards ({currentIndex + 1} of {filteredData.length})
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 p-1"
+          >
+            <X size={isMobile ? 20 : 24} />
+          </button>
+        </div>
+
+        <div 
+          className="flex-1 relative overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="h-full flex flex-col">
+            
+            <div className="flex-1 p-6 flex items-center justify-center">
+              <div className={`w-full max-w-sm bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-6 shadow-lg transition-all duration-300 ${
+                isTransitioning ? 'scale-95 opacity-80' : 'scale-100 opacity-100'
+              }`}>
+                
+                <div className="text-center mb-6">
+                  <div className="text-2xl font-bold text-gray-800 mb-2">
+                    {currentMeal.fullName}
                   </div>
-                ) : (
-                  <ClickableBurnAndLearnView
-                    totalMacros={totalMacros}
-                    profile={profile}
-                    onItemClick={handleBurnAndLearnClick}
-                  />
+                  <div className="text-lg text-gray-600">{currentMeal.time}</div>
+                </div>
+                
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Calories:</span>
+                    <span className="font-bold text-lg">{currentMeal.calories}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Sugar:</span>
+                    <span className={`font-bold ${
+                      currentMeal.sugar > 15 ? 'text-red-600' : 
+                      currentMeal.sugar > 8 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {currentMeal.sugar}g
+                    </span>
+                  </div>
+                </div>
+                
+                {currentMeal.sugar > 8 && (
+                  <div className={`p-3 rounded-lg text-center text-sm font-medium ${
+                    currentMeal.sugar > 15 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {currentMeal.sugar > 15 ? '⚠️ High Sugar Content!' : '⚡ Moderate Sugar Level'}
+                  </div>
+                )}
+
+                {isMobile && (
+                  <div className="mt-4 text-center text-xs text-gray-500">
+                    👈 Swipe left/right to navigate 👉
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-        )}
-
-        {showTrends && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">📈 Daily Trends</h3>
-                <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
-                <CustomTrendsView meals={meals} totalMacros={totalMacros} />
+            
+            <div className="p-4 border-t bg-gray-50">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => navigateToCard(Math.max(0, currentIndex - 1))}
+                  disabled={currentIndex === 0 || isTransitioning}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                    currentIndex === 0 || isTransitioning
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                      : 'bg-purple-500 text-white hover:bg-purple-600'
+                  }`}
+                >
+                  ← Previous
+                </button>
+                
+                <div className="flex space-x-2">
+                  {filteredData.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => !isTransitioning && navigateToCard(index)}
+                      disabled={isTransitioning}
+                      className={`w-3 h-3 rounded-full transition-colors ${
+                        index === currentIndex ? 'bg-purple-500' : 'bg-gray-300'
+                      } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                    />
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => navigateToCard(Math.min(filteredData.length - 1, currentIndex + 1))}
+                  disabled={currentIndex === filteredData.length - 1 || isTransitioning}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                    currentIndex === filteredData.length - 1 || isTransitioning
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                      : 'bg-purple-500 text-white hover:bg-purple-600'
+                  }`}
+                >
+                  Next →
+                </button>
               </div>
             </div>
           </div>
-        )}
-
-        {showPieChart && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">🥧 Macro Distribution</h3>
-                <button onClick={() => setShowPieChart(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
-                <DailyPieChartView totalMacros={totalMacros} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showGraphs && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">📊 Meal Breakdown</h3>
-                <button onClick={() => setShowGraphs(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
-                <BarChartView meals={meals} />
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default MealSwipeApp;
+export default NutritionApp;
