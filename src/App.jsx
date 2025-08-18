@@ -8,6 +8,7 @@ import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
+import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
 // Import chart components from WelcomeScreen module
 import {
   ClickableBurnAndLearnView,
@@ -1926,13 +1927,102 @@ const MealSwipeApp = () => {
             >
               ×
             </button>
-            <DailyMealPlannerModule
-              meals={meals}
-              profile={profile}
-              totalMacros={totalMacros}
-              mealSources={mealSources}
-              className="h-full"
-            />
+
+            {/* Custom View Plan Interface */}
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex-shrink-0">
+                <h2 className="text-xl font-bold text-center">📋 Daily Meal Plans</h2>
+                <p className="text-center text-blue-100 text-sm mt-1">Your personalized nutrition schedule</p>
+              </div>
+
+              {/* Scrollable Meals Section */}
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                <div className="space-y-4 max-w-md mx-auto">
+                  {meals.map((meal) => {
+                    const source = mealSources[meal.name];
+                    const isUSDAOwned = source === 'usda';
+
+                    return (
+                      <div key={meal.id} className="bg-white rounded-xl p-4 shadow-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="text-2xl">
+                              {meal.name === 'Breakfast' && '🍳'}
+                              {meal.name === 'FirstSnack' && '🍎'}
+                              {meal.name === 'SecondSnack' && '🥨'}
+                              {meal.name === 'Lunch' && '🥗'}
+                              {meal.name === 'MidAfternoon Snack' && '🥜'}
+                              {meal.name === 'Dinner' && '🍽️'}
+                              {meal.name === 'Late Snack' && '🍓'}
+                              {meal.name === 'PostWorkout' && '💪'}
+                              {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-gray-800">{meal.name}</h3>
+                              <p className="text-sm text-gray-600">{meal.time}</p>
+                            </div>
+                          </div>
+                          {isUSDAOwned && (
+                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">USDA</span>
+                          )}
+                        </div>
+
+                        {/* Meal Items */}
+                        <MealFoodList
+                          meal={meal}
+                          onRemoveFood={removeFoodFromMeal}
+                          mealSources={mealSources}
+                          readOnly={true}
+                        />
+
+                        {/* Meal Macros (without daily totals) */}
+                        {meal.calories > 0 && (
+                          <div className="mt-3 bg-gray-50 rounded-lg p-2">
+                            <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                              <div>
+                                <div className="font-bold text-purple-600">{Math.round(meal.calories)}</div>
+                                <div className="text-gray-500">cal</div>
+                              </div>
+                              <div>
+                                <div className="font-bold text-blue-600">{Math.round(meal.protein)}g</div>
+                                <div className="text-gray-500">protein</div>
+                              </div>
+                              <div>
+                                <div className="font-bold text-green-600">{Math.round(meal.carbs)}g</div>
+                                <div className="text-gray-500">carbs</div>
+                              </div>
+                              <div>
+                                <div className="font-bold text-yellow-600">{Math.round(meal.fat)}g</div>
+                                <div className="text-gray-500">fat</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Print Buttons Section */}
+              <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+                <PrintableNutritionPlan
+                  allMeals={formatMealsForMessaging()}
+                  userProfile={profile}
+                  calorieData={calorieData}
+                  isMobile={true}
+                />
+              </div>
+
+              {/* Motivational Message */}
+              <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-4 text-center flex-shrink-0">
+                <div className="text-lg font-bold mb-1">🌟 You've Got This!</div>
+                <p className="text-sm text-green-100">
+                  Consistent nutrition is the foundation of success. Every meal brings you closer to your goals!
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
