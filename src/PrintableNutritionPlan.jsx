@@ -19,296 +19,19 @@ const PrintableNutritionPlan = ({
     tdee: 'Not set'
   };
 
-  // Add print styles to document head
+  // Add minimal print styles (since we now use new window method)
   useEffect(() => {
     const printStyles = `
       @media print {
-        /* Hide everything first */
+        /* Hide everything when printing main app */
         body * {
           visibility: hidden;
         }
         
-        /* Show only printable content */
-        .printable-content,
-        .printable-content * {
-          visibility: visible !important;
-          display: block !important;
-        }
-        
-        /* Main printable container - TRUE MOBILE CENTER FIX */
-        .printable-content {
-          position: absolute !important;
-          left: 50% !important;
-          top: 50% !important;
-          width: 90% !important;
-          height: 90% !important;
-          background: white !important;
-          font-family: Arial, sans-serif !important;
-          color: black !important;
-          font-size: 12px !important;
-          line-height: 1.4 !important;
-          overflow: visible !important;
-          margin: 0 !important;
-          padding: 15px !important;
-          box-sizing: border-box !important;
-          z-index: 999999 !important;
-          transform: translate(-50%, -50%) !important;
-        }
-        
-        /* MOBILE CENTER FIX - Force true center */
-        @media (max-width: 768px) {
-          .printable-content {
-            position: absolute !important;
-            left: 50% !important;
-            top: 50% !important;
-            width: 95% !important;
-            height: 95% !important;
-            max-width: 95vw !important;
-            max-height: 95vh !important;
-            font-size: 10px !important;
-            padding: 8px !important;
-            margin: 0 !important;
-            transform: translate(-50%, -50%) scale(0.9) !important;
-            transform-origin: center center !important;
-            overflow: hidden !important;
-            border: 1px solid #000 !important;
-          }
-          
-          /* Ensure parent containers don't interfere */
-          html, body {
-            width: 100vw !important;
-            height: 100vh !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            position: relative !important;
-          }
-          
-          /* Reset any other positioning */
-          body * {
-            position: static !important;
-          }
-          
-          .printable-content * {
-            position: relative !important;
-          }
-        }
-        
-        /* Hide non-printable elements */
+        /* This prevents accidental printing of main app */
         .print-hide {
           display: none !important;
           visibility: hidden !important;
-        }
-        
-        /* Header styling */
-        .print-header {
-          text-align: center !important;
-          margin-bottom: 15px !important;
-          border-bottom: 2px solid #333 !important;
-          padding-bottom: 8px !important;
-          page-break-inside: avoid !important;
-        }
-        
-        /* Table styling - Enhanced for mobile */
-        .print-table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-          margin-bottom: 8px !important;
-          page-break-inside: avoid !important;
-          font-size: 10px !important;
-          display: table !important;
-          visibility: visible !important;
-          table-layout: fixed !important;
-        }
-        
-        .print-table th,
-        .print-table td {
-          border: 1px solid #333 !important;
-          padding: 2px 3px !important;
-          text-align: left !important;
-          vertical-align: top !important;
-          display: table-cell !important;
-          visibility: visible !important;
-          word-wrap: break-word !important;
-          overflow-wrap: break-word !important;
-          hyphens: auto !important;
-        }
-        
-        /* Mobile table adjustments */
-        @media (max-width: 768px) {
-          .print-table {
-            font-size: 8px !important;
-            margin-bottom: 5px !important;
-          }
-          
-          .print-table th,
-          .print-table td {
-            padding: 1px 2px !important;
-            font-size: 8px !important;
-            line-height: 1.2 !important;
-          }
-          
-          .print-table th {
-            font-size: 7px !important;
-          }
-        }
-        
-        .print-table thead {
-          display: table-header-group !important;
-          visibility: visible !important;
-        }
-        
-        .print-table tbody {
-          display: table-row-group !important;
-          visibility: visible !important;
-        }
-        
-        .print-table tr {
-          display: table-row !important;
-          visibility: visible !important;
-          page-break-inside: avoid !important;
-        }
-        
-        .print-table th {
-          background-color: #f0f0f0 !important;
-          font-weight: bold !important;
-          font-size: 9px !important;
-        }
-        
-        .meal-header {
-          background-color: #e8e8e8 !important;
-          font-weight: bold !important;
-          page-break-inside: avoid !important;
-        }
-        
-        /* Summary section */
-        .print-summary {
-          margin-top: 10px !important;
-          border-top: 2px solid #333 !important;
-          padding-top: 8px !important;
-          page-break-inside: avoid !important;
-        }
-        
-        /* Footer */
-        .print-footer {
-          margin-top: 15px !important;
-          text-align: center !important;
-          font-size: 8px !important;
-          color: #666 !important;
-          page-break-inside: avoid !important;
-        }
-        
-        /* Notes section */
-        .print-notes {
-          margin-top: 10px !important;
-          page-break-inside: avoid !important;
-        }
-        
-        .print-notes-box {
-          height: 30px !important;
-          border: 1px solid #ccc !important;
-          padding: 5px !important;
-        }
-        
-        /* Page settings - Mobile optimized */
-        @page {
-          margin: 0.3in !important;
-          size: letter !important;
-        }
-        
-        /* AGGRESSIVE mobile page settings */
-        @media (max-width: 768px) {
-          @page {
-            margin: 0.1in !important;
-            size: letter portrait !important;
-          }
-          
-          /* Scale down everything for mobile */
-          .print-header h1 {
-            font-size: 16px !important;
-            margin-bottom: 5px !important;
-          }
-          
-          .print-header h2 {
-            font-size: 14px !important;
-            margin-bottom: 3px !important;
-          }
-          
-          .print-header p {
-            font-size: 10px !important;
-          }
-          
-          .print-summary h3 {
-            font-size: 12px !important;
-            margin-bottom: 5px !important;
-          }
-          
-          .print-notes h3 {
-            font-size: 10px !important;
-            margin-bottom: 3px !important;
-          }
-          
-          .print-notes-box {
-            height: 20px !important;
-            padding: 2px !important;
-          }
-          
-          .print-footer {
-            font-size: 6px !important;
-            margin-top: 8px !important;
-          }
-        }
-        
-        /* Force content to stay in bounds */
-        html, body {
-          height: 100% !important;
-          overflow: hidden !important;
-          margin: 0 !important;
-          padding: 0 !important;
-        }
-        
-        /* FINAL mobile print override - FORCE SINGLE PAGE */
-        @media print and (max-width: 768px) {
-          /* Scale everything down to fit */
-          .printable-content {
-            position: absolute !important;
-            left: 50% !important;
-            top: 50% !important;
-            width: 90% !important;
-            height: 90% !important;
-            padding: 5px !important;
-            margin: 0 !important;
-            overflow: hidden !important;
-            font-size: 8px !important;
-            line-height: 1.0 !important;
-            background: white !important;
-            color: black !important;
-            transform: translate(-50%, -50%) scale(0.8) !important;
-            transform-origin: center center !important;
-          }
-          
-          /* Compact all elements for single page */
-          .print-header h1 { font-size: 12px !important; margin-bottom: 3px !important; }
-          .print-header h2 { font-size: 10px !important; margin-bottom: 2px !important; }
-          .print-header p { font-size: 8px !important; margin-bottom: 5px !important; }
-          
-          .print-table { font-size: 7px !important; margin-bottom: 3px !important; }
-          .print-table th, .print-table td { padding: 1px !important; font-size: 7px !important; }
-          .meal-header td { font-size: 8px !important; }
-          
-          .print-summary h3 { font-size: 9px !important; margin: 3px 0 2px 0 !important; }
-          .print-summary table { font-size: 7px !important; }
-          
-          .print-notes h3 { font-size: 8px !important; margin: 3px 0 2px 0 !important; }
-          .print-notes-box { height: 15px !important; padding: 1px !important; font-size: 6px !important; }
-          
-          .print-footer { font-size: 6px !important; margin-top: 5px !important; }
-          
-          /* Prevent page breaks */
-          .print-header, .print-table, .print-summary, .print-notes, .print-footer {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
         }
       }
     `;
@@ -329,7 +52,328 @@ const PrintableNutritionPlan = ({
   }, []);
 
   const handlePrint = () => {
-    window.print();
+    // Generate isolated HTML for meal plan printing (similar to grocery list)
+    const formatDate = () => {
+      return new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    const getMealTypeLabel = (mealType) => {
+      const labels = {
+        breakfast: 'Breakfast',
+        lunch: 'Lunch',
+        dinner: 'Dinner',
+        firstSnack: 'Morning Snack',
+        secondSnack: 'Mid-Morning Snack',
+        midAfternoon: 'Afternoon Snack',
+        lateSnack: 'Evening Snack',
+        postWorkout: 'Post-Workout'
+      };
+      return labels[mealType] || mealType;
+    };
+
+    const getSmartServingSize = (item) => {
+      const serving = item.servings || item.serving;
+
+      if (!item.food || !item.category || !serving) {
+        return `${item.displayServing || serving || '1'} ${item.displayUnit || 'servings'}`;
+      }
+
+      const foodName = item.food.toLowerCase();
+      const conversions = servingSizeConversions[item.category]?.[item.food];
+
+      if (!conversions) {
+        return `${serving.toFixed(1)} servings`;
+      }
+
+      // Quick serving size logic for print
+      if (foodName.includes('egg')) {
+        const numEggs = Math.round(serving);
+        return numEggs === 1 ? '1 egg' : `${numEggs} eggs`;
+      }
+
+      if (foodName.includes('greek yogurt') || foodName.includes('cottage cheese')) {
+        const totalCups = (conversions.cups * serving).toFixed(1);
+        const displayCups = totalCups.endsWith('.0') ? totalCups.slice(0, -2) : totalCups;
+        return displayCups === '1' ? '1 cup' : `${displayCups} cups`;
+      }
+
+      if (conversions.ounces) {
+        const totalOunces = (conversions.ounces * serving).toFixed(1);
+        const displayOunces = totalOunces.endsWith('.0') ? totalOunces.slice(0, -2) : totalOunces;
+        return `${displayOunces} oz`;
+      }
+
+      return `${serving.toFixed(1)} servings`;
+    };
+
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Daily Nutrition Plan</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            /* Reset and base styles */
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: 'Arial', sans-serif; 
+              margin: 15px; 
+              font-size: 12px; 
+              line-height: 1.3;
+              color: #000;
+              background: #fff;
+            }
+            
+            /* Header styles */
+            .header { 
+              text-align: center; 
+              border-bottom: 2px solid #000; 
+              padding-bottom: 8px; 
+              margin-bottom: 15px; 
+            }
+            
+            .header h1 { font-size: 18px; margin-bottom: 5px; }
+            .header h2 { font-size: 16px; margin-bottom: 3px; }
+            .header p { font-size: 12px; color: #666; }
+            
+            /* Table styles */
+            .meal-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 15px;
+              font-size: 11px;
+            }
+            
+            .meal-table th,
+            .meal-table td {
+              border: 1px solid #333;
+              padding: 4px 6px;
+              text-align: left;
+              vertical-align: top;
+            }
+            
+            .meal-table th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+              font-size: 10px;
+            }
+            
+            .meal-header {
+              background-color: #e8e8e8;
+              font-weight: bold;
+              font-size: 12px;
+            }
+            
+            /* Summary section */
+            .summary {
+              margin-top: 15px;
+              border-top: 2px solid #333;
+              padding-top: 10px;
+            }
+            
+            .summary h3 {
+              font-size: 14px;
+              margin-bottom: 8px;
+              border-bottom: 1px solid #333;
+              padding-bottom: 3px;
+            }
+            
+            .summary-table {
+              width: 60%;
+              border-collapse: collapse;
+              font-size: 10px;
+            }
+            
+            .summary-table td {
+              border: 1px solid #333;
+              padding: 3px 5px;
+            }
+            
+            /* Notes section */
+            .notes {
+              margin-top: 15px;
+            }
+            
+            .notes h3 {
+              font-size: 12px;
+              margin-bottom: 5px;
+              border-bottom: 1px solid #333;
+              padding-bottom: 2px;
+            }
+            
+            .notes-box {
+              height: 40px;
+              border: 1px solid #ccc;
+              padding: 5px;
+              font-size: 9px;
+              color: #666;
+            }
+            
+            /* Footer */
+            .footer {
+              margin-top: 20px;
+              text-align: center;
+              font-size: 9px;
+              color: #666;
+            }
+            
+            /* DYNAMIC SCALING - Auto-adjust to fit one page */
+            @media print {
+              @page {
+                margin: 0.4in;
+                size: letter;
+              }
+              
+              /* Try base size first */
+              body { 
+                font-size: 12px;
+                margin: 0;
+                padding: 0.2in;
+              }
+              
+              /* If content is too big, scale down */
+              @media (min-height: 11in) {
+                body { 
+                  font-size: 11px;
+                  transform: scale(0.95);
+                  transform-origin: top left;
+                }
+              }
+              
+              /* Further scaling if still too big */
+              @media (min-height: 10in) {
+                body { 
+                  font-size: 10px;
+                  transform: scale(0.9);
+                  transform-origin: top left;
+                }
+              }
+              
+              /* Final compact mode */
+              @media (min-height: 9in) {
+                body { 
+                  font-size: 9px;
+                  transform: scale(0.85);
+                  transform-origin: top left;
+                }
+                
+                .meal-table { font-size: 8px; }
+                .meal-table th, .meal-table td { padding: 2px 3px; }
+                .header h1 { font-size: 14px; }
+                .header h2 { font-size: 12px; }
+                .summary h3 { font-size: 11px; }
+                .notes-box { height: 25px; font-size: 8px; }
+              }
+              
+              /* Mobile print adjustments */
+              @media (max-width: 768px) {
+                body { 
+                  font-size: 10px;
+                  transform: scale(0.8);
+                  margin: 0;
+                  padding: 0.1in;
+                }
+                
+                .meal-table { font-size: 8px; }
+                .meal-table th, .meal-table td { padding: 1px 2px; }
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>🥗 Daily Nutrition Plan</h1>
+            <h2>${userProfile.firstName || 'User'} ${userProfile.lastName || ''}</h2>
+            <p>${formatDate()}</p>
+          </div>
+
+          <table class="meal-table">
+            <thead>
+              <tr>
+                <th style="width: 15%">Time</th>
+                <th style="width: 50%">Food</th>
+                <th style="width: 35%">Serving Size</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+    // Add meal data
+    Object.entries(allMeals).forEach(([mealType, meal]) => {
+      const validItems = meal.items ? meal.items.filter(item => item.food && item.food.trim() !== '') : [];
+
+      if (validItems.length > 0) {
+        htmlContent += `
+              <tr class="meal-header">
+                <td colspan="3">${getMealTypeLabel(mealType)} - ${meal.time}</td>
+              </tr>`;
+
+        validItems.forEach((item, index) => {
+          htmlContent += `
+              <tr>
+                <td>${index === 0 ? meal.time : ''}</td>
+                <td>${item.food}</td>
+                <td>${getSmartServingSize(item)}</td>
+              </tr>`;
+        });
+      }
+    });
+
+    htmlContent += `
+            </tbody>
+          </table>
+
+          <div class="summary">
+            <h3>📊 Daily Summary</h3>
+            <table class="summary-table">
+              <tr><td><strong>Target Calories:</strong></td><td>${safeCalorieData.targetCalories || 'Not set'}</td></tr>
+              <tr><td><strong>BMR:</strong></td><td>${safeCalorieData.bmr || 'Not set'}</td></tr>
+              <tr><td><strong>TDEE:</strong></td><td>${safeCalorieData.tdee || 'Not set'}</td></tr>
+              <tr><td><strong>Goal:</strong></td><td style="text-transform: capitalize">${userProfile.goal || 'Not set'}</td></tr>
+            </table>
+          </div>
+
+          <div class="notes">
+            <h3>📝 Notes</h3>
+            <div class="notes-box">
+              Space for personal notes, meal prep reminders, or adjustments...
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Generated by Nutrition Tracker • ${formatDate()}</p>
+            <p>Stay consistent, stay healthy! 💪</p>
+          </div>
+          
+          <script>
+            // Auto-print when page loads
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    // Create new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+
+    if (!printWindow) {
+      alert('Please allow popups to print the meal plan');
+      return;
+    }
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
   };
 
   const handlePreview = () => {
@@ -400,25 +444,35 @@ const PrintableNutritionPlan = ({
 
             <div className="flex-1 overflow-y-auto p-4">
               <div className="bg-white border border-gray-300 p-8 max-w-[8.5in] mx-auto" style={{ minHeight: '11in' }}>
-                <PrintableContent
-                  allMeals={allMeals}
-                  userProfile={userProfile}
-                  calorieData={safeCalorieData}
-                />
+                <div className="text-center mb-6">
+                  <h1 className="text-2xl font-bold mb-2">🥗 Daily Nutrition Plan</h1>
+                  <h2 className="text-lg mb-2">{userProfile.firstName || 'User'} {userProfile.lastName || ''}</h2>
+                  <p className="text-sm text-gray-600">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">📄</div>
+                  <p className="text-gray-600 mb-4">This is a preview of your nutrition plan format.</p>
+                  <p className="text-gray-500 text-sm">Click "Print" to generate the full formatted document with all your meals.</p>
+                </div>
+
+                <div className="mt-8 border-t pt-4">
+                  <h3 className="font-bold mb-2">📊 Features:</h3>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Complete meal schedule with times</li>
+                    <li>• Smart serving sizes (cups, ounces, slices)</li>
+                    <li>• Daily nutrition summary</li>
+                    <li>• Space for personal notes</li>
+                    <li>• Auto-scales to fit one page</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Hidden Printable Content */}
-      <div className="printable-content" style={{ display: 'none' }}>
-        <PrintableContent
-          allMeals={allMeals}
-          userProfile={userProfile}
-          calorieData={safeCalorieData}
-        />
-      </div>
+      {/* Hidden Printable Content - No longer needed with new window method */}
 
       {/* Grocery List Modal */}
       <GroceryListModal
@@ -427,256 +481,6 @@ const PrintableNutritionPlan = ({
         allMeals={allMeals}
         isMobile={isMobile}
       />
-    </div>
-  );
-};
-
-const PrintableContent = ({
-  allMeals = {},
-  userProfile = {},
-  calorieData = {}
-}) => {
-  const formatDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const getMealTypeLabel = (mealType) => {
-    const labels = {
-      breakfast: 'Breakfast',
-      lunch: 'Lunch',
-      dinner: 'Dinner',
-      firstSnack: 'Morning Snack',
-      secondSnack: 'Mid-Morning Snack',
-      midAfternoon: 'Afternoon Snack',
-      lateSnack: 'Evening Snack',
-      postWorkout: 'Post-Workout'
-    };
-    return labels[mealType] || mealType;
-  };
-
-  // Smart serving size display - chooses the most logical unit for each food
-  const getSmartServingSize = (item) => {
-    // Fix: Check for both servings and serving
-    const serving = item.servings || item.serving;
-
-    if (!item.food || !item.category || !serving) {
-      return `${item.displayServing || serving || '1'} ${item.displayUnit || 'servings'}`;
-    }
-
-    const foodName = item.food.toLowerCase();
-    const conversions = servingSizeConversions[item.category]?.[item.food];
-
-    if (!conversions) {
-      return `${item.displayServing || serving || '1'} ${item.displayUnit || 'servings'}`;
-    }
-
-    // Specific food logic for best display units
-    if (foodName.includes('egg whites')) {
-      // Show as number of egg whites (each egg white = ~33g, base is 33g = 1 egg white)
-      const numEggWhites = Math.round(serving);
-      return numEggWhites === 1 ? '1 egg white' : `${numEggWhites} egg whites`;
-    }
-
-    if (foodName.includes('eggs') && foodName.includes('whole')) {
-      // Show as number of whole eggs
-      const numEggs = Math.round(serving);
-      return numEggs === 1 ? '1 egg' : `${numEggs} eggs`;
-    }
-
-    if (foodName.includes('hard-boiled egg')) {
-      // Show as number of eggs
-      const numEggs = Math.round(serving);
-      return numEggs === 1 ? '1 egg' : `${numEggs} eggs`;
-    }
-
-    if (foodName.includes('greek yogurt') || foodName.includes('cottage cheese')) {
-      // Show in cups
-      const totalCups = (conversions.cups * serving).toFixed(1);
-      const displayCups = totalCups.endsWith('.0') ? totalCups.slice(0, -2) : totalCups;
-      return displayCups === '1' ? '1 cup' : `${displayCups} cups`;
-    }
-
-    // Meats and fish - show in ounces
-    if (foodName.includes('chicken') || foodName.includes('salmon') || foodName.includes('tuna') ||
-      foodName.includes('turkey') || foodName.includes('beef') || foodName.includes('cod') ||
-      foodName.includes('tilapia') || foodName.includes('shrimp')) {
-      const totalOunces = (conversions.ounces * serving).toFixed(1);
-      const displayOunces = totalOunces.endsWith('.0') ? totalOunces.slice(0, -2) : totalOunces;
-      return `${displayOunces} oz`;
-    }
-
-    // Protein powders and bars - show as scoops/bars
-    if (foodName.includes('protein') && (foodName.includes('whey') || foodName.includes('scoop'))) {
-      const numScoops = serving.toFixed(1);
-      const displayScoops = numScoops.endsWith('.0') ? numScoops.slice(0, -2) : numScoops;
-      return displayScoops === '1' ? '1 scoop' : `${displayScoops} scoops`;
-    }
-
-    if (foodName.includes('bar')) {
-      const numBars = serving.toFixed(1);
-      const displayBars = numBars.endsWith('.0') ? numBars.slice(0, -2) : numBars;
-      return displayBars === '1' ? '1 bar' : `${displayBars} bars`;
-    }
-
-    // Rice, oats, pasta - show in cups
-    if (foodName.includes('rice') || foodName.includes('oats') || foodName.includes('pasta') || foodName.includes('quinoa')) {
-      const totalCups = (conversions.cups * serving).toFixed(1);
-      const displayCups = totalCups.endsWith('.0') ? totalCups.slice(0, -2) : totalCups;
-      return displayCups === '1' ? '1 cup' : `${displayCups} cups`;
-    }
-
-    // Bread - show as slices
-    if (foodName.includes('bread')) {
-      const numSlices = Math.round(serving);
-      return numSlices === 1 ? '1 slice' : `${numSlices} slices`;
-    }
-
-    // Fruits - show as pieces for whole fruits, cups for others
-    if (item.category === 'fruits') {
-      if (foodName.includes('apple') || foodName.includes('banana') || foodName.includes('orange') ||
-        foodName.includes('kiwi') || foodName.includes('lemon') || foodName.includes('lime')) {
-        const numPieces = serving.toFixed(1);
-        const displayPieces = numPieces.endsWith('.0') ? numPieces.slice(0, -2) : numPieces;
-        return displayPieces === '1' ? `1 ${foodName}` : `${displayPieces} ${foodName}s`;
-      } else {
-        // Berries, grapes, etc. - show in cups
-        const totalCups = (conversions.cups * serving).toFixed(1);
-        const displayCups = totalCups.endsWith('.0') ? totalCups.slice(0, -2) : totalCups;
-        return displayCups === '1' ? '1 cup' : `${displayCups} cups`;
-      }
-    }
-
-    // Nuts, seeds, oils - show in tablespoons or ounces
-    if (item.category === 'fat') {
-      if (foodName.includes('oil') || foodName.includes('butter')) {
-        // Small amounts in tablespoons (convert from ounces: 1 oz = 2 tbsp)
-        const totalTbsp = (conversions.ounces * serving * 2).toFixed(1);
-        const displayTbsp = totalTbsp.endsWith('.0') ? totalTbsp.slice(0, -2) : totalTbsp;
-        return displayTbsp === '1' ? '1 tbsp' : `${displayTbsp} tbsp`;
-      } else {
-        // Nuts and seeds in ounces
-        const totalOunces = (conversions.ounces * serving).toFixed(1);
-        const displayOunces = totalOunces.endsWith('.0') ? totalOunces.slice(0, -2) : totalOunces;
-        return `${displayOunces} oz`;
-      }
-    }
-
-    // Default fallback - use original display or best available unit
-    if (conversions.ounces && typeof conversions.ounces === 'number') {
-      const totalOunces = (conversions.ounces * serving).toFixed(1);
-      const displayOunces = totalOunces.endsWith('.0') ? totalOunces.slice(0, -2) : totalOunces;
-      return `${displayOunces} oz`;
-    }
-
-    // Final fallback to original
-    return `${item.displayServing || serving || '1'} ${item.displayUnit || 'servings'}`;
-  };
-
-  return (
-    <div>
-      {/* Header */}
-      <div className="print-header">
-        <h1 style={{ fontSize: '24px', margin: '0 0 10px 0' }}>
-          🥗 Daily Nutrition Plan
-        </h1>
-        <h2 style={{ fontSize: '18px', margin: '0 0 5px 0' }}>
-          {userProfile.firstName || 'User'} {userProfile.lastName || ''}
-        </h2>
-        <p style={{ fontSize: '14px', margin: '0', color: '#666' }}>
-          {formatDate()}
-        </p>
-      </div>
-
-      {/* Meal Plan Table */}
-      <table className="print-table">
-        <thead>
-          <tr>
-            <th style={{ width: '15%' }}>Time</th>
-            <th style={{ width: '50%' }}>Food</th>
-            <th style={{ width: '35%' }}>Serving Size</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.entries(allMeals).map(([mealType, meal]) => {
-            // Only show meals that have food items
-            const validItems = meal.items ? meal.items.filter(item => item.food && item.food.trim() !== '') : [];
-
-            if (validItems.length === 0) return null;
-
-            return (
-              <React.Fragment key={mealType}>
-                <tr className="meal-header">
-                  <td colSpan="3" style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                    {getMealTypeLabel(mealType)} - {meal.time}
-                  </td>
-                </tr>
-                {validItems.map((item, index) => (
-                  <tr key={index}>
-                    <td>{index === 0 ? meal.time : ''}</td>
-                    <td>{item.food}</td>
-                    <td>{getSmartServingSize(item)}</td>
-                  </tr>
-                ))}
-              </React.Fragment>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* Daily Summary */}
-      <div className="print-summary">
-        <h3 style={{ fontSize: '16px', margin: '0 0 10px 0', borderBottom: '1px solid #333', paddingBottom: '5px' }}>
-          📊 Daily Summary
-        </h3>
-
-        <table className="print-table" style={{ width: '50%' }}>
-          <tbody>
-            <tr>
-              <td><strong>Target Calories:</strong></td>
-              <td>{calorieData.targetCalories || 'Not set'}</td>
-            </tr>
-            <tr>
-              <td><strong>BMR:</strong></td>
-              <td>{calorieData.bmr || 'Not set'}</td>
-            </tr>
-            <tr>
-              <td><strong>TDEE:</strong></td>
-              <td>{calorieData.tdee || 'Not set'}</td>
-            </tr>
-            <tr>
-              <td><strong>Goal:</strong></td>
-              <td style={{ textTransform: 'capitalize' }}>{userProfile.goal || 'Not set'}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Notes Section */}
-      <div className="print-notes" style={{ marginTop: '10px' }}>
-        <h3 style={{ fontSize: '14px', margin: '0 0 5px 0', borderBottom: '1px solid #333', paddingBottom: '3px' }}>
-          📝 Notes
-        </h3>
-        <div className="print-notes-box" style={{ height: '40px', border: '1px solid #ccc', padding: '5px' }}>
-          <p style={{ margin: '0', color: '#666', fontSize: '9px' }}>
-            Space for personal notes, meal prep reminders, or adjustments...
-          </p>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="print-footer">
-        <p style={{ margin: '0', fontSize: '9px' }}>
-          Generated by Nutrition Tracker • {formatDate()}
-        </p>
-        <p style={{ margin: '2px 0 0 0', fontSize: '9px' }}>
-          Stay consistent, stay healthy! 💪
-        </p>
-      </div>
     </div>
   );
 };
