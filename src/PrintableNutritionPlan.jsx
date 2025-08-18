@@ -52,7 +52,7 @@ const PrintableNutritionPlan = ({
   }, []);
 
   const handlePrint = () => {
-    // Generate isolated HTML for meal plan printing (similar to grocery list)
+    // Generate isolated HTML for meal plan printing (much simpler approach)
     const formatDate = () => {
       return new Date().toLocaleDateString('en-US', {
         weekday: 'long',
@@ -124,7 +124,7 @@ const PrintableNutritionPlan = ({
             body { 
               font-family: 'Arial', sans-serif; 
               margin: 15px; 
-              font-size: 14px; 
+              font-size: 12px; 
               line-height: 1.4;
               color: #000;
               background: #fff;
@@ -147,7 +147,7 @@ const PrintableNutritionPlan = ({
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 15px;
-              font-size: 13px;
+              font-size: 11px;
             }
             
             .meal-table th,
@@ -161,13 +161,13 @@ const PrintableNutritionPlan = ({
             .meal-table th {
               background-color: #f0f0f0;
               font-weight: bold;
-              font-size: 12px;
+              font-size: 10px;
             }
             
             .meal-header {
               background-color: #e8e8e8;
               font-weight: bold;
-              font-size: 14px;
+              font-size: 12px;
             }
             
             /* Summary section */
@@ -178,7 +178,7 @@ const PrintableNutritionPlan = ({
             }
             
             .summary h3 {
-              font-size: 16px;
+              font-size: 14px;
               margin-bottom: 8px;
               border-bottom: 1px solid #333;
               padding-bottom: 3px;
@@ -187,7 +187,7 @@ const PrintableNutritionPlan = ({
             .summary-table {
               width: 60%;
               border-collapse: collapse;
-              font-size: 12px;
+              font-size: 10px;
             }
             
             .summary-table td {
@@ -201,17 +201,17 @@ const PrintableNutritionPlan = ({
             }
             
             .notes h3 {
-              font-size: 14px;
+              font-size: 12px;
               margin-bottom: 5px;
               border-bottom: 1px solid #333;
               padding-bottom: 2px;
             }
             
             .notes-box {
-              height: 40px;
+              height: 35px;
               border: 1px solid #ccc;
               padding: 5px;
-              font-size: 11px;
+              font-size: 9px;
               color: #666;
             }
             
@@ -219,70 +219,35 @@ const PrintableNutritionPlan = ({
             .footer {
               margin-top: 20px;
               text-align: center;
-              font-size: 11px;
+              font-size: 9px;
               color: #666;
             }
             
-            /* DYNAMIC SCALING - Auto-adjust to fit one page */
+            /* Print styles with simple scaling */
             @media print {
               @page {
-                margin: 0.4in;
+                margin: 0.5in;
                 size: letter;
               }
               
-              /* Try base size first */
               body { 
-                font-size: 12px;
                 margin: 0;
-                padding: 0.2in;
+                padding: 0;
+                font-size: 11px;
               }
               
-              /* If content is too big, scale down */
-              @media (min-height: 11in) {
-                body { 
-                  font-size: 11px;
-                  transform: scale(0.95);
-                  transform-origin: top left;
-                }
-              }
+              .meal-table { font-size: 10px; }
+              .meal-table th, .meal-table td { padding: 3px 4px; }
+              .header h1 { font-size: 18px; }
+              .header h2 { font-size: 16px; }
+              .summary h3 { font-size: 12px; }
+              .notes-box { height: 30px; font-size: 8px; }
               
-              /* Further scaling if still too big */
-              @media (min-height: 10in) {
-                body { 
-                  font-size: 10px;
-                  transform: scale(0.9);
-                  transform-origin: top left;
-                }
-              }
-              
-              /* Final compact mode */
-              @media (min-height: 9in) {
-                body { 
-                  font-size: 9px;
-                  transform: scale(0.85);
-                  transform-origin: top left;
-                }
-                
-                .meal-table { font-size: 8px; }
-                .meal-table th, .meal-table td { padding: 2px 3px; }
-                .header h1 { font-size: 14px; }
-                .header h2 { font-size: 12px; }
-                .summary h3 { font-size: 11px; }
-                .notes-box { height: 25px; font-size: 8px; }
-              }
-              
-              /* Mobile print adjustments */
-              @media (max-width: 768px) {
-                body { 
-                  font-size: 10px;
-                  transform: scale(0.8);
-                  margin: 0;
-                  padding: 0.1in;
-                }
-                
-                .meal-table { font-size: 8px; }
-                .meal-table th, .meal-table td { padding: 1px 2px; }
-              }
+              /* Ensure everything fits on one page */
+              .meal-table { margin-bottom: 10px; }
+              .summary { margin-top: 10px; padding-top: 8px; }
+              .notes { margin-top: 10px; }
+              .footer { margin-top: 15px; }
             }
           </style>
         </head>
@@ -351,51 +316,12 @@ const PrintableNutritionPlan = ({
           </div>
           
           <script>
-            // Dynamic scaling - start big and scale down only if needed
+            // Simple auto-print on load
             window.onload = function() {
-              // Function to check if content fits on one page
-              function contentFitsOnePage() {
-                const pageHeight = 11 * 96; // 11 inches * 96 DPI
-                const margin = 0.4 * 96 * 2; // top + bottom margins
-                const availableHeight = pageHeight - margin;
-                const contentHeight = document.body.scrollHeight;
-                return contentHeight <= availableHeight;
-              }
-              
-              // Progressive scaling function
-              function scaleToFit() {
-                const compactLevels = ['', 'compact-1', 'compact-2', 'compact-3', 'compact-4'];
-                
-                for (let i = 0; i < compactLevels.length; i++) {
-                  // Remove previous compact class
-                  document.body.className = '';
-                  
-                  // Apply current compact level
-                  if (compactLevels[i]) {
-                    document.body.classList.add(compactLevels[i]);
-                  }
-                  
-                  // Wait a moment for styles to apply
-                  setTimeout(() => {
-                    if (contentFitsOnePage() || i === compactLevels.length - 1) {
-                      // Content fits or we've reached max compression
-                      console.log('Applied scaling level:', compactLevels[i] || 'base (14px)');
-                      
-                      // Now print
-                      setTimeout(() => {
-                        window.print();
-                        window.onafterprint = function() {
-                          window.close();
-                        };
-                      }, 100);
-                      return;
-                    }
-                  }, 50);
-                }
-              }
-              
-              // Start the scaling process
-              scaleToFit();
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
             };
           </script>
         </body>
@@ -483,12 +409,6 @@ const PrintableNutritionPlan = ({
 
             <div className="flex-1 overflow-y-auto p-4">
               <div className="bg-white border border-gray-300 p-8 max-w-[8.5in] mx-auto" style={{ minHeight: '11in' }}>
-                <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold mb-2">🥗 Daily Nutrition Plan</h1>
-                  <h2 className="text-lg mb-2">{userProfile.firstName || 'User'} {userProfile.lastName || ''}</h2>
-                  <p className="text-sm text-gray-600">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                </div>
-
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">📄</div>
                   <p className="text-gray-600 mb-4">This is a preview of your nutrition plan format.</p>
@@ -502,7 +422,7 @@ const PrintableNutritionPlan = ({
                     <li>• Smart serving sizes (cups, ounces, slices)</li>
                     <li>• Daily nutrition summary</li>
                     <li>• Space for personal notes</li>
-                    <li>• Auto-scales to fit one page</li>
+                    <li>• Optimized for one-page printing</li>
                   </ul>
                 </div>
               </div>
@@ -510,8 +430,6 @@ const PrintableNutritionPlan = ({
           </div>
         </div>
       )}
-
-      {/* Hidden Printable Content - No longer needed with new window method */}
 
       {/* Grocery List Modal */}
       <GroceryListModal
