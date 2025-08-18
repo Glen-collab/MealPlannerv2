@@ -1755,7 +1755,7 @@ const MealSwipeApp = () => {
                   className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">🍽️</div>
-                  <div className="text-xs font-semibold">Quick View</div>
+                  <div className="text-xs font-semibold">Add Foods</div>
                 </button>
                 <button
                   onClick={enterScrollModal}
