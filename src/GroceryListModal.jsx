@@ -223,80 +223,105 @@ const GroceryListModal = ({
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { 
               font-family: 'Arial', sans-serif; 
-              margin: 20px; 
-              font-size: 12px; 
-              line-height: 1.4;
+              margin: 15px; 
+              font-size: 10px; 
+              line-height: 1.2;
               color: #000;
               background: #fff;
             }
             
-            /* Header styles */
+            /* Header styles - More compact */
             h1 { 
               text-align: center; 
-              border-bottom: 2px solid #000; 
-              padding-bottom: 10px; 
-              margin-bottom: 20px; 
-              font-size: 20px;
+              border-bottom: 1px solid #000; 
+              padding-bottom: 5px; 
+              margin-bottom: 10px; 
+              font-size: 16px;
             }
             
             .date-info {
               text-align: center; 
-              margin-bottom: 25px; 
-              font-size: 11px;
+              margin-bottom: 15px; 
+              font-size: 9px;
               color: #666;
             }
             
-            /* Category headers */
+            /* Category headers - Smaller */
             h3 { 
-              background-color: #f0f0f0; 
-              padding: 8px; 
+              background-color: #f5f5f5; 
+              padding: 4px 6px; 
               border: 1px solid #333; 
-              margin: 15px 0 8px 0; 
-              font-size: 14px;
+              margin: 8px 0 4px 0; 
+              font-size: 11px;
               font-weight: bold;
             }
             
-            /* Grocery items */
+            /* Grocery items - Very compact */
             .item { 
-              margin: 5px 0; 
-              padding: 3px 0 3px 20px; 
-              font-size: 11px;
-              border-bottom: 1px dotted #ccc;
+              margin: 2px 0; 
+              padding: 1px 0 1px 15px; 
+              font-size: 9px;
+              line-height: 1.1;
             }
             
             .checkbox {
               display: inline-block;
-              width: 12px;
-              height: 12px;
+              width: 8px;
+              height: 8px;
               border: 1px solid #333;
-              margin-right: 8px;
+              margin-right: 5px;
               vertical-align: middle;
             }
             
-            /* Footer */
+            /* Footer - Smaller */
             .footer { 
-              margin-top: 30px; 
+              margin-top: 15px; 
               text-align: center; 
               border-top: 1px solid #333; 
-              padding-top: 10px; 
-              font-size: 10px;
+              padding-top: 5px; 
+              font-size: 8px;
               color: #666;
             }
             
-            /* Print specific styles */
+            /* Print specific styles - FORCE SINGLE PAGE */
             @media print {
-              body { margin: 0.5in; }
-              h1 { font-size: 18px; }
-              .item { page-break-inside: avoid; }
-              .footer { page-break-inside: avoid; }
+              @page {
+                margin: 0.4in !important;
+                size: letter !important;
+              }
+              
+              body { 
+                margin: 0 !important; 
+                padding: 0.2in !important;
+                font-size: 9px !important;
+                transform: scale(0.85) !important;
+                transform-origin: top left !important;
+              }
+              
+              h1 { font-size: 14px !important; margin-bottom: 8px !important; }
+              h3 { font-size: 10px !important; margin: 6px 0 3px 0 !important; padding: 3px 4px !important; }
+              .item { 
+                font-size: 8px !important; 
+                margin: 1px 0 !important; 
+                padding: 0 0 0 12px !important;
+                line-height: 1.0 !important;
+              }
+              .footer { font-size: 7px !important; margin-top: 10px !important; }
+              .date-info { font-size: 8px !important; margin-bottom: 10px !important; }
+              
+              /* Prevent page breaks */
+              .item { page-break-inside: avoid !important; }
+              h3 { page-break-after: avoid !important; }
+              .footer { page-break-inside: avoid !important; }
             }
             
-            /* Mobile print adjustments */
+            /* Mobile print adjustments - Even more compact */
             @media (max-width: 768px) {
-              body { margin: 10px; font-size: 10px; }
-              h1 { font-size: 16px; }
-              h3 { font-size: 12px; }
-              .item { font-size: 10px; }
+              body { margin: 8px; font-size: 8px; }
+              h1 { font-size: 12px; }
+              h3 { font-size: 9px; padding: 2px 3px; margin: 4px 0 2px 0; }
+              .item { font-size: 7px; padding: 0 0 0 10px; }
+              .footer { font-size: 6px; }
             }
           </style>
         </head>
