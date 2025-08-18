@@ -1762,7 +1762,7 @@ const MealSwipeApp = () => {
                   className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">📋</div>
-                  <div className="text-xs font-semibold">Scroll View</div>
+                  <div className="text-xs font-semibold">View Plan</div>
                 </button>
                 <button
                   onClick={enterFullScreenSwipe}
@@ -1776,7 +1776,7 @@ const MealSwipeApp = () => {
                   className="bg-gradient-to-br from-green-500 to-green-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">🔍</div>
-                  <div className="text-xs font-semibold">Create Meal</div>
+                  <div className="text-xs font-semibold">Food Lookup</div>
                 </button>
               </div>
 
