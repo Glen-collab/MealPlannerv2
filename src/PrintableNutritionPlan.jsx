@@ -3,11 +3,11 @@ import { Printer, X, ShoppingCart } from 'lucide-react';
 import { servingSizeConversions } from './FoodDatabase.js';
 import GroceryListModal from './GroceryListModal.jsx';
 
-const PrintableNutritionPlan = ({ 
-  allMeals = {}, 
-  userProfile = {}, 
+const PrintableNutritionPlan = ({
+  allMeals = {},
+  userProfile = {},
   calorieData = null,
-  isMobile = false 
+  isMobile = false
 }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [showGroceryList, setShowGroceryList] = useState(false);
@@ -35,20 +35,48 @@ const PrintableNutritionPlan = ({
           display: block !important;
         }
         
-        /* Main printable container */
+        /* Main printable container - FIXED for mobile */
         .printable-content {
-          position: absolute !important;
+          position: fixed !important;
           left: 0 !important;
           top: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
+          width: 100vw !important;
+          height: 100vh !important;
           background: white !important;
           font-family: Arial, sans-serif !important;
           color: black !important;
-          font-size: 11px !important;
-          line-height: 1.3 !important;
-          overflow: hidden !important;
-          page-break-inside: avoid !important;
+          font-size: 12px !important;
+          line-height: 1.4 !important;
+          overflow: visible !important;
+          margin: 0 !important;
+          padding: 15px !important;
+          box-sizing: border-box !important;
+          z-index: 9999 !important;
+        }
+        
+        /* Mobile-specific print fixes */
+        @media (max-width: 768px) {
+          .printable-content {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            font-size: 11px !important;
+            padding: 10px !important;
+            transform: none !important;
+            margin: 0 !important;
+          }
+          
+          /* Force full viewport coverage on mobile */
+          html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
         }
         
         /* Hide non-printable elements */
@@ -80,11 +108,12 @@ const PrintableNutritionPlan = ({
         .print-table th,
         .print-table td {
           border: 1px solid #333 !important;
-          padding: 4px 6px !important;
+          padding: 3px 4px !important;
           text-align: left !important;
           vertical-align: top !important;
           display: table-cell !important;
           visibility: visible !important;
+          word-wrap: break-word !important;
         }
         
         .print-table thead {
@@ -106,7 +135,7 @@ const PrintableNutritionPlan = ({
         .print-table th {
           background-color: #f0f0f0 !important;
           font-weight: bold !important;
-          font-size: 10px !important;
+          font-size: 9px !important;
         }
         
         .meal-header {
@@ -127,36 +156,45 @@ const PrintableNutritionPlan = ({
         .print-footer {
           margin-top: 15px !important;
           text-align: center !important;
-          font-size: 9px !important;
+          font-size: 8px !important;
           color: #666 !important;
           page-break-inside: avoid !important;
         }
         
-        /* Notes section - smaller */
+        /* Notes section */
         .print-notes {
           margin-top: 10px !important;
           page-break-inside: avoid !important;
         }
         
         .print-notes-box {
-          height: 40px !important;
+          height: 30px !important;
           border: 1px solid #ccc !important;
           padding: 5px !important;
         }
         
-        /* Force single page */
+        /* Page settings */
         @page {
-          margin: 0.4in !important;
+          margin: 0.3in !important;
           size: letter !important;
         }
         
-        /* Scale content to fit if needed */
+        /* Mobile page settings */
+        @media (max-width: 768px) {
+          @page {
+            margin: 0.2in !important;
+          }
+        }
+        
+        /* Force content to stay in bounds */
         html, body {
           height: 100% !important;
           overflow: hidden !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         
-        /* Ensure no page breaks */
+        /* Prevent page breaks */
         * {
           page-break-before: avoid !important;
           page-break-after: avoid !important;
@@ -195,7 +233,7 @@ const PrintableNutritionPlan = ({
         <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800 text-center`}>
           📄 Print Your Nutrition Plan
         </h3>
-        
+
         <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 sm:grid-cols-3 gap-3'} justify-center`}>
           <button
             onClick={handlePreview}
@@ -204,7 +242,7 @@ const PrintableNutritionPlan = ({
             <span>👁️</span>
             {isMobile ? 'Preview Plan' : 'Preview Plan'}
           </button>
-          
+
           <button
             onClick={handlePrint}
             className={`${isMobile ? 'w-full py-4 text-base' : 'px-6 py-3'} bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors font-medium flex items-center justify-center gap-2`}
@@ -212,7 +250,7 @@ const PrintableNutritionPlan = ({
             <Printer size={20} />
             {isMobile ? 'Print Plan' : 'Print Plan'}
           </button>
-          
+
           <button
             onClick={() => setShowGroceryList(true)}
             className={`${isMobile ? 'w-full py-4 text-base' : 'px-6 py-3'} bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2`}
@@ -221,7 +259,7 @@ const PrintableNutritionPlan = ({
             {isMobile ? 'Grocery List' : 'Grocery List'}
           </button>
         </div>
-        
+
         <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-gray-600 text-center`}>
           {isMobile ? 'Tap Grocery List for your shopping checklist!' : 'Works with network printers, wireless printers, and mobile printing services'}
         </p>
@@ -249,10 +287,10 @@ const PrintableNutritionPlan = ({
                 </button>
               </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4">
               <div className="bg-white border border-gray-300 p-8 max-w-[8.5in] mx-auto" style={{ minHeight: '11in' }}>
-                <PrintableContent 
+                <PrintableContent
                   allMeals={allMeals}
                   userProfile={userProfile}
                   calorieData={safeCalorieData}
@@ -265,7 +303,7 @@ const PrintableNutritionPlan = ({
 
       {/* Hidden Printable Content */}
       <div className="printable-content" style={{ display: 'none' }}>
-        <PrintableContent 
+        <PrintableContent
           allMeals={allMeals}
           userProfile={userProfile}
           calorieData={safeCalorieData}
@@ -283,16 +321,16 @@ const PrintableNutritionPlan = ({
   );
 };
 
-const PrintableContent = ({ 
+const PrintableContent = ({
   allMeals = {},
-  userProfile = {}, 
-  calorieData = {} 
+  userProfile = {},
+  calorieData = {}
 }) => {
   const formatDate = () => {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
-      month: 'long', 
+      month: 'long',
       day: 'numeric'
     });
   };
@@ -300,7 +338,7 @@ const PrintableContent = ({
   const getMealTypeLabel = (mealType) => {
     const labels = {
       breakfast: 'Breakfast',
-      lunch: 'Lunch', 
+      lunch: 'Lunch',
       dinner: 'Dinner',
       firstSnack: 'Morning Snack',
       secondSnack: 'Mid-Morning Snack',
@@ -313,88 +351,91 @@ const PrintableContent = ({
 
   // Smart serving size display - chooses the most logical unit for each food
   const getSmartServingSize = (item) => {
-    if (!item.food || !item.category || !item.serving) {
-      return `${item.displayServing || '1'} ${item.displayUnit || 'servings'}`;
+    // Fix: Check for both servings and serving
+    const serving = item.servings || item.serving;
+
+    if (!item.food || !item.category || !serving) {
+      return `${item.displayServing || serving || '1'} ${item.displayUnit || 'servings'}`;
     }
 
     const foodName = item.food.toLowerCase();
     const conversions = servingSizeConversions[item.category]?.[item.food];
-    
+
     if (!conversions) {
-      return `${item.displayServing || '1'} ${item.displayUnit || 'servings'}`;
+      return `${item.displayServing || serving || '1'} ${item.displayUnit || 'servings'}`;
     }
 
     // Specific food logic for best display units
     if (foodName.includes('egg whites')) {
       // Show as number of egg whites (each egg white = ~33g, base is 33g = 1 egg white)
-      const numEggWhites = Math.round(item.serving);
+      const numEggWhites = Math.round(serving);
       return numEggWhites === 1 ? '1 egg white' : `${numEggWhites} egg whites`;
     }
-    
+
     if (foodName.includes('eggs') && foodName.includes('whole')) {
       // Show as number of whole eggs
-      const numEggs = Math.round(item.serving);
+      const numEggs = Math.round(serving);
       return numEggs === 1 ? '1 egg' : `${numEggs} eggs`;
     }
 
     if (foodName.includes('hard-boiled egg')) {
       // Show as number of eggs
-      const numEggs = Math.round(item.serving);
+      const numEggs = Math.round(serving);
       return numEggs === 1 ? '1 egg' : `${numEggs} eggs`;
     }
-    
+
     if (foodName.includes('greek yogurt') || foodName.includes('cottage cheese')) {
       // Show in cups
-      const totalCups = (conversions.cups * item.serving).toFixed(1);
+      const totalCups = (conversions.cups * serving).toFixed(1);
       const displayCups = totalCups.endsWith('.0') ? totalCups.slice(0, -2) : totalCups;
       return displayCups === '1' ? '1 cup' : `${displayCups} cups`;
     }
 
     // Meats and fish - show in ounces
-    if (foodName.includes('chicken') || foodName.includes('salmon') || foodName.includes('tuna') || 
-        foodName.includes('turkey') || foodName.includes('beef') || foodName.includes('cod') || 
-        foodName.includes('tilapia') || foodName.includes('shrimp')) {
-      const totalOunces = (conversions.ounces * item.serving).toFixed(1);
+    if (foodName.includes('chicken') || foodName.includes('salmon') || foodName.includes('tuna') ||
+      foodName.includes('turkey') || foodName.includes('beef') || foodName.includes('cod') ||
+      foodName.includes('tilapia') || foodName.includes('shrimp')) {
+      const totalOunces = (conversions.ounces * serving).toFixed(1);
       const displayOunces = totalOunces.endsWith('.0') ? totalOunces.slice(0, -2) : totalOunces;
       return `${displayOunces} oz`;
     }
 
     // Protein powders and bars - show as scoops/bars
     if (foodName.includes('protein') && (foodName.includes('whey') || foodName.includes('scoop'))) {
-      const numScoops = item.serving.toFixed(1);
+      const numScoops = serving.toFixed(1);
       const displayScoops = numScoops.endsWith('.0') ? numScoops.slice(0, -2) : numScoops;
       return displayScoops === '1' ? '1 scoop' : `${displayScoops} scoops`;
     }
 
     if (foodName.includes('bar')) {
-      const numBars = item.serving.toFixed(1);
+      const numBars = serving.toFixed(1);
       const displayBars = numBars.endsWith('.0') ? numBars.slice(0, -2) : numBars;
       return displayBars === '1' ? '1 bar' : `${displayBars} bars`;
     }
 
     // Rice, oats, pasta - show in cups
     if (foodName.includes('rice') || foodName.includes('oats') || foodName.includes('pasta') || foodName.includes('quinoa')) {
-      const totalCups = (conversions.cups * item.serving).toFixed(1);
+      const totalCups = (conversions.cups * serving).toFixed(1);
       const displayCups = totalCups.endsWith('.0') ? totalCups.slice(0, -2) : totalCups;
       return displayCups === '1' ? '1 cup' : `${displayCups} cups`;
     }
 
     // Bread - show as slices
     if (foodName.includes('bread')) {
-      const numSlices = Math.round(item.serving);
+      const numSlices = Math.round(serving);
       return numSlices === 1 ? '1 slice' : `${numSlices} slices`;
     }
 
     // Fruits - show as pieces for whole fruits, cups for others
     if (item.category === 'fruits') {
-      if (foodName.includes('apple') || foodName.includes('banana') || foodName.includes('orange') || 
-          foodName.includes('kiwi') || foodName.includes('lemon') || foodName.includes('lime')) {
-        const numPieces = item.serving.toFixed(1);
+      if (foodName.includes('apple') || foodName.includes('banana') || foodName.includes('orange') ||
+        foodName.includes('kiwi') || foodName.includes('lemon') || foodName.includes('lime')) {
+        const numPieces = serving.toFixed(1);
         const displayPieces = numPieces.endsWith('.0') ? numPieces.slice(0, -2) : numPieces;
         return displayPieces === '1' ? `1 ${foodName}` : `${displayPieces} ${foodName}s`;
       } else {
         // Berries, grapes, etc. - show in cups
-        const totalCups = (conversions.cups * item.serving).toFixed(1);
+        const totalCups = (conversions.cups * serving).toFixed(1);
         const displayCups = totalCups.endsWith('.0') ? totalCups.slice(0, -2) : totalCups;
         return displayCups === '1' ? '1 cup' : `${displayCups} cups`;
       }
@@ -404,12 +445,12 @@ const PrintableContent = ({
     if (item.category === 'fat') {
       if (foodName.includes('oil') || foodName.includes('butter')) {
         // Small amounts in tablespoons (convert from ounces: 1 oz = 2 tbsp)
-        const totalTbsp = (conversions.ounces * item.serving * 2).toFixed(1);
+        const totalTbsp = (conversions.ounces * serving * 2).toFixed(1);
         const displayTbsp = totalTbsp.endsWith('.0') ? totalTbsp.slice(0, -2) : totalTbsp;
         return displayTbsp === '1' ? '1 tbsp' : `${displayTbsp} tbsp`;
       } else {
         // Nuts and seeds in ounces
-        const totalOunces = (conversions.ounces * item.serving).toFixed(1);
+        const totalOunces = (conversions.ounces * serving).toFixed(1);
         const displayOunces = totalOunces.endsWith('.0') ? totalOunces.slice(0, -2) : totalOunces;
         return `${displayOunces} oz`;
       }
@@ -417,13 +458,13 @@ const PrintableContent = ({
 
     // Default fallback - use original display or best available unit
     if (conversions.ounces && typeof conversions.ounces === 'number') {
-      const totalOunces = (conversions.ounces * item.serving).toFixed(1);
+      const totalOunces = (conversions.ounces * serving).toFixed(1);
       const displayOunces = totalOunces.endsWith('.0') ? totalOunces.slice(0, -2) : totalOunces;
       return `${displayOunces} oz`;
     }
 
     // Final fallback to original
-    return `${item.displayServing || '1'} ${item.displayUnit || 'servings'}`;
+    return `${item.displayServing || serving || '1'} ${item.displayUnit || 'servings'}`;
   };
 
   return (
@@ -454,9 +495,9 @@ const PrintableContent = ({
           {Object.entries(allMeals).map(([mealType, meal]) => {
             // Only show meals that have food items
             const validItems = meal.items ? meal.items.filter(item => item.food && item.food.trim() !== '') : [];
-            
+
             if (validItems.length === 0) return null;
-            
+
             return (
               <React.Fragment key={mealType}>
                 <tr className="meal-header">
@@ -482,7 +523,7 @@ const PrintableContent = ({
         <h3 style={{ fontSize: '16px', margin: '0 0 10px 0', borderBottom: '1px solid #333', paddingBottom: '5px' }}>
           📊 Daily Summary
         </h3>
-        
+
         <table className="print-table" style={{ width: '50%' }}>
           <tbody>
             <tr>
