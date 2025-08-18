@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { FoodDatabase, getFoodsInCategory, getServingInfo } from './FoodDatabase.js';
+import { FoodDatabase, getFoodsInCategory, getServingInfo, servingSizeConversions } from './FoodDatabase.js';
 import { USDAMealCreator } from './USDAMealCreator.jsx';
 import MealSwipeGame from './MealSwipeGame.jsx';
 import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
@@ -16,6 +16,201 @@ import {
   DailyPieChartView,
   BarChartView
 } from './WelcomeScreen.jsx';
+
+// Serving Picker Modal Component
+function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, category, foodName, onSelectServing, onClose }) {
+  const [selectedAmount, setSelectedAmount] = useState(1);
+  const [selectedFraction, setSelectedFraction] = useState(0);
+  const [selectedUnit, setSelectedUnit] = useState('servings');
+
+  const servingInfo = getServingInfo(category, foodName);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Parse current serving to set initial values
+      if (currentServing) {
+        const wholeNumber = Math.floor(currentServing);
+        const fraction = currentServing - wholeNumber;
+
+        setSelectedAmount(wholeNumber || 1);
+
+        // Set fraction based on decimal
+        if (Math.abs(fraction - 0.25) < 0.01) setSelectedFraction(0.25);
+        else if (Math.abs(fraction - 0.5) < 0.01) setSelectedFraction(0.5);
+        else if (Math.abs(fraction - 0.75) < 0.01) setSelectedFraction(0.75);
+        else setSelectedFraction(0);
+      }
+      setSelectedUnit(currentUnit || 'servings');
+    }
+  }, [isOpen, currentServing, currentUnit]);
+
+  const handleConfirm = () => {
+    const totalAmount = selectedAmount + selectedFraction;
+    let finalServings = totalAmount;
+
+    // Convert to servings if different unit selected
+    if (selectedUnit === 'ounces' && servingInfo.ounces) {
+      finalServings = totalAmount / servingInfo.ounces;
+    } else if (selectedUnit === 'grams' && servingInfo.grams) {
+      finalServings = totalAmount / servingInfo.grams;
+    }
+
+    onSelectServing(finalServings, selectedUnit);
+    onClose();
+  };
+
+  // Calculate preview nutrition based on selection
+  const getPreviewNutrition = () => {
+    const totalAmount = selectedAmount + selectedFraction;
+    let servingMultiplier = totalAmount;
+
+    if (selectedUnit === 'ounces' && servingInfo.ounces) {
+      servingMultiplier = totalAmount / servingInfo.ounces;
+    } else if (selectedUnit === 'grams' && servingInfo.grams) {
+      servingMultiplier = totalAmount / servingInfo.grams;
+    }
+
+    return {
+      calories: Math.round(foodData.calories * servingMultiplier),
+      protein: Math.round(foodData.protein * servingMultiplier * 10) / 10,
+      carbs: Math.round(foodData.carbs * servingMultiplier * 10) / 10,
+      fat: Math.round(foodData.fat * servingMultiplier * 10) / 10
+    };
+  };
+
+  if (!isOpen) return null;
+
+  const amounts = Array.from({ length: 12 }, (_, i) => i + 1);
+  const fractions = [
+    { display: '0', value: 0 },
+    { display: '1/4', value: 0.25 },
+    { display: '1/2', value: 0.5 },
+    { display: '3/4', value: 0.75 }
+  ];
+  const units = ['servings', 'ounces', 'grams'];
+
+  const previewNutrition = getPreviewNutrition();
+  const totalAmount = selectedAmount + selectedFraction;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl w-full max-w-lg">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">Select Amount</h3>
+            <p className="text-sm text-gray-600">{foodName}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-3 gap-6 mb-6">
+            {/* Whole Numbers Column */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Amount</h4>
+              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                {amounts.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setSelectedAmount(amount)}
+                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedAmount === amount ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Fractions Column */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">+ Fraction</h4>
+              <div className="space-y-3">
+                {fractions.map((fraction) => (
+                  <button
+                    key={fraction.value}
+                    onClick={() => setSelectedFraction(fraction.value)}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedFraction === fraction.value ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
+                  >
+                    {fraction.display}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Units Column */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Unit</h4>
+              <div className="space-y-3">
+                {units.map((unit) => (
+                  <button
+                    key={unit}
+                    onClick={() => setSelectedUnit(unit)}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-sm ${selectedUnit === unit ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
+                  >
+                    {unit}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Selection Preview */}
+          <div className="text-center mb-4">
+            <div className="text-2xl font-bold text-gray-800 mb-2">
+              {totalAmount} {selectedUnit}
+            </div>
+            <div className="text-sm text-gray-600 mb-3">
+              {selectedUnit === 'servings' && servingInfo.palm && (
+                <div>Reference: {servingInfo.palm}</div>
+              )}
+              {selectedUnit === 'ounces' && (
+                <div>≈ {Math.round((totalAmount / servingInfo.ounces) * 10) / 10} servings</div>
+              )}
+              {selectedUnit === 'grams' && (
+                <div>≈ {Math.round((totalAmount / servingInfo.grams) * 10) / 10} servings</div>
+              )}
+            </div>
+
+            {/* Nutrition Preview */}
+            <div className="bg-gray-50 rounded-xl p-3">
+              <div className="text-sm font-medium text-gray-700 mb-2">Nutrition Preview:</div>
+              <div className="grid grid-cols-4 gap-3 text-xs">
+                <div className="text-center">
+                  <div className="font-bold text-red-600">{previewNutrition.calories}</div>
+                  <div className="text-gray-500">cal</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-blue-600">{previewNutrition.protein}g</div>
+                  <div className="text-gray-500">protein</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-green-600">{previewNutrition.carbs}g</div>
+                  <div className="text-gray-500">carbs</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-yellow-600">{previewNutrition.fat}g</div>
+                  <div className="text-gray-500">fat</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleConfirm} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
+              Add {totalAmount} {selectedUnit}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Time Picker Modal Component
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
@@ -271,6 +466,8 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onO
 function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
   const [selectedFood, setSelectedFood] = useState('');
   const [servings, setServings] = useState(1);
+  const [servingUnit, setServingUnit] = useState('servings');
+  const [showServingPicker, setShowServingPicker] = useState(false);
 
   const foodCategoryMapping = {
     'Protein': 'protein',
@@ -292,6 +489,14 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
       onClose();
     }
   };
+
+  const handleServingSelection = (newServings, unit) => {
+    setServings(newServings);
+    setServingUnit(unit);
+    setShowServingPicker(false);
+  };
+
+  const selectedFoodData = selectedFood ? FoodDatabase[dbCategory]?.[selectedFood] : null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -329,18 +534,43 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
         {selectedFood && (
           <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
             <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-3 font-medium">Reference: {getServingInfo(dbCategory, selectedFood).palm}</div>
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-medium text-gray-700">Servings:</label>
-                <input
-                  type="number"
-                  value={servings}
-                  onChange={(e) => setServings(Math.max(0.1, parseFloat(e.target.value) || 1))}
-                  step="0.1"
-                  min="0.1"
-                  className="w-24 p-3 border border-gray-300 rounded-lg text-center text-lg"
-                />
+              <div className="text-sm text-gray-600 mb-3 font-medium">
+                Reference: {getServingInfo(dbCategory, selectedFood).palm}
               </div>
+              <div className="flex items-center gap-4 mb-4">
+                <label className="text-sm font-medium text-gray-700">Amount:</label>
+                <button
+                  onClick={() => setShowServingPicker(true)}
+                  className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  {servings} {servingUnit}
+                </button>
+              </div>
+
+              {/* Nutrition Preview */}
+              {selectedFoodData && (
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs font-medium text-gray-700 mb-2">Nutrition Preview:</div>
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="font-bold text-red-600">{Math.round(selectedFoodData.calories * servings)}</div>
+                      <div className="text-gray-500">cal</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-blue-600">{Math.round(selectedFoodData.protein * servings * 10) / 10}g</div>
+                      <div className="text-gray-500">protein</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-green-600">{Math.round(selectedFoodData.carbs * servings * 10) / 10}g</div>
+                      <div className="text-gray-500">carbs</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-yellow-600">{Math.round(selectedFoodData.fat * servings * 10) / 10}g</div>
+                      <div className="text-gray-500">fat</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <button
               onClick={handleAddFood}
@@ -351,6 +581,18 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
           </div>
         )}
       </div>
+
+      {/* Serving Picker Modal */}
+      <ServingPickerModal
+        isOpen={showServingPicker}
+        currentServing={servings}
+        currentUnit={servingUnit}
+        foodData={selectedFoodData}
+        category={dbCategory}
+        foodName={selectedFood}
+        onSelectServing={handleServingSelection}
+        onClose={() => setShowServingPicker(false)}
+      />
     </div>
   );
 }
