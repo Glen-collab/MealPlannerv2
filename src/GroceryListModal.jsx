@@ -191,8 +191,9 @@ const GroceryListModal = ({
   const groceryList = extractGroceryList();
 
   const handlePrint = () => {
-    // Generate simple HTML for grocery list printing
-    const groceryList = extractGroceryList();
+    // Count total items to determine layout strategy
+    const totalItems = Object.values(groceryList).reduce((total, map) => total + map.size, 0);
+    const categoriesWithItems = Object.values(groceryList).filter(map => map.size > 0).length;
 
     const formatDate = () => {
       const today = new Date();
@@ -210,6 +211,17 @@ const GroceryListModal = ({
       condiments: '🧂 Condiments',
       snacks: '🍿 Snacks'
     };
+
+    // Determine layout strategy based on content
+    const getLayoutStrategy = () => {
+      if (totalItems <= 15) return 'normal';
+      if (totalItems <= 30) return 'compact';
+      if (totalItems <= 50) return 'dense';
+      return 'ultra-compact';
+    };
+
+    const layoutStrategy = getLayoutStrategy();
+    const useColumns = totalItems > 20 && categoriesWithItems >= 4;
 
     let htmlContent = `
       <!DOCTYPE html>
@@ -246,6 +258,11 @@ const GroceryListModal = ({
               color: #666;
             }
             
+            /* Layout containers */
+            .content-container {
+              ${useColumns ? 'column-count: 2; column-gap: 20px; column-fill: balance;' : ''}
+            }
+            
             /* Category headers */
             h3 { 
               background-color: #f0f0f0; 
@@ -254,6 +271,12 @@ const GroceryListModal = ({
               margin: 12px 0 6px 0; 
               font-size: 13px;
               font-weight: bold;
+              ${useColumns ? 'break-inside: avoid; page-break-inside: avoid;' : ''}
+            }
+            
+            /* Category sections */
+            .category-section {
+              ${useColumns ? 'break-inside: avoid; page-break-inside: avoid; margin-bottom: 15px;' : ''}
             }
             
             /* Grocery items */
@@ -281,54 +304,118 @@ const GroceryListModal = ({
               padding-top: 8px; 
               font-size: 9px;
               color: #666;
+              ${useColumns ? 'column-span: all;' : ''}
             }
             
-            /* Simple print styles */
+            /* ADAPTIVE SCALING STYLES */
+            .normal {
+              /* Default sizes for <= 15 items */
+            }
+            
+            .compact {
+              font-size: 11px;
+            }
+            .compact h1 { font-size: 16px; }
+            .compact h3 { font-size: 12px; padding: 4px 6px; margin: 10px 0 5px 0; }
+            .compact .item { font-size: 10px; margin: 2px 0; }
+            .compact .date-info { font-size: 10px; margin-bottom: 15px; }
+            .compact .footer { font-size: 8px; margin-top: 15px; }
+            
+            .dense {
+              font-size: 10px;
+            }
+            .dense h1 { font-size: 15px; margin-bottom: 10px; }
+            .dense h3 { font-size: 11px; padding: 3px 5px; margin: 8px 0 4px 0; }
+            .dense .item { font-size: 9px; margin: 1px 0; padding: 1px 0 1px 15px; }
+            .dense .date-info { font-size: 9px; margin-bottom: 12px; }
+            .dense .footer { font-size: 7px; margin-top: 12px; }
+            .dense .checkbox { width: 8px; height: 8px; margin-right: 4px; }
+            
+            .ultra-compact {
+              font-size: 9px;
+            }
+            .ultra-compact h1 { font-size: 13px; margin-bottom: 8px; }
+            .ultra-compact h3 { font-size: 10px; padding: 2px 4px; margin: 6px 0 3px 0; }
+            .ultra-compact .item { font-size: 8px; margin: 0; padding: 0 0 0 12px; }
+            .ultra-compact .date-info { font-size: 8px; margin-bottom: 10px; }
+            .ultra-compact .footer { font-size: 7px; margin-top: 10px; }
+            .ultra-compact .checkbox { width: 7px; height: 7px; margin-right: 3px; }
+            
+            /* Print styles with single-page guarantee */
             @media print {
               @page {
-                margin: 0.5in;
+                margin: 0.4in;
                 size: letter;
               }
               
               body { 
-                font-size: 11px;
                 margin: 0;
                 padding: 0;
               }
               
-              h1 { font-size: 16px; }
-              h3 { font-size: 12px; padding: 4px 6px; }
-              .item { font-size: 10px; margin: 2px 0; }
-              .footer { font-size: 8px; margin-top: 15px; }
-              .date-info { font-size: 10px; margin-bottom: 15px; }
+              /* Force single page */
+              * {
+                page-break-before: avoid !important;
+                page-break-after: avoid !important;
+              }
+              
+              .category-section {
+                page-break-inside: avoid !important;
+              }
+              
+              /* If still too big, final scale down */
+              @media (min-height: 10.5in) {
+                body { 
+                  transform: scale(0.95);
+                  transform-origin: top left;
+                  width: 105.26%;
+                }
+              }
+              
+              /* Ultra emergency scaling */
+              @media (min-height: 10in) {
+                body { 
+                  transform: scale(0.9);
+                  transform-origin: top left;
+                  width: 111.11%;
+                }
+              }
             }
           </style>
         </head>
-        <body>
+        <body class="${layoutStrategy}">
           <h1>🛒 Weekly Grocery Shopping List</h1>
           <div class="date-info">Shopping Period: ${formatDate()}</div>
+          
+          <div class="content-container">
     `;
 
     // Add food categories that have items
     Object.entries(categoryLabels).forEach(([category, label]) => {
       const items = groceryList[category];
       if (items && items.size > 0) {
-        htmlContent += `<h3>${label}</h3>`;
+        htmlContent += `
+            <div class="category-section">
+              <h3>${label}</h3>`;
+
         Array.from(items.entries()).forEach(([food, quantity]) => {
           htmlContent += `
-            <div class="item">
-              <span class="checkbox"></span>
-              ${getGroceryQuantity(food, category, quantity)} • ${food}
-            </div>
-          `;
+              <div class="item">
+                <span class="checkbox"></span>
+                ${getGroceryQuantity(food, category, quantity)} • ${food}
+              </div>`;
         });
+
+        htmlContent += `</div>`;
       }
     });
 
     htmlContent += `
+          </div>
+          
           <div class="footer">
             <p>✓ Check off items as you shop • Generated from your nutrition plan</p>
-            <p>Total unique items: ${Object.values(groceryList).reduce((total, map) => total + map.size, 0)}</p>
+            <p>Total unique items: ${totalItems} • Strategy: ${layoutStrategy}${useColumns ? ' + 2-column' : ''}</p>
           </div>
           
           <script>
@@ -424,6 +511,10 @@ const GroceryListModal = ({
                   <div className="text-center mb-6">
                     <h3 className="text-xl font-bold text-gray-800 mb-2">📋 7-Day Grocery Shopping List</h3>
                     <p className="text-gray-600">Based on your current meal plan • Quantities calculated for one week</p>
+                    <p className="text-gray-500 text-sm mt-2">
+                      {Object.values(groceryList).reduce((total, map) => total + map.size, 0)} items •
+                      Auto-scales to fit one page perfectly
+                    </p>
                   </div>
 
                   <GroceryListContent
