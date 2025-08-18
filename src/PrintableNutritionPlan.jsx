@@ -35,15 +35,13 @@ const PrintableNutritionPlan = ({
           display: block !important;
         }
         
-        /* Main printable container - MOBILE PRINT FIX */
+        /* Main printable container - TRUE MOBILE CENTER FIX */
         .printable-content {
           position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
+          left: 50% !important;
+          top: 50% !important;
+          width: 90% !important;
+          height: 90% !important;
           background: white !important;
           font-family: Arial, sans-serif !important;
           color: black !important;
@@ -54,55 +52,45 @@ const PrintableNutritionPlan = ({
           padding: 15px !important;
           box-sizing: border-box !important;
           z-index: 999999 !important;
-          transform: none !important;
+          transform: translate(-50%, -50%) !important;
         }
         
-        /* AGGRESSIVE mobile print fixes */
+        /* MOBILE CENTER FIX - Force true center */
         @media (max-width: 768px) {
-          /* Force everything to be visible and reset */
-          * {
-            position: static !important;
-            transform: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          
           .printable-content {
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            width: 95% !important;
+            height: 95% !important;
+            max-width: 95vw !important;
+            max-height: 95vh !important;
             font-size: 10px !important;
             padding: 8px !important;
             margin: 0 !important;
-            transform: translate3d(0,0,0) !important;
+            transform: translate(-50%, -50%) scale(0.9) !important;
+            transform-origin: center center !important;
             overflow: hidden !important;
+            border: 1px solid #000 !important;
           }
           
-          /* Force full viewport on mobile */
+          /* Ensure parent containers don't interfere */
           html, body {
             width: 100vw !important;
             height: 100vh !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
+            position: relative !important;
+          }
+          
+          /* Reset any other positioning */
+          body * {
             position: static !important;
           }
           
-          /* Ensure print content fills screen */
-          .print-header,
-          .print-table,
-          .print-summary,
-          .print-notes,
-          .print-footer {
-            position: static !important;
-            transform: none !important;
-            margin: 2px 0 !important;
+          .printable-content * {
+            position: relative !important;
           }
         }
         
@@ -279,36 +267,45 @@ const PrintableNutritionPlan = ({
           padding: 0 !important;
         }
         
-        /* FINAL mobile print override */
+        /* FINAL mobile print override - FORCE SINGLE PAGE */
         @media print and (max-width: 768px) {
-          /* Reset everything for mobile print */
-          * {
-            box-sizing: border-box !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
-          /* Ensure printable content covers entire viewport */
+          /* Scale everything down to fit */
           .printable-content {
             position: absolute !important;
-            inset: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
+            left: 50% !important;
+            top: 50% !important;
+            width: 90% !important;
+            height: 90% !important;
             padding: 5px !important;
             margin: 0 !important;
-            overflow: visible !important;
-            font-size: 9px !important;
-            line-height: 1.1 !important;
+            overflow: hidden !important;
+            font-size: 8px !important;
+            line-height: 1.0 !important;
             background: white !important;
             color: black !important;
+            transform: translate(-50%, -50%) scale(0.8) !important;
+            transform-origin: center center !important;
           }
           
-          /* Prevent page breaks on mobile */
-          .print-header,
-          .print-table,
-          .print-summary,
-          .print-notes,
-          .print-footer {
+          /* Compact all elements for single page */
+          .print-header h1 { font-size: 12px !important; margin-bottom: 3px !important; }
+          .print-header h2 { font-size: 10px !important; margin-bottom: 2px !important; }
+          .print-header p { font-size: 8px !important; margin-bottom: 5px !important; }
+          
+          .print-table { font-size: 7px !important; margin-bottom: 3px !important; }
+          .print-table th, .print-table td { padding: 1px !important; font-size: 7px !important; }
+          .meal-header td { font-size: 8px !important; }
+          
+          .print-summary h3 { font-size: 9px !important; margin: 3px 0 2px 0 !important; }
+          .print-summary table { font-size: 7px !important; }
+          
+          .print-notes h3 { font-size: 8px !important; margin: 3px 0 2px 0 !important; }
+          .print-notes-box { height: 15px !important; padding: 1px !important; font-size: 6px !important; }
+          
+          .print-footer { font-size: 6px !important; margin-top: 5px !important; }
+          
+          /* Prevent page breaks */
+          .print-header, .print-table, .print-summary, .print-notes, .print-footer {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
           }
