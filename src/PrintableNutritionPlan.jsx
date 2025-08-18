@@ -124,8 +124,8 @@ const PrintableNutritionPlan = ({
             body { 
               font-family: 'Arial', sans-serif; 
               margin: 15px; 
-              font-size: 12px; 
-              line-height: 1.3;
+              font-size: 14px; 
+              line-height: 1.4;
               color: #000;
               background: #fff;
             }
@@ -138,16 +138,16 @@ const PrintableNutritionPlan = ({
               margin-bottom: 15px; 
             }
             
-            .header h1 { font-size: 18px; margin-bottom: 5px; }
-            .header h2 { font-size: 16px; margin-bottom: 3px; }
-            .header p { font-size: 12px; color: #666; }
+            .header h1 { font-size: 20px; margin-bottom: 5px; }
+            .header h2 { font-size: 18px; margin-bottom: 3px; }
+            .header p { font-size: 14px; color: #666; }
             
             /* Table styles */
             .meal-table {
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 15px;
-              font-size: 11px;
+              font-size: 13px;
             }
             
             .meal-table th,
@@ -161,13 +161,13 @@ const PrintableNutritionPlan = ({
             .meal-table th {
               background-color: #f0f0f0;
               font-weight: bold;
-              font-size: 10px;
+              font-size: 12px;
             }
             
             .meal-header {
               background-color: #e8e8e8;
               font-weight: bold;
-              font-size: 12px;
+              font-size: 14px;
             }
             
             /* Summary section */
@@ -178,7 +178,7 @@ const PrintableNutritionPlan = ({
             }
             
             .summary h3 {
-              font-size: 14px;
+              font-size: 16px;
               margin-bottom: 8px;
               border-bottom: 1px solid #333;
               padding-bottom: 3px;
@@ -187,7 +187,7 @@ const PrintableNutritionPlan = ({
             .summary-table {
               width: 60%;
               border-collapse: collapse;
-              font-size: 10px;
+              font-size: 12px;
             }
             
             .summary-table td {
@@ -201,7 +201,7 @@ const PrintableNutritionPlan = ({
             }
             
             .notes h3 {
-              font-size: 12px;
+              font-size: 14px;
               margin-bottom: 5px;
               border-bottom: 1px solid #333;
               padding-bottom: 2px;
@@ -211,7 +211,7 @@ const PrintableNutritionPlan = ({
               height: 40px;
               border: 1px solid #ccc;
               padding: 5px;
-              font-size: 9px;
+              font-size: 11px;
               color: #666;
             }
             
@@ -219,7 +219,7 @@ const PrintableNutritionPlan = ({
             .footer {
               margin-top: 20px;
               text-align: center;
-              font-size: 9px;
+              font-size: 11px;
               color: #666;
             }
             
@@ -351,12 +351,51 @@ const PrintableNutritionPlan = ({
           </div>
           
           <script>
-            // Auto-print when page loads
+            // Dynamic scaling - start big and scale down only if needed
             window.onload = function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
-              };
+              // Function to check if content fits on one page
+              function contentFitsOnePage() {
+                const pageHeight = 11 * 96; // 11 inches * 96 DPI
+                const margin = 0.4 * 96 * 2; // top + bottom margins
+                const availableHeight = pageHeight - margin;
+                const contentHeight = document.body.scrollHeight;
+                return contentHeight <= availableHeight;
+              }
+              
+              // Progressive scaling function
+              function scaleToFit() {
+                const compactLevels = ['', 'compact-1', 'compact-2', 'compact-3', 'compact-4'];
+                
+                for (let i = 0; i < compactLevels.length; i++) {
+                  // Remove previous compact class
+                  document.body.className = '';
+                  
+                  // Apply current compact level
+                  if (compactLevels[i]) {
+                    document.body.classList.add(compactLevels[i]);
+                  }
+                  
+                  // Wait a moment for styles to apply
+                  setTimeout(() => {
+                    if (contentFitsOnePage() || i === compactLevels.length - 1) {
+                      // Content fits or we've reached max compression
+                      console.log('Applied scaling level:', compactLevels[i] || 'base (14px)');
+                      
+                      // Now print
+                      setTimeout(() => {
+                        window.print();
+                        window.onafterprint = function() {
+                          window.close();
+                        };
+                      }, 100);
+                      return;
+                    }
+                  }, 50);
+                }
+              }
+              
+              // Start the scaling process
+              scaleToFit();
             };
           </script>
         </body>
