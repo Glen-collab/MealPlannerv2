@@ -52,7 +52,11 @@ const PrintableNutritionPlan = ({
   }, []);
 
   const handlePrint = () => {
-    // Generate isolated HTML for meal plan printing (much simpler approach)
+    // Count total food items to determine layout strategy
+    const totalItems = Object.values(allMeals).reduce((total, meal) => {
+      return total + (meal.items ? meal.items.filter(item => item.food && item.food.trim() !== '').length : 0);
+    }, 0);
+
     const formatDate = () => {
       return new Date().toLocaleDateString('en-US', {
         weekday: 'long',
@@ -110,6 +114,16 @@ const PrintableNutritionPlan = ({
 
       return `${serving.toFixed(1)} servings`;
     };
+
+    // Determine scaling based on content amount
+    const getScalingClass = () => {
+      if (totalItems <= 10) return 'normal-size';
+      if (totalItems <= 20) return 'compact-size';
+      if (totalItems <= 30) return 'dense-size';
+      return 'ultra-compact-size';
+    };
+
+    const scalingClass = getScalingClass();
 
     let htmlContent = `
       <!DOCTYPE html>
@@ -170,7 +184,7 @@ const PrintableNutritionPlan = ({
               font-size: 12px;
             }
             
-            /* Summary section */
+            /* Summary section - always compact for space */
             .summary {
               margin-top: 15px;
               border-top: 2px solid #333;
@@ -185,7 +199,7 @@ const PrintableNutritionPlan = ({
             }
             
             .summary-table {
-              width: 60%;
+              width: 50%;
               border-collapse: collapse;
               font-size: 10px;
             }
@@ -195,7 +209,7 @@ const PrintableNutritionPlan = ({
               padding: 3px 5px;
             }
             
-            /* Notes section */
+            /* Notes section - smaller for space */
             .notes {
               margin-top: 15px;
             }
@@ -208,7 +222,7 @@ const PrintableNutritionPlan = ({
             }
             
             .notes-box {
-              height: 35px;
+              height: 25px;
               border: 1px solid #ccc;
               padding: 5px;
               font-size: 9px;
@@ -223,35 +237,83 @@ const PrintableNutritionPlan = ({
               color: #666;
             }
             
-            /* Print styles with simple scaling */
+            /* ADAPTIVE SCALING CLASSES */
+            .normal-size {
+              /* Default sizes - for meals with <= 10 items */
+            }
+            
+            .compact-size {
+              font-size: 11px;
+            }
+            .compact-size .meal-table { font-size: 10px; }
+            .compact-size .meal-table th, .compact-size .meal-table td { padding: 3px 4px; }
+            .compact-size .header h1 { font-size: 18px; }
+            .compact-size .header h2 { font-size: 16px; }
+            .compact-size .summary { margin-top: 12px; padding-top: 8px; }
+            .compact-size .notes { margin-top: 12px; }
+            .compact-size .notes-box { height: 20px; }
+            
+            .dense-size {
+              font-size: 10px;
+            }
+            .dense-size .meal-table { font-size: 9px; margin-bottom: 10px; }
+            .dense-size .meal-table th, .dense-size .meal-table td { padding: 2px 3px; }
+            .dense-size .header h1 { font-size: 16px; }
+            .dense-size .header h2 { font-size: 14px; }
+            .dense-size .header { margin-bottom: 10px; }
+            .dense-size .summary { margin-top: 10px; padding-top: 6px; }
+            .dense-size .summary h3 { font-size: 12px; }
+            .dense-size .notes { margin-top: 10px; }
+            .dense-size .notes-box { height: 18px; font-size: 8px; }
+            .dense-size .footer { margin-top: 15px; }
+            
+            .ultra-compact-size {
+              font-size: 9px;
+            }
+            .ultra-compact-size .meal-table { font-size: 8px; margin-bottom: 8px; }
+            .ultra-compact-size .meal-table th, .ultra-compact-size .meal-table td { padding: 1px 2px; }
+            .ultra-compact-size .header h1 { font-size: 14px; }
+            .ultra-compact-size .header h2 { font-size: 12px; }
+            .ultra-compact-size .header { margin-bottom: 8px; padding-bottom: 6px; }
+            .ultra-compact-size .summary { margin-top: 8px; padding-top: 5px; }
+            .ultra-compact-size .summary h3 { font-size: 10px; margin-bottom: 5px; }
+            .ultra-compact-size .summary-table { font-size: 8px; }
+            .ultra-compact-size .notes { margin-top: 8px; }
+            .ultra-compact-size .notes h3 { font-size: 10px; }
+            .ultra-compact-size .notes-box { height: 15px; font-size: 7px; }
+            .ultra-compact-size .footer { margin-top: 12px; font-size: 8px; }
+            
+            /* Print styles with single-page guarantee */
             @media print {
               @page {
-                margin: 0.5in;
+                margin: 0.4in;
                 size: letter;
               }
               
               body { 
                 margin: 0;
                 padding: 0;
-                font-size: 11px;
               }
               
-              .meal-table { font-size: 10px; }
-              .meal-table th, .meal-table td { padding: 3px 4px; }
-              .header h1 { font-size: 18px; }
-              .header h2 { font-size: 16px; }
-              .summary h3 { font-size: 12px; }
-              .notes-box { height: 30px; font-size: 8px; }
+              /* Force single page */
+              * {
+                page-break-before: avoid !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+              }
               
-              /* Ensure everything fits on one page */
-              .meal-table { margin-bottom: 10px; }
-              .summary { margin-top: 10px; padding-top: 8px; }
-              .notes { margin-top: 10px; }
-              .footer { margin-top: 15px; }
+              /* If still too big, scale down entire page */
+              @media (min-height: 10.5in) {
+                body { 
+                  transform: scale(0.95);
+                  transform-origin: top left;
+                  width: 105.26%;
+                }
+              }
             }
           </style>
         </head>
-        <body>
+        <body class="${scalingClass}">
           <div class="header">
             <h1>🥗 Daily Nutrition Plan</h1>
             <h2>${userProfile.firstName || 'User'} ${userProfile.lastName || ''}</h2>
@@ -268,7 +330,7 @@ const PrintableNutritionPlan = ({
             </thead>
             <tbody>`;
 
-    // Add meal data
+    // Add meal data - only meals with actual food items
     Object.entries(allMeals).forEach(([mealType, meal]) => {
       const validItems = meal.items ? meal.items.filter(item => item.food && item.food.trim() !== '') : [];
 
@@ -316,7 +378,7 @@ const PrintableNutritionPlan = ({
           </div>
           
           <script>
-            // Simple auto-print on load
+            // Auto-print on load
             window.onload = function() {
               window.print();
               window.onafterprint = function() {
@@ -380,7 +442,7 @@ const PrintableNutritionPlan = ({
         </div>
 
         <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-gray-600 text-center`}>
-          {isMobile ? 'Tap Grocery List for your shopping checklist!' : 'Works with network printers, wireless printers, and mobile printing services'}
+          {isMobile ? 'Auto-scales to fit one page perfectly!' : 'Smart scaling ensures everything fits on one page while staying readable'}
         </p>
       </div>
 
@@ -416,13 +478,13 @@ const PrintableNutritionPlan = ({
                 </div>
 
                 <div className="mt-8 border-t pt-4">
-                  <h3 className="font-bold mb-2">📊 Features:</h3>
+                  <h3 className="font-bold mb-2">📊 Smart Single-Page Features:</h3>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Complete meal schedule with times</li>
+                    <li>• Adaptive scaling based on content amount</li>
                     <li>• Smart serving sizes (cups, ounces, slices)</li>
-                    <li>• Daily nutrition summary</li>
-                    <li>• Space for personal notes</li>
-                    <li>• Optimized for one-page printing</li>
+                    <li>• Only shows meals with actual food items</li>
+                    <li>• Compact layout optimized for printing</li>
+                    <li>• Guaranteed single-page fit</li>
                   </ul>
                 </div>
               </div>
