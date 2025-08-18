@@ -224,104 +224,145 @@ const GroceryListModal = ({
             body { 
               font-family: 'Arial', sans-serif; 
               margin: 15px; 
-              font-size: 10px; 
-              line-height: 1.2;
+              font-size: 12px; 
+              line-height: 1.3;
               color: #000;
               background: #fff;
             }
             
-            /* Header styles - More compact */
+            /* Header styles */
             h1 { 
               text-align: center; 
-              border-bottom: 1px solid #000; 
-              padding-bottom: 5px; 
-              margin-bottom: 10px; 
-              font-size: 16px;
+              border-bottom: 2px solid #000; 
+              padding-bottom: 8px; 
+              margin-bottom: 15px; 
+              font-size: 18px;
             }
             
             .date-info {
               text-align: center; 
-              margin-bottom: 15px; 
-              font-size: 9px;
+              margin-bottom: 20px; 
+              font-size: 11px;
               color: #666;
             }
             
-            /* Category headers - Smaller */
+            /* Category headers */
             h3 { 
-              background-color: #f5f5f5; 
-              padding: 4px 6px; 
+              background-color: #f0f0f0; 
+              padding: 6px 8px; 
               border: 1px solid #333; 
-              margin: 8px 0 4px 0; 
-              font-size: 11px;
+              margin: 12px 0 6px 0; 
+              font-size: 13px;
               font-weight: bold;
             }
             
-            /* Grocery items - Very compact */
+            /* Grocery items */
             .item { 
-              margin: 2px 0; 
-              padding: 1px 0 1px 15px; 
-              font-size: 9px;
-              line-height: 1.1;
+              margin: 3px 0; 
+              padding: 2px 0 2px 18px; 
+              font-size: 11px;
+              line-height: 1.2;
             }
             
             .checkbox {
               display: inline-block;
-              width: 8px;
-              height: 8px;
+              width: 10px;
+              height: 10px;
               border: 1px solid #333;
-              margin-right: 5px;
+              margin-right: 6px;
               vertical-align: middle;
             }
             
-            /* Footer - Smaller */
+            /* Footer */
             .footer { 
-              margin-top: 15px; 
+              margin-top: 20px; 
               text-align: center; 
               border-top: 1px solid #333; 
-              padding-top: 5px; 
-              font-size: 8px;
+              padding-top: 8px; 
+              font-size: 9px;
               color: #666;
             }
             
-            /* Print specific styles - FORCE SINGLE PAGE */
+            /* DYNAMIC SCALING - Auto-adjust to fit one page */
             @media print {
               @page {
-                margin: 0.4in !important;
-                size: letter !important;
+                margin: 0.4in;
+                size: letter;
               }
               
+              /* Try base size first (12px) */
               body { 
-                margin: 0 !important; 
-                padding: 0.2in !important;
-                font-size: 9px !important;
-                transform: scale(0.85) !important;
-                transform-origin: top left !important;
+                font-size: 12px;
+                margin: 0;
+                padding: 0.2in;
               }
               
-              h1 { font-size: 14px !important; margin-bottom: 8px !important; }
-              h3 { font-size: 10px !important; margin: 6px 0 3px 0 !important; padding: 3px 4px !important; }
-              .item { 
-                font-size: 8px !important; 
-                margin: 1px 0 !important; 
-                padding: 0 0 0 12px !important;
-                line-height: 1.0 !important;
+              /* If content overflows, scale to 11px */
+              @supports (font-size: 11px) {
+                body { 
+                  font-size: 11px;
+                }
+                h1 { font-size: 16px; }
+                h3 { font-size: 12px; }
+                .item { font-size: 10px; }
               }
-              .footer { font-size: 7px !important; margin-top: 10px !important; }
-              .date-info { font-size: 8px !important; margin-bottom: 10px !important; }
+              
+              /* Further scale to 10px if still too big */
+              @media (min-height: 10in) {
+                body { 
+                  font-size: 10px;
+                  transform: scale(0.95);
+                  transform-origin: top left;
+                }
+                h1 { font-size: 15px; }
+                h3 { font-size: 11px; padding: 4px 6px; }
+                .item { font-size: 9px; margin: 2px 0; }
+              }
+              
+              /* Final compact mode (9px) */
+              @media (min-height: 9in) {
+                body { 
+                  font-size: 9px;
+                  transform: scale(0.9);
+                  transform-origin: top left;
+                }
+                h1 { font-size: 14px; margin-bottom: 8px; }
+                h3 { font-size: 10px; padding: 3px 5px; margin: 8px 0 4px 0; }
+                .item { font-size: 8px; margin: 1px 0; padding: 1px 0 1px 15px; }
+                .footer { font-size: 8px; margin-top: 15px; }
+                .date-info { font-size: 9px; margin-bottom: 15px; }
+              }
+              
+              /* Ultra compact mode for lots of items (8px) */
+              @media (min-height: 8in) {
+                body { 
+                  font-size: 8px;
+                  transform: scale(0.85);
+                  transform-origin: top left;
+                }
+                h1 { font-size: 13px; }
+                h3 { font-size: 9px; padding: 2px 4px; }
+                .item { font-size: 7px; padding: 0 0 0 12px; }
+                .checkbox { width: 8px; height: 8px; margin-right: 4px; }
+              }
+              
+              /* Mobile print adjustments */
+              @media (max-width: 768px) {
+                body { 
+                  font-size: 10px;
+                  transform: scale(0.8);
+                  margin: 0;
+                  padding: 0.1in;
+                }
+                h1 { font-size: 12px; }
+                h3 { font-size: 9px; }
+                .item { font-size: 8px; }
+              }
               
               /* Prevent page breaks */
-              .item { page-break-inside: avoid !important; }
-              h3 { page-break-after: avoid !important; }
-              .footer { page-break-inside: avoid !important; }
-            }
-            
-            /* Mobile print adjustments - Even more compact */
-            @media (max-width: 768px) {
-              body { margin: 8px; font-size: 8px; }
-              h1 { font-size: 12px; }
-              h3 { font-size: 9px; padding: 2px 3px; margin: 4px 0 2px 0; }
-              .item { font-size: 7px; padding: 0 0 0 10px; }
-              .footer { font-size: 6px; }
+              .item { page-break-inside: avoid; }
+              h3 { page-break-after: avoid; }
+              .footer { page-break-inside: avoid; }
             }
           </style>
         </head>
