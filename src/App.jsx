@@ -1966,6 +1966,26 @@ const MealSwipeApp = () => {
                           {isUSDAOwned && (
                             <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">USDA</span>
                           )}
+
+                          {/* Print Options Modal */}
+                          {showPrintModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                              <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+                                <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                                  <h3 className="text-xl font-bold text-gray-800">🖨️ Print Options</h3>
+                                  <button onClick={() => setShowPrintModal(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                                </div>
+                                <div className="p-4">
+                                  <PrintableNutritionPlan
+                                    allMeals={formatMealsForMessaging()}
+                                    userProfile={profile}
+                                    calorieData={calorieData}
+                                    isMobile={true}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Meal Items */}
@@ -2005,14 +2025,15 @@ const MealSwipeApp = () => {
                 </div>
               </div>
 
-              {/* Print Buttons Section */}
-              <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
-                <PrintableNutritionPlan
-                  allMeals={formatMealsForMessaging()}
-                  userProfile={profile}
-                  calorieData={calorieData}
-                  isMobile={true}
-                />
+              {/* Print Options Button */}
+              <div className="bg-white border-t border-gray-200 p-3 flex-shrink-0">
+                <button
+                  onClick={() => setShowPrintModal(true)}
+                  className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="text-lg">🖨️</span>
+                  Print Options
+                </button>
               </div>
 
               {/* Motivational Message */}
