@@ -326,6 +326,17 @@ const GroceryListModal = ({
             <p>✓ Check off items as you shop • Generated from your nutrition plan</p>
             <p>Total unique items: ${Object.values(groceryList).reduce((total, map) => total + map.size, 0)}</p>
           </div>
+          
+          <script>
+            // Auto-print when page loads
+            window.onload = function() {
+              window.print();
+              // Close window after printing (optional)
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
         </body>
       </html>
     `;
@@ -339,18 +350,10 @@ const GroceryListModal = ({
       return;
     }
 
-    // Write content and setup printing
+    // Write content and close document
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-
-    // Wait for content to load then print
-    printWindow.onload = function () {
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-    };
+    printWindow.focus();
   };
 
   const handlePreview = () => {
