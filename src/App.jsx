@@ -883,6 +883,7 @@ const MealSwipeApp = () => {
 
   // Add WeekPlanModal state
   const [isWeekPlanModalOpen, setIsWeekPlanModalOpen] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Analytics modals state
   const [showBurnAndLearn, setShowBurnAndLearn] = useState(false);
