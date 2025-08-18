@@ -191,7 +191,7 @@ const GroceryListModal = ({
   const groceryList = extractGroceryList();
 
   const handlePrint = () => {
-    // Generate completely isolated HTML for grocery list printing
+    // Generate simple HTML for grocery list printing
     const groceryList = extractGroceryList();
 
     const formatDate = () => {
@@ -283,86 +283,24 @@ const GroceryListModal = ({
               color: #666;
             }
             
-            /* DYNAMIC SCALING - Auto-adjust to fit one page */
+            /* Simple print styles */
             @media print {
               @page {
-                margin: 0.4in;
+                margin: 0.5in;
                 size: letter;
               }
               
-              /* Try base size first (12px) */
               body { 
-                font-size: 12px;
+                font-size: 11px;
                 margin: 0;
-                padding: 0.2in;
+                padding: 0;
               }
               
-              /* If content overflows, scale to 11px */
-              @supports (font-size: 11px) {
-                body { 
-                  font-size: 11px;
-                }
-                h1 { font-size: 16px; }
-                h3 { font-size: 12px; }
-                .item { font-size: 10px; }
-              }
-              
-              /* Further scale to 10px if still too big */
-              @media (min-height: 10in) {
-                body { 
-                  font-size: 10px;
-                  transform: scale(0.95);
-                  transform-origin: top left;
-                }
-                h1 { font-size: 15px; }
-                h3 { font-size: 11px; padding: 4px 6px; }
-                .item { font-size: 9px; margin: 2px 0; }
-              }
-              
-              /* Final compact mode (9px) */
-              @media (min-height: 9in) {
-                body { 
-                  font-size: 9px;
-                  transform: scale(0.9);
-                  transform-origin: top left;
-                }
-                h1 { font-size: 14px; margin-bottom: 8px; }
-                h3 { font-size: 10px; padding: 3px 5px; margin: 8px 0 4px 0; }
-                .item { font-size: 8px; margin: 1px 0; padding: 1px 0 1px 15px; }
-                .footer { font-size: 8px; margin-top: 15px; }
-                .date-info { font-size: 9px; margin-bottom: 15px; }
-              }
-              
-              /* Ultra compact mode for lots of items (8px) */
-              @media (min-height: 8in) {
-                body { 
-                  font-size: 8px;
-                  transform: scale(0.85);
-                  transform-origin: top left;
-                }
-                h1 { font-size: 13px; }
-                h3 { font-size: 9px; padding: 2px 4px; }
-                .item { font-size: 7px; padding: 0 0 0 12px; }
-                .checkbox { width: 8px; height: 8px; margin-right: 4px; }
-              }
-              
-              /* Mobile print adjustments */
-              @media (max-width: 768px) {
-                body { 
-                  font-size: 10px;
-                  transform: scale(0.8);
-                  margin: 0;
-                  padding: 0.1in;
-                }
-                h1 { font-size: 12px; }
-                h3 { font-size: 9px; }
-                .item { font-size: 8px; }
-              }
-              
-              /* Prevent page breaks */
-              .item { page-break-inside: avoid; }
-              h3 { page-break-after: avoid; }
-              .footer { page-break-inside: avoid; }
+              h1 { font-size: 16px; }
+              h3 { font-size: 12px; padding: 4px 6px; }
+              .item { font-size: 10px; margin: 2px 0; }
+              .footer { font-size: 8px; margin-top: 15px; }
+              .date-info { font-size: 10px; margin-bottom: 15px; }
             }
           </style>
         </head>
@@ -397,7 +335,6 @@ const GroceryListModal = ({
             // Auto-print when page loads
             window.onload = function() {
               window.print();
-              // Close window after printing (optional)
               window.onafterprint = function() {
                 window.close();
               };
@@ -407,16 +344,14 @@ const GroceryListModal = ({
       </html>
     `;
 
-    // Create completely new window for printing
+    // Create new window for printing
     const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
 
-    // Ensure window opened successfully
     if (!printWindow) {
       alert('Please allow popups to print the grocery list');
       return;
     }
 
-    // Write content and close document
     printWindow.document.write(htmlContent);
     printWindow.document.close();
     printWindow.focus();
@@ -433,7 +368,7 @@ const GroceryListModal = ({
       <div className={`bg-white rounded-lg w-full ${isMobile ? 'max-w-sm max-h-full' : 'max-w-6xl max-h-[95vh]'} overflow-hidden flex flex-col`} style={{ zIndex: 10000 }}>
 
         {/* Modal Header */}
-        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-green-50 to-blue-50" style={{ printDisplay: 'none' }}>
+        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-green-50 to-blue-50">
           <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-800 flex items-center gap-2`}>
             <ShoppingCart size={24} />
             Weekly Grocery List
@@ -465,7 +400,7 @@ const GroceryListModal = ({
         <div className="flex-1 overflow-y-auto p-4">
           {showPrintPreview ? (
             /* Print Preview */
-            <div className="bg-white border border-gray-300 p-6 max-w-[8.5in] mx-auto min-h-[11in]" style={{ printDisplay: 'none' }}>
+            <div className="bg-white border border-gray-300 p-6 max-w-[8.5in] mx-auto min-h-[11in]">
               <div className="print-preview-content">
                 <GroceryListContent
                   groceryList={groceryList}
@@ -476,19 +411,13 @@ const GroceryListModal = ({
             </div>
           ) : (
             /* Screen View */
-            <div style={{ printDisplay: 'none' }}>
+            <div>
               {/* Check if grocery list is empty */}
               {Object.values(groceryList).every(map => map.size === 0) ? (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">🛒</div>
                   <p className="text-gray-600">No food items found in your meal plan.</p>
                   <p className="text-gray-500 text-sm mt-2">Add some meals to generate your grocery list!</p>
-                  <button
-                    onClick={() => console.log('Current allMeals data:', allMeals)}
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600"
-                  >
-                    🔍 Debug: Check Meal Data
-                  </button>
                 </div>
               ) : (
                 <>
@@ -511,7 +440,7 @@ const GroceryListModal = ({
 
         {/* Print Preview Controls */}
         {showPrintPreview && (
-          <div className="border-t p-4 flex justify-between items-center" style={{ printDisplay: 'none' }}>
+          <div className="border-t p-4 flex justify-between items-center">
             <button
               onClick={() => setShowPrintPreview(false)}
               className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
@@ -558,7 +487,7 @@ const GroceryListContent = ({
   return (
     <div>
       {/* Header */}
-      <div className="text-center mb-6" style={{ printDisplay: 'none' }}>
+      <div className="text-center mb-6">
         <h1 style={{ fontSize: isScreenView ? '24px' : '20px', margin: '0 0 8px 0' }}>
           🛒 Weekly Grocery Shopping List
         </h1>
@@ -567,7 +496,7 @@ const GroceryListContent = ({
         </p>
       </div>
 
-      {/* Food Categories Only */}
+      {/* Food Categories */}
       <div className={isScreenView ? 'space-y-6' : 'space-y-4'}>
         {Object.entries(categoryLabels).map(([category, label]) => {
           const items = groceryList[category];
@@ -594,7 +523,7 @@ const GroceryListContent = ({
       </div>
 
       {/* Footer */}
-      <div style={{ marginTop: isScreenView ? '20px' : '15px', textAlign: 'center', fontSize: isScreenView ? '14px' : '10px', color: '#666', printDisplay: 'none' }}>
+      <div style={{ marginTop: isScreenView ? '20px' : '15px', textAlign: 'center', fontSize: isScreenView ? '14px' : '10px', color: '#666' }}>
         <p style={{ margin: '0' }}>
           ✓ Check off items as you shop • Generated from your nutrition plan
         </p>
