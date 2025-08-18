@@ -35,13 +35,15 @@ const PrintableNutritionPlan = ({
           display: block !important;
         }
         
-        /* Main printable container - FIXED for mobile */
+        /* Main printable container - MOBILE PRINT FIX */
         .printable-content {
-          position: fixed !important;
+          position: absolute !important;
           left: 0 !important;
           top: 0 !important;
-          width: 100vw !important;
-          height: 100vh !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
           background: white !important;
           font-family: Arial, sans-serif !important;
           color: black !important;
@@ -51,31 +53,56 @@ const PrintableNutritionPlan = ({
           margin: 0 !important;
           padding: 15px !important;
           box-sizing: border-box !important;
-          z-index: 9999 !important;
+          z-index: 999999 !important;
+          transform: none !important;
         }
         
-        /* Mobile-specific print fixes */
+        /* AGGRESSIVE mobile print fixes */
         @media (max-width: 768px) {
+          /* Force everything to be visible and reset */
+          * {
+            position: static !important;
+            transform: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
           .printable-content {
             position: fixed !important;
             left: 0 !important;
             top: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            font-size: 11px !important;
-            padding: 10px !important;
-            transform: none !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            font-size: 10px !important;
+            padding: 8px !important;
             margin: 0 !important;
+            transform: translate3d(0,0,0) !important;
+            overflow: hidden !important;
           }
           
-          /* Force full viewport coverage on mobile */
+          /* Force full viewport on mobile */
           html, body {
-            width: 100% !important;
-            height: 100% !important;
+            width: 100vw !important;
+            height: 100vh !important;
             margin: 0 !important;
             padding: 0 !important;
+            overflow: hidden !important;
+            position: static !important;
+          }
+          
+          /* Ensure print content fills screen */
+          .print-header,
+          .print-table,
+          .print-summary,
+          .print-notes,
+          .print-footer {
+            position: static !important;
+            transform: none !important;
+            margin: 2px 0 !important;
           }
         }
         
@@ -94,26 +121,48 @@ const PrintableNutritionPlan = ({
           page-break-inside: avoid !important;
         }
         
-        /* Table styling */
+        /* Table styling - Enhanced for mobile */
         .print-table {
           width: 100% !important;
           border-collapse: collapse !important;
-          margin-bottom: 10px !important;
+          margin-bottom: 8px !important;
           page-break-inside: avoid !important;
           font-size: 10px !important;
           display: table !important;
           visibility: visible !important;
+          table-layout: fixed !important;
         }
         
         .print-table th,
         .print-table td {
           border: 1px solid #333 !important;
-          padding: 3px 4px !important;
+          padding: 2px 3px !important;
           text-align: left !important;
           vertical-align: top !important;
           display: table-cell !important;
           visibility: visible !important;
           word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+          hyphens: auto !important;
+        }
+        
+        /* Mobile table adjustments */
+        @media (max-width: 768px) {
+          .print-table {
+            font-size: 8px !important;
+            margin-bottom: 5px !important;
+          }
+          
+          .print-table th,
+          .print-table td {
+            padding: 1px 2px !important;
+            font-size: 8px !important;
+            line-height: 1.2 !important;
+          }
+          
+          .print-table th {
+            font-size: 7px !important;
+          }
         }
         
         .print-table thead {
@@ -173,16 +222,52 @@ const PrintableNutritionPlan = ({
           padding: 5px !important;
         }
         
-        /* Page settings */
+        /* Page settings - Mobile optimized */
         @page {
           margin: 0.3in !important;
           size: letter !important;
         }
         
-        /* Mobile page settings */
+        /* AGGRESSIVE mobile page settings */
         @media (max-width: 768px) {
           @page {
-            margin: 0.2in !important;
+            margin: 0.1in !important;
+            size: letter portrait !important;
+          }
+          
+          /* Scale down everything for mobile */
+          .print-header h1 {
+            font-size: 16px !important;
+            margin-bottom: 5px !important;
+          }
+          
+          .print-header h2 {
+            font-size: 14px !important;
+            margin-bottom: 3px !important;
+          }
+          
+          .print-header p {
+            font-size: 10px !important;
+          }
+          
+          .print-summary h3 {
+            font-size: 12px !important;
+            margin-bottom: 5px !important;
+          }
+          
+          .print-notes h3 {
+            font-size: 10px !important;
+            margin-bottom: 3px !important;
+          }
+          
+          .print-notes-box {
+            height: 20px !important;
+            padding: 2px !important;
+          }
+          
+          .print-footer {
+            font-size: 6px !important;
+            margin-top: 8px !important;
           }
         }
         
@@ -194,11 +279,39 @@ const PrintableNutritionPlan = ({
           padding: 0 !important;
         }
         
-        /* Prevent page breaks */
-        * {
-          page-break-before: avoid !important;
-          page-break-after: avoid !important;
-          page-break-inside: avoid !important;
+        /* FINAL mobile print override */
+        @media print and (max-width: 768px) {
+          /* Reset everything for mobile print */
+          * {
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          /* Ensure printable content covers entire viewport */
+          .printable-content {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            padding: 5px !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            font-size: 9px !important;
+            line-height: 1.1 !important;
+            background: white !important;
+            color: black !important;
+          }
+          
+          /* Prevent page breaks on mobile */
+          .print-header,
+          .print-table,
+          .print-summary,
+          .print-notes,
+          .print-footer {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
         }
       }
     `;
