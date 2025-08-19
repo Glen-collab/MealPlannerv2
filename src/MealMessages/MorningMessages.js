@@ -7,14 +7,14 @@ export const MorningMessages = {
   // ========================
   getBreakfastMessage: (pieData, selectedTime, foodItems, totals, userProfile) => {
     if (totals.calories < 50) return null;
-    
+
     const eggItems = ['eggs (whole)', 'egg whites'];
-    const ridiculousItem = foodItems.find(item => 
-      item.food && 
-      item.serving > 8 && 
+    const ridiculousItem = foodItems.find(item =>
+      item.food &&
+      item.serving > 8 &&
       !eggItems.some(eggItem => item.food.toLowerCase().includes(eggItem.toLowerCase()))
     );
-    
+
     // Ridiculous serving check - TOP PRIORITY
     if (ridiculousItem && userProfile.firstName) {
       return `${userProfile.firstName}, don't be ridiculous with the ${ridiculousItem.food}. Let's focus here! Balance Daniel-son.`;
@@ -23,17 +23,17 @@ export const MorningMessages = {
     const proteinPercent = pieData[0]?.percentage || 0;
     const carbPercent = pieData[1]?.percentage || 0;
     const fatPercent = pieData[2]?.percentage || 0;
-    
+
     // Perfect balance check
-    const isWellBalanced = 
+    const isWellBalanced =
       Math.abs(proteinPercent - 40) <= 5 &&
       Math.abs(carbPercent - 40) <= 5 &&
       Math.abs(fatPercent - 20) <= 5;
-    
+
     if (isWellBalanced) {
       const timeHour = parseInt(selectedTime.split(':')[0]);
       let message = `Excellent! You've nailed the macro balance with ${proteinPercent}% protein, ${carbPercent}% carbs, and ${fatPercent}% fat. This is exactly the kind of balanced nutrition that will keep your energy steady and support your goals throughout the day. `;
-      
+
       if (timeHour < 6) {
         message += "It also looks like you are getting an early start to the morning so make sure you grab your healthy on-the-go snack. You may need two before lunch.";
       } else if (timeHour === 6) {
@@ -43,7 +43,7 @@ export const MorningMessages = {
       } else if (timeHour >= 7) {
         message += "You may be able to make it to lunch but hunger will set in around 10am, so make sure you have your snack ready so you don't over eat at lunch.";
       }
-      
+
       return message;
     }
 
@@ -51,7 +51,7 @@ export const MorningMessages = {
     if (userProfile.firstName) {
       let message = "";
       const timeHour = parseInt(selectedTime.split(':')[0]);
-      
+
       // PART 1: High-Protein Praise Messages (40%+ protein)
       if (proteinPercent >= 40) {
         const highProteinMessages = [
@@ -74,7 +74,7 @@ export const MorningMessages = {
           `${userProfile.firstName}, ${proteinPercent}% protein at breakfast? You're playing in the major leagues now!`,
           `Love this, ${userProfile.firstName}! ${proteinPercent}% protein means you're serious about your goals.`
         ];
-        
+
         message += highProteinMessages[Math.floor(Math.random() * highProteinMessages.length)];
       } else {
         // Standard protein messages for lower protein breakfasts
@@ -85,10 +85,10 @@ export const MorningMessages = {
           `Nice work, ${userProfile.firstName}! You're building healthy habits one meal at a time.`,
           `${userProfile.firstName}, this breakfast puts you on track for a successful day.`
         ];
-        
+
         message += standardMessages[Math.floor(Math.random() * standardMessages.length)];
       }
-      
+
       // PART 2: Time-Based Snack Recommendations
       message += " ";
       if (timeHour <= 6) {
@@ -124,14 +124,14 @@ export const MorningMessages = {
         ];
         message += lateMessages[Math.floor(Math.random() * lateMessages.length)];
       }
-      
+
       // PART 3: NEW - Smart Supplement Calculations for Low Protein (under 25%)
       message += " ";
       if (proteinPercent < 25) {
         // Calculate optimal supplement to reach 40%+ protein
         const currentProteinGrams = totals.protein;
         const currentCalories = totals.calories;
-        
+
         // Try different supplements to find the best match
         const supplements = [
           { name: 'whey protein scoop', protein: 24, calories: 120, type: 'powder' },
@@ -140,15 +140,15 @@ export const MorningMessages = {
           { name: 'Greek yogurt cup', protein: 17, calories: 92, type: 'whole food' },
           { name: 'hard-boiled egg', protein: 6, calories: 70, type: 'whole food' }
         ];
-        
+
         let bestSupplement = null;
         let bestMatch = 0;
-        
+
         for (const supplement of supplements) {
           const newTotalProtein = currentProteinGrams + supplement.protein;
           const newTotalCalories = currentCalories + supplement.calories;
           const newProteinPercent = (newTotalProtein * 4 / newTotalCalories) * 100;
-          
+
           // Find the supplement that gets closest to 40-45% protein range
           if (newProteinPercent >= 35 && newProteinPercent <= 50) {
             const targetScore = Math.abs(newProteinPercent - 42); // Aim for 42%
@@ -158,19 +158,19 @@ export const MorningMessages = {
             }
           }
         }
-        
+
         if (bestSupplement) {
           const newTotalProtein = Math.round(currentProteinGrams + bestSupplement.protein);
           const newTotalCalories = Math.round(currentCalories + bestSupplement.calories);
           const newProteinPercent = Math.round((newTotalProtein * 4 / newTotalCalories) * 100);
-          
+
           const supplementMessages = [
             `This is where I add in ${bestSupplement.name} to bring you from ${proteinPercent}% to ${newProteinPercent}% protein (${newTotalProtein}g total, ${newTotalCalories} calories).`,
             `Perfect opportunity to add ${bestSupplement.name} - that would boost you to ${newProteinPercent}% protein for the meal (${newTotalProtein}g protein, ${newTotalCalories} total calories).`,
             `I'd throw in ${bestSupplement.name} here to hit ${newProteinPercent}% protein instead of ${proteinPercent}% - takes you to ${newTotalProtein}g protein in ${newTotalCalories} calories.`,
             `Time to add ${bestSupplement.name}! That jumps you from ${proteinPercent}% to ${newProteinPercent}% protein (${newTotalProtein}g in ${newTotalCalories} total calories).`
           ];
-          
+
           message += supplementMessages[Math.floor(Math.random() * supplementMessages.length)];
         } else {
           // Fallback if no supplement calculation works
@@ -207,17 +207,17 @@ export const MorningMessages = {
         ];
         message += balancedAdvice[Math.floor(Math.random() * balancedAdvice.length)];
       }
-      
+
       return message;
     }
-    
+
     // Fallback for users without names
     const allFoods = foodItems.filter(item => item.food).map(item => item.food);
     if (allFoods.length > 0) {
       const foodText = allFoods.length === 1 ? allFoods[0] : allFoods.join(', ');
       return `Every breakfast is a step in the right direction! Plan the rest of your day around your ${foodText} to optimize your energy levels and get towards your goal of 40% protein, 40% carbs and 20% fats.`;
     }
-    
+
     return null;
   },
 
@@ -226,7 +226,7 @@ export const MorningMessages = {
   // ========================
   getFirstSnackMessage: (pieData, selectedTime, foodItems, totals, breakfastTime, breakfastTotals, breakfastPieData, userProfile, calorieData, postWorkoutTotals, postWorkoutTime) => {
     if (totals.calories < 25) return null;
-    
+
     if (!userProfile.firstName) {
       // Fallback for users without names
       const allFoods = foodItems.filter(item => item.food).map(item => item.food);
@@ -251,37 +251,37 @@ export const MorningMessages = {
     // Determine if post-workout should be included (only if it happened before this snack)
     const snackMinutes = timeToMinutes(selectedTime);
     const postWorkoutMinutes = timeToMinutes(postWorkoutTime);
-    const shouldIncludePostWorkout = postWorkoutTotals && 
-                                   postWorkoutTotals.calories > 0 && 
-                                   postWorkoutMinutes < snackMinutes;
+    const shouldIncludePostWorkout = postWorkoutTotals &&
+      postWorkoutTotals.calories > 0 &&
+      postWorkoutMinutes < snackMinutes;
 
     // Calculate combined morning totals (breakfast + post-workout if applicable) - WITH SAFE DEFAULTS
     const safeBreakfastTotals = breakfastTotals || { calories: 0, protein: 0, carbs: 0, fat: 0 };
     const safePostWorkoutTotals = postWorkoutTotals || { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    
+
     const morningCombinedCalories = safeBreakfastTotals.calories + (shouldIncludePostWorkout ? safePostWorkoutTotals.calories : 0);
     const morningCombinedProtein = safeBreakfastTotals.protein + (shouldIncludePostWorkout ? safePostWorkoutTotals.protein : 0);
-    
+
     // Calculate totals so far including this snack
     const totalCaloriesSoFar = morningCombinedCalories + totals.calories;
     const totalProteinSoFar = morningCombinedProtein + totals.protein;
-    
+
     // Calculate time gaps - WITH SAFE DEFAULTS
     const breakfastHour = breakfastTime ? parseInt(breakfastTime.split(':')[0]) : 7;
     const snackHour = parseInt(selectedTime.split(':')[0]);
     const hoursFromBreakfast = snackHour - breakfastHour;
-    
+
     // Food quality assessment based on protein ratio - WITH SAFE DEFAULTS
     const breakfastProteinRatio = safeBreakfastTotals.protein / (safeBreakfastTotals.protein + safeBreakfastTotals.carbs + safeBreakfastTotals.fat || 1);
     const foodQuality = breakfastProteinRatio >= 0.4 ? 'high' : breakfastProteinRatio >= 0.25 ? 'medium' : 'low';
-    
+
     // Goal-based protein targets
     const proteinTarget = ['gain-muscle', 'dirty-bulk'].includes(userProfile.goal) ? 50 : 30;
     const targetDailyCalories = calorieData?.targetCalories || 2500;
     const targetCaloriesByNow = Math.round(targetDailyCalories * 0.3); // 30% by first snack
-    
+
     let message = "";
-    
+
     // ============ PART 1: ASSESSMENT/PRAISE WITH MORE VARIETY ============
     if (totalCaloriesSoFar >= targetCaloriesByNow && totalProteinSoFar >= proteinTarget) {
       // Crushing it messages - MORE VARIETY
@@ -296,7 +296,7 @@ export const MorningMessages = {
         `Phenomenal start, ${userProfile.firstName}! ${Math.round(totalCaloriesSoFar)} calories and consistent protein - you're building muscle while others skip meals!`
       ];
       message += crusherMessages[Math.floor(Math.random() * crusherMessages.length)];
-      
+
     } else if (totalProteinSoFar >= proteinTarget) {
       // Good protein, maybe low calories - MORE VARIETY
       const goodProteinMessages = [
@@ -308,11 +308,11 @@ export const MorningMessages = {
         `Protein discipline is solid, ${userProfile.firstName}! ${Math.round(totalProteinSoFar)}g shows you understand muscle building - just add more fuel.`
       ];
       message += goodProteinMessages[Math.floor(Math.random() * goodProteinMessages.length)];
-      
+
     } else {
       // Behind on protein - MORE URGENT VARIETY
       const behindMessages = [
-        `${userProfile.firstName}, only ${Math.round(totalProteinSoFar)}g protein by snack 1 for ${userProfile.goal}? We need to catch up FAST!`,
+        `${userProfile.firstName}, only ${Math.round(totalProteinSoFar)}g protein by snack 1 for ${userProfile.goal} goals? We need to catch up FAST!`,
         `${userProfile.firstName}, ${Math.round(totalProteinSoFar)}g protein isn't cutting it for your goals - bodybuilders need consistent protein every 3-4 hours!`,
         `Time to step it up, ${userProfile.firstName}! ${Math.round(totalProteinSoFar)}g protein by now puts you behind the curve.`,
         `Wake up call, ${userProfile.firstName}! ${Math.round(totalProteinSoFar)}g protein by first snack won't build the physique you want!`,
@@ -329,10 +329,10 @@ export const MorningMessages = {
       const proteinNeeded = proteinTarget - totalProteinSoFar;
       const currentProteinGrams = totalProteinSoFar;
       const currentCalories = totalCaloriesSoFar;
-      
+
       // FOODATABASE-ONLY supplement selection based on goal and protein gap
       let recommendedSupplements = [];
-      
+
       if (userProfile.goal === 'dirty-bulk') {
         recommendedSupplements = [
           { name: 'Peanut Butter (2 tbsp) + Whey Protein', protein: 32, calories: 496, type: 'bulk' }, // PB 16g + Whey 24g
@@ -360,32 +360,32 @@ export const MorningMessages = {
           { name: 'Quest Protein Bar', protein: 20, calories: 190, type: 'lean' }
         ];
       }
-      
+
       // Find best match for protein gap WITH PROTEIN PERCENTAGE CALCULATION
       let bestSupplement = null;
       let bestMatch = Infinity;
-      
+
       for (const supplement of recommendedSupplements) {
         const newTotalProtein = currentProteinGrams + supplement.protein;
         const newTotalCalories = currentCalories + supplement.calories;
         const newProteinPercent = (newTotalProtein * 4 / newTotalCalories) * 100;
-        
+
         // Prioritize getting protein gap filled AND getting to 40-50% protein range
         const proteinGapScore = Math.abs(supplement.protein - proteinNeeded);
         const proteinPercentScore = Math.abs(newProteinPercent - 45); // Target 45%
         const combinedScore = proteinGapScore + (proteinPercentScore * 0.5);
-        
+
         if (combinedScore < bestMatch) {
           bestSupplement = supplement;
           bestMatch = combinedScore;
         }
       }
-      
+
       if (bestSupplement) {
         const newTotalProtein = Math.round(currentProteinGrams + bestSupplement.protein);
         const newTotalCalories = Math.round(currentCalories + bestSupplement.calories);
         const newProteinPercent = Math.round((newTotalProtein * 4 / newTotalCalories) * 100);
-        
+
         // VARIETY OF SUPPLEMENT RECOMMENDATION MESSAGES WITH PROTEIN PERCENTAGE
         const supplementMessages = [
           `Add ${bestSupplement.name} to hit ${newTotalProtein}g protein and ${newProteinPercent}% protein ratio (${newTotalCalories} total calories) - that's ${userProfile.goal} territory!`,
@@ -395,10 +395,10 @@ export const MorningMessages = {
           `Grab ${bestSupplement.name} and jump to ${newTotalProtein}g protein (${newProteinPercent}% protein) - that's ${newTotalCalories} total calories of pure muscle fuel!`,
           `Perfect supplement: ${bestSupplement.name} takes you to ${newTotalProtein}g protein at ${newProteinPercent}% ratio for ${userProfile.goal} success!`
         ];
-        
+
         message += supplementMessages[Math.floor(Math.random() * supplementMessages.length)];
       }
-      
+
     } else if (totalCaloriesSoFar < targetCaloriesByNow) {
       // Good protein, need more calories - MORE VARIETY
       const calorieGap = targetCaloriesByNow - totalCaloriesSoFar;
@@ -502,7 +502,7 @@ export const MorningMessages = {
 
     const snackHour = parseInt(selectedTime.split(':')[0]);
     const snackMinute = parseInt(selectedTime.split(':')[1]);
-    
+
     // Helper function to convert time to comparable number
     const timeToMinutes = (timeStr) => {
       if (!timeStr) return 0;
@@ -517,18 +517,18 @@ export const MorningMessages = {
     // Determine if post-workout should be included (only if it happened before this snack)
     const snackMinutes = timeToMinutes(selectedTime);
     const postWorkoutMinutes = timeToMinutes(postWorkoutTime);
-    const shouldIncludePostWorkout = postWorkoutTotals && 
-                                   postWorkoutTotals.calories > 0 && 
-                                   postWorkoutMinutes < snackMinutes;
-    
+    const shouldIncludePostWorkout = postWorkoutTotals &&
+      postWorkoutTotals.calories > 0 &&
+      postWorkoutMinutes < snackMinutes;
+
     // Calculate all totals so far - WITH SAFE DEFAULTS
     const safeBreakfastTotals = breakfastTotals || { calories: 0, protein: 0, carbs: 0, fat: 0 };
     const safeFirstSnackTotals = firstSnackTotals || { calories: 0, protein: 0, carbs: 0, fat: 0 };
     const safePostWorkoutTotals = postWorkoutTotals || { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    
+
     const morningCombinedCalories = safeBreakfastTotals.calories + (shouldIncludePostWorkout ? safePostWorkoutTotals.calories : 0);
     const morningCombinedProtein = safeBreakfastTotals.protein + (shouldIncludePostWorkout ? safePostWorkoutTotals.protein : 0);
-    
+
     const totalCaloriesSoFar = morningCombinedCalories + safeFirstSnackTotals.calories + totals.calories;
     const totalProteinSoFar = morningCombinedProtein + safeFirstSnackTotals.protein + totals.protein;
 
@@ -536,14 +536,14 @@ export const MorningMessages = {
     const proteinTarget = ['gain-muscle', 'dirty-bulk'].includes(userProfile.goal) ? 75 : 50; // Higher by second snack
     const targetDailyCalories = calorieData?.targetCalories || 2500;
     const targetCaloriesByNow = Math.round(targetDailyCalories * 0.45); // 45% by second snack
-    
+
     // Time analysis
     const lunchishTime = snackHour >= 12 || (snackHour === 11 && snackMinute >= 30);
-    
+
     let message = "";
 
     // ============ PART 1: ASSESSMENT/PRAISE WITH MORE VARIETY ============
-    
+
     // Dirty bulk specific celebration - ENHANCED
     if (userProfile.goal === 'dirty-bulk') {
       if (totalCaloriesSoFar >= targetCaloriesByNow) {
@@ -558,9 +558,9 @@ export const MorningMessages = {
         message += bulkCelebrationMessages[Math.floor(Math.random() * bulkCelebrationMessages.length)];
       } else {
         const bulkBehindMessages = [
-          `${userProfile.firstName}, only ${Math.round(totalCaloriesSoFar)} calories for a dirty bulk? Time to get SERIOUS about eating!`,
+          `${userProfile.firstName}, only ${Math.round(totalCaloriesSoFar)} calories for dirty bulk goals? Time to get SERIOUS about eating!`,
           `${userProfile.firstName}, ${Math.round(totalCaloriesSoFar)} calories isn't going to build the mass you want - EAT MORE!`,
-          `Wake up, ${userProfile.firstName}! ${Math.round(totalCaloriesSoFar)} calories for dirty bulk? You're bulking like you're cutting!`,
+          `Wake up, ${userProfile.firstName}! ${Math.round(totalCaloriesSoFar)} calories for dirty bulk goals? You're bulking like you're cutting!`,
           `${userProfile.firstName}, BULK EMERGENCY! ${Math.round(totalCaloriesSoFar)} calories by snack 2? That's maintenance eating!`
         ];
         message += bulkBehindMessages[Math.floor(Math.random() * bulkBehindMessages.length)];
@@ -587,7 +587,7 @@ export const MorningMessages = {
         message += goodProteinMessages[Math.floor(Math.random() * goodProteinMessages.length)];
       } else {
         const catchUpMessages = [
-          `${userProfile.firstName}, ${Math.round(totalProteinSoFar)}g protein by snack 2? For ${userProfile.goal}, we need to accelerate!`,
+          `${userProfile.firstName}, ${Math.round(totalProteinSoFar)}g protein by snack 2? For ${userProfile.goal} goals, we need to accelerate!`,
           `Wake up call, ${userProfile.firstName}! ${Math.round(totalProteinSoFar)}g protein by now won't cut it for serious results!`,
           `${userProfile.firstName}, URGENT! Only ${Math.round(totalProteinSoFar)}g protein by second snack? Your muscles are begging for amino acids!`,
           `Red flag, ${userProfile.firstName}! ${Math.round(totalProteinSoFar)}g protein by snack 2 means you're behind on your ${userProfile.goal} goals!`
@@ -599,7 +599,7 @@ export const MorningMessages = {
     message += " ";
 
     // ============ PART 2: ENHANCED SUPPLEMENT RECOMMENDATIONS WITH FOODATABASE ITEMS ============
-    
+
     if (lunchishTime) {
       const preLunchMessages = [
         `At ${selectedTime}, this is basically lunch timing - perfect opportunity to make it substantial and hit your remaining macros for the day!`,
@@ -612,10 +612,10 @@ export const MorningMessages = {
       const proteinNeeded = proteinTarget - totalProteinSoFar;
       const currentProteinGrams = totalProteinSoFar;
       const currentCalories = totalCaloriesSoFar;
-      
+
       // ENHANCED goal-specific recommendations for second snack WITH FOODATABASE ITEMS
       let recommendedSupplements = [];
-      
+
       if (userProfile.goal === 'dirty-bulk') {
         recommendedSupplements = [
           { name: 'Whey Protein + Bagel + Peanut Butter', protein: 41, calories: 708, type: 'bulk' }, // Whey 24g + Bagel 9g + PB 8g
@@ -641,32 +641,32 @@ export const MorningMessages = {
           { name: 'Quest Bar + Almonds (small)', protein: 26, calories: 354, type: 'lean' }
         ];
       }
-      
+
       // Find best match WITH PROTEIN PERCENTAGE CALCULATION
       let bestSupplement = null;
       let bestMatch = Infinity;
-      
+
       for (const supplement of recommendedSupplements) {
         const newTotalProtein = currentProteinGrams + supplement.protein;
         const newTotalCalories = currentCalories + supplement.calories;
         const newProteinPercent = (newTotalProtein * 4 / newTotalCalories) * 100;
-        
+
         // Prioritize getting protein gap filled AND getting to 40-50% protein range
         const proteinGapScore = Math.abs(supplement.protein - proteinNeeded);
         const proteinPercentScore = Math.abs(newProteinPercent - 45); // Target 45%
         const combinedScore = proteinGapScore + (proteinPercentScore * 0.5);
-        
+
         if (combinedScore < bestMatch) {
           bestSupplement = supplement;
           bestMatch = combinedScore;
         }
       }
-      
+
       if (bestSupplement) {
         const newTotalProtein = Math.round(currentProteinGrams + bestSupplement.protein);
         const newTotalCalories = Math.round(currentCalories + bestSupplement.calories);
         const newProteinPercent = Math.round((newTotalProtein * 4 / newTotalCalories) * 100);
-        
+
         const lateSupplementMessages = [
           `Second snack is crucial - grab ${bestSupplement.name} to reach ${newTotalProtein}g protein at ${newProteinPercent}% (${newTotalCalories} total calories)!`,
           `This is your last chance before lunch - ${bestSupplement.name} brings you to ${newTotalProtein}g protein and ${newProteinPercent}% for the morning!`,
@@ -675,7 +675,7 @@ export const MorningMessages = {
           `Second snack strategy: ${bestSupplement.name} = ${newTotalProtein}g protein at ${newProteinPercent}% and ${newTotalCalories} calories of pure muscle fuel!`,
           `Last call for morning gains - ${bestSupplement.name} delivers ${newTotalProtein}g protein at ${newProteinPercent}% in ${newTotalCalories} total calories!`
         ];
-        
+
         message += lateSupplementMessages[Math.floor(Math.random() * lateSupplementMessages.length)];
       }
     } else {
@@ -694,11 +694,11 @@ export const MorningMessages = {
     message += " ";
 
     // ============ PART 3: ENHANCED ENERGY/HUNGER STATE + PRE-LUNCH PREP ============
-    
-    const hoursSinceFirstSnack = firstSnackTime ? 
-      snackHour - parseInt(firstSnackTime.split(':')[0]) : 
+
+    const hoursSinceFirstSnack = firstSnackTime ?
+      snackHour - parseInt(firstSnackTime.split(':')[0]) :
       (breakfastTime ? snackHour - parseInt(breakfastTime.split(':')[0]) : 2);
-    
+
     if (lunchishTime) {
       const preLunchMessages = [
         `With lunch approaching, make sure it's substantial - you've been fueling consistently and your body is primed for nutrients!`,
