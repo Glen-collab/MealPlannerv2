@@ -7,7 +7,7 @@ import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
 import ProfileModule from './ProfileModule.jsx';
 import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
-import WeekPlanModal from './WeekPlanModal.jsx';
+import WeekPlanModal from './mealPlanning/WeekPlanModal.jsx';
 import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
 import UltimateFitnessCardTrick from './UltimateFitnessCardTrick.jsx';
 import { GlenSaysMotivation, GlenSaysMini } from './MealMessages/DailyMotivation.js';
