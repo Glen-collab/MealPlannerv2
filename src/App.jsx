@@ -894,6 +894,7 @@ const MealSwipeApp = () => {
   const [showPieChart, setShowPieChart] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
   const [burnAndLearnDetails, setBurnAndLearnDetails] = useState(null);
+  const [showGlenSays, setShowGlenSays] = useState(false);
 
   const dragRef = useRef({ startX: 0, startY: 0 });
 
@@ -1770,11 +1771,11 @@ const MealSwipeApp = () => {
                   <div className="text-xs font-semibold">View Plan</div>
                 </button>
                 <button
-                  onClick={enterFullScreenSwipe}
+                  onClick={() => setShowGlenSays(true)}
                   className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
-                  <div className="text-lg mb-1">🌟</div>
-                  <div className="text-xs font-semibold">Full Screen</div>
+                  <div className="text-lg mb-1">👨‍🏫</div>
+                  <div className="text-xs font-semibold">Glen Says</div>
                 </button>
                 <button
                   onClick={() => setShowCreateMeal(true)}
@@ -1873,6 +1874,21 @@ const MealSwipeApp = () => {
                       {action.icon} {action.text}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Glen Says Modal */}
+            {showGlenSays && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+                  <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-gray-800">👨‍🏫 Daily Motivation</h3>
+                    <button onClick={() => setShowGlenSays(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                  </div>
+                  <div className="p-4">
+                    <GlenSaysMotivation userProfile={profile} />
+                  </div>
                 </div>
               </div>
             )}
