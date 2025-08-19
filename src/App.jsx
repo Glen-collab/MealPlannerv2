@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { FoodDatabase, getFoodsInCategory, getServingInfo, servingSizeConversions } from './mealPlanning/FoodDatabase2.js';
+import { FoodDatabase, getFoodsInCategory, getServingInfo, servingSizeConversions } from './FoodDatabase.js';
 import { USDAMealCreator } from './USDAMealCreator.jsx';
 import MealSwipeGame from './MealSwipeGame.jsx';
 import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
@@ -11,8 +11,6 @@ import WeekPlanModal from './WeekPlanModal.jsx';
 import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
 import UltimateFitnessCardTrick from './UltimateFitnessCardTrick.jsx';
 import { GlenSaysMotivation, GlenSaysMini } from './MealMessages/DailyMotivation.js';
-import { optimizationManager } from './mealPlanning/PerformanceOptimization.js';
-
 // Import chart components from WelcomeScreen module
 import {
   ClickableBurnAndLearnView,
@@ -87,15 +85,6 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
     onSelectServing(finalServings, selectedUnit);
     onClose();
   };
-  
-  useEffect(() => {
-    const initializeMealPlanning = async () => {
-      await optimizationManager.initialize();
-      console.log('🚀 Advanced meal planning system ready');
-    };
-
-    initializeMealPlanning();
-  }, []);
 
   // Calculate preview nutrition based on selection
   const getPreviewNutrition = () => {
