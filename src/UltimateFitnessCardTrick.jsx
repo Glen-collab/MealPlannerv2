@@ -249,9 +249,9 @@ const UltimateFitnessCardTrick = () => {
 
             <div className="grid grid-cols-4 gap-2 max-w-2xl mx-auto">
                 {cards.map((card, index) => (
-                    <div key={index} className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg p-2 text-center h-20 flex flex-col justify-center">
-                        <div className="text-xl mb-1">{getCardEmoji(card)}</div>
-                        <div className="text-xs font-medium text-gray-700 break-words leading-tight px-1">{card}</div>
+                    <div key={index} className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg p-1 text-center h-20 flex flex-col justify-center">
+                        <div className="text-2xl mb-1">{getCardEmoji(card)}</div>
+                        <div className="text-sm font-medium text-gray-700">{card}</div>
                     </div>
                 ))}
             </div>
@@ -297,9 +297,9 @@ const UltimateFitnessCardTrick = () => {
                             const cardIndex = colIndex * 4 + rowIndex;
                             const card = cards[cardIndex];
                             return (
-                                <div key={cardIndex} className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg p-2 text-center h-20 flex flex-col justify-center">
-                                    <div className="text-xl mb-1">{getCardEmoji(card)}</div>
-                                    <div className="text-xs font-bold text-gray-700 break-words leading-tight px-1">{card}</div>
+                                <div key={cardIndex} className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg p-1 text-center h-20 flex flex-col justify-center">
+                                    <div className="text-2xl mb-1">{getCardEmoji(card)}</div>
+                                    <div className="text-xs font-bold text-gray-700">{card}</div>
                                 </div>
                             );
                         })}
