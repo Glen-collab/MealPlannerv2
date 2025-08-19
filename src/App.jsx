@@ -9,6 +9,7 @@ import MealIdeasModal from './MealIdeas.jsx';
 import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
 import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
+import UltimateFitnessCardTrick from './UltimateFitnessCardTrick.jsx';
 // Import chart components from WelcomeScreen module
 import {
   ClickableBurnAndLearnView,
@@ -869,6 +870,7 @@ const MealSwipeApp = () => {
   const [isFullScreenSwipe, setIsFullScreenSwipe] = useState(false);
   const [showCreateMeal, setShowCreateMeal] = useState(false);
   const [showGame, setShowGame] = useState(false);
+  const [showCardMagic, setShowCardMagic] = useState(false); // NEW: Card Magic state
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
 
@@ -1710,7 +1712,7 @@ const MealSwipeApp = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-blue-500 to-red-600 p-4">
       <div className="max-w-md mx-auto">
-        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && (
+        {!isSwipeMode && !isFullScreenSwipe && !showCreateMeal && !showGame && !showCardMagic && (
           <>
             {/* ProfileModule */}
             <ProfileModule
@@ -1885,12 +1887,21 @@ const MealSwipeApp = () => {
               </button>
             </div>
 
-            <div className="flex justify-center">
+            {/* Game Buttons - Updated to include Card Magic */}
+            <div className="flex justify-center gap-3">
               <button
                 onClick={() => setShowGame(true)}
                 className="bg-white text-pink-600 px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
               >
                 🎮 Rate Your Meals
+              </button>
+
+              {/* NEW: Card Magic Button */}
+              <button
+                onClick={() => setShowCardMagic(true)}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+              >
+                🎭 Card Magic
               </button>
             </div>
           </>
@@ -2098,6 +2109,21 @@ const MealSwipeApp = () => {
                   onComplete={() => setShowGame(false)}
                   isIntegrated={true}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Card Magic Modal */}
+        {showCardMagic && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-screen overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">🎭 Fitness Card Magic</h3>
+                <button onClick={() => setShowCardMagic(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              </div>
+              <div className="p-4">
+                <UltimateFitnessCardTrick />
               </div>
             </div>
           </div>
