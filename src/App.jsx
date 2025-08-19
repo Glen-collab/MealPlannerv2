@@ -10,6 +10,7 @@ import { MealMessages } from './MealMessages/index.js';
 import WeekPlanModal from './WeekPlanModal.jsx';
 import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
 import UltimateFitnessCardTrick from './UltimateFitnessCardTrick.jsx';
+import { GlenSaysMotivation, GlenSaysMini } from './MealMessages/DailyMotivation.js';
 // Import chart components from WelcomeScreen module
 import {
   ClickableBurnAndLearnView,
