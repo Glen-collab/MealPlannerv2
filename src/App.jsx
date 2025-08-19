@@ -20,6 +20,30 @@ import {
   BarChartView
 } from './WelcomeScreen.jsx';
 
+// 🔧 FIXED: Move helper functions to top level, outside of any component
+const timeToMinutes = (timeStr) => {
+  if (!timeStr) return 0;
+  const [time, period] = timeStr.split(' ');
+  const [hours, minutes] = time.split(':').map(Number);
+  let totalMinutes = hours * 60 + (minutes || 0);
+
+  if (period === 'PM' && hours !== 12) {
+    totalMinutes += 12 * 60;
+  } else if (period === 'AM' && hours === 12) {
+    totalMinutes -= 12 * 60;
+  }
+
+  return totalMinutes;
+};
+
+const getSortedMealsByTime = (meals) => {
+  return [...meals].sort((a, b) => {
+    const timeA = timeToMinutes(a.time);
+    const timeB = timeToMinutes(b.time);
+    return timeA - timeB;
+  });
+};
+
 // Serving Picker Modal Component
 function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, category, foodName, onSelectServing, onClose }) {
   const [selectedAmount, setSelectedAmount] = useState(1);
@@ -46,30 +70,6 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
       setSelectedUnit(currentUnit || 'servings');
     }
   }, [isOpen, currentServing, currentUnit]);
-  
-  // Add these helper functions near the top of App.jsx, after imports
-  const timeToMinutes = (timeStr) => {
-    if (!timeStr) return 0;
-    const [time, period] = timeStr.split(' ');
-    const [hours, minutes] = time.split(':').map(Number);
-    let totalMinutes = hours * 60 + (minutes || 0);
-
-    if (period === 'PM' && hours !== 12) {
-      totalMinutes += 12 * 60;
-    } else if (period === 'AM' && hours === 12) {
-      totalMinutes -= 12 * 60;
-    }
-
-    return totalMinutes;
-  };
-
-  const getSortedMealsByTime = (meals) => {
-    return [...meals].sort((a, b) => {
-      const timeA = timeToMinutes(a.time);
-      const timeB = timeToMinutes(b.time);
-      return timeA - timeB;
-    });
-  };
 
   const handleConfirm = () => {
     const totalAmount = selectedAmount + selectedFraction;
@@ -666,7 +666,7 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   );
 }
 
-// Full Screen Swipe Interface Component
+// 🔧 FIXED: Full Screen Swipe Interface Component
 function FullScreenSwipeInterface({
   meals,
   currentCard,
@@ -730,7 +730,8 @@ function FullScreenSwipeInterface({
         </div>
 
         <div className="flex-1 relative px-4 pb-4">
-          {getSortedMealsByTime(meals).map((meal) => {
+          {/* 🔧 FIXED: Added proper index parameter to map function */}
+          {meals.map((meal, index) => {
             const isActive = index === currentCard;
             const position = cardPositions[index];
             const zIndex = isActive ? 20 : meals.length - Math.abs(index - currentCard);
@@ -1594,7 +1595,7 @@ const MealSwipeApp = () => {
   const enterSwipeMode = () => {
     setIsSwipeMode(true);
     document.body.style.overflow = 'hidden';
-    // ADD THESE LINES:
+    // 🔧 FIXED: Add proper sorting setup
     setCurrentCard(0);
     const sortedMeals = getSortedMealsByTime(meals);
     setCardPositions(sortedMeals.map(() => ({ x: 0, y: 0, rotation: 0 })));
@@ -1621,7 +1622,7 @@ const MealSwipeApp = () => {
   const enterFullScreenSwipe = () => {
     setIsFullScreenSwipe(true);
     document.body.style.overflow = 'hidden';
-    // ADD THESE LINES:
+    // 🔧 FIXED: Add proper sorting setup
     setCurrentCard(0);
     const sortedMeals = getSortedMealsByTime(meals);
     setCardPositions(sortedMeals.map(() => ({ x: 0, y: 0, rotation: 0 })));
@@ -1674,7 +1675,8 @@ const MealSwipeApp = () => {
         index === currentCard ? { x: direction === 'right' ? 400 : -400, y: pos.y, rotation: direction === 'right' ? 30 : -30 } : pos
       ));
       setTimeout(() => {
-        setCurrentCard(prev => (prev + 1) % meals.length);
+        const sortedMeals = getSortedMealsByTime(meals);
+        setCurrentCard(prev => (prev + 1) % sortedMeals.length);
         setCardPositions(prev => prev.map(() => ({ x: 0, y: 0, rotation: 0 })));
       }, 300);
     } else {
@@ -2016,7 +2018,8 @@ const MealSwipeApp = () => {
               {/* Scrollable Meals Section */}
               <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                 <div className="space-y-4 max-w-md mx-auto">
-                  {sortedMeals.map((meal) => {
+                  {/* 🔧 FIXED: Use getSortedMealsByTime instead of undefined sortedMeals */}
+                  {getSortedMealsByTime(meals).map((meal) => {
                     const source = mealSources[meal.name];
                     const isUSDAOwned = source === 'usda';
 
@@ -2042,26 +2045,6 @@ const MealSwipeApp = () => {
                           </div>
                           {isUSDAOwned && (
                             <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">USDA</span>
-                          )}
-
-                          {/* Print Options Modal */}
-                          {showPrintModal && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                              <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
-                                <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                                  <h3 className="text-xl font-bold text-gray-800">🖨️ Print Options</h3>
-                                  <button onClick={() => setShowPrintModal(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-                                </div>
-                                <div className="p-4">
-                                  <PrintableNutritionPlan
-                                    allMeals={formatMealsForMessaging()}
-                                    userProfile={profile}
-                                    calorieData={calorieData}
-                                    isMobile={true}
-                                  />
-                                </div>
-                              </div>
-                            </div>
                           )}
                         </div>
 
@@ -2119,6 +2102,26 @@ const MealSwipeApp = () => {
                 <p className="text-sm text-green-100">
                   Consistent nutrition is the foundation of success. Every meal brings you closer to your goals!
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Print Options Modal */}
+        {showPrintModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">🖨️ Print Options</h3>
+                <button onClick={() => setShowPrintModal(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+              </div>
+              <div className="p-4">
+                <PrintableNutritionPlan
+                  allMeals={formatMealsForMessaging()}
+                  userProfile={profile}
+                  calorieData={calorieData}
+                  isMobile={true}
+                />
               </div>
             </div>
           </div>
