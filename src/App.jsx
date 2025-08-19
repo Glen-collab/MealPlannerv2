@@ -1772,7 +1772,7 @@ const MealSwipeApp = () => {
                 </button>
                 <button
                   onClick={() => setShowGlenSays(true)}
-                  className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
+                  className="bg-gradient-to-br from-black to-white text-black p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">👨‍🏫</div>
                   <div className="text-xs font-semibold">Glen Says</div>
