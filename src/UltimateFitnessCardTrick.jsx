@@ -52,7 +52,7 @@ const UltimateFitnessCardTrick = () => {
             cards: [
                 'Arnold', 'Lou', 'Zane', 'Sergio',
                 'Yates', 'Big Ron', 'Heath', 'Cutler',
-                'Bumstead', 'Dana', 'Iris', 'Cory',
+                'CBum', 'Dana', 'Iris', 'Cory',
                 'Rachel', 'Lenda', 'Bev', 'Nicole'
             ],
             emojis: {
@@ -64,7 +64,7 @@ const UltimateFitnessCardTrick = () => {
                 'Big Ron': '👑',
                 'Heath': '🎯',
                 'Cutler': '💼',
-                'Bumstead': '🌟',
+                'CBum': '🌟',
                 'Dana': '📸',
                 'Iris': '💎',
                 'Cory': '🌈',
@@ -82,7 +82,7 @@ const UltimateFitnessCardTrick = () => {
                 'Big Ron': "The king's dominance flows through your spirit! Like Ronnie Coleman's record 8 Mr. Olympia wins, you have the capacity for sustained excellence. Nothing can keep you down!",
                 'Heath': "The Gift of precision is yours! Like Phil Heath's 7 consecutive Mr. Olympia victories, your attention to detail will set you apart from the competition.",
                 'Cutler': "The businessman-champion mindset awakens! Like Jay Cutler's success, you understand that building your body and building your empire go hand in hand.",
-                'Bumstead': "Classic aesthetics call to your modern spirit! Like Chris Bumstead's dominance, you represent the perfect blend of old-school values and new-age appeal.",
+                'CBum': "Classic aesthetics call to your modern spirit! Like Chris Bumstead's dominance, you represent the perfect blend of old-school values and new-age appeal.",
                 'Dana': "Social influence flows through you! Like Dana Linn Bailey's figure success, you have the power to motivate others while achieving your own goals.",
                 'Iris': "Ten-time champion energy is yours! Like Iris Kyle's record Ms. Olympia wins, your consistency and excellence know no bounds.",
                 'Cory': "Pioneer spirit awakens within you! Like Cory Everson's 6 titles, you're meant to break barriers and show the world what's possible.",
@@ -95,13 +95,13 @@ const UltimateFitnessCardTrick = () => {
         exercises: {
             name: "Exercise & Workouts",
             cards: [
-                'Deadlift', 'Squat', 'Bench', 'Pull-ups',
+                'Dead lift', 'Squat', 'Bench', 'Pull-ups',
                 'Plank', 'Burpees', 'Lunges', 'Push-ups',
                 'Rows', 'Dips', 'Curls', 'Cardio',
-                'Yoga', 'Abs', 'Sprints', 'Stretches'
+                'Yoga', 'Abs', 'Sprints', 'Stretch'
             ],
             emojis: {
-                'Deadlift': '🏋️',
+                'Dead lift': '🏋️',
                 'Squat': '🦵',
                 'Bench': '💺',
                 'Pull-ups': '🔝',
@@ -116,10 +116,10 @@ const UltimateFitnessCardTrick = () => {
                 'Yoga': '🧘‍♀️',
                 'Abs': '🏃',
                 'Sprints': '⚡',
-                'Stretches': '🤸'
+                'Stretch': '🤸'
             },
             tarotReadings: {
-                'Deadlift': "The king of all exercises calls to you! Like the deadlift that works every muscle, you're ready to tackle challenges that demand your full commitment and strength.",
+                'Dead lift': "The king of all exercises calls to you! Like the deadlift that works every muscle, you're ready to tackle challenges that demand your full commitment and strength.",
                 'Squat': "Foundation power rises within you! Like the squat that builds your base, you're establishing the fundamental strength needed for all your future endeavors.",
                 'Bench': "Upper body dominance awaits! Like the bench press that builds pushing power, you're ready to press through obstacles and push your limits higher.",
                 'Pull-ups': "Overcome gravity itself! Like pull-ups that defy your own weight, you have the power to rise above any situation through pure determination.",
@@ -134,7 +134,7 @@ const UltimateFitnessCardTrick = () => {
                 'Yoga': "Mind-body harmony is your path! Like yoga that connects breath and movement, you're finding the balance that leads to holistic wellness and peace.",
                 'Abs': "Core power radiates from within! Like abdominal training that strengthens your center, you're developing the stability that supports all other growth.",
                 'Sprints': "Explosive speed is your advantage! Like sprint training that builds power, you're ready for rapid progress and breakthrough moments.",
-                'Stretches': "Flexibility opens new possibilities! Like stretching that increases range of motion, you're expanding your capacity and opening to new opportunities."
+                'Stretch': "Flexibility opens new possibilities! Like stretching that increases range of motion, you're expanding your capacity and opening to new opportunities."
             }
         }
     };
