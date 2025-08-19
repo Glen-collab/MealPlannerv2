@@ -826,7 +826,7 @@ const MealSwipeApp = () => {
     heightInches: '8',
     weight: '150',
     exerciseLevel: 'moderate',
-    goal: 'gain-muscle',
+    goal: 'Gain-muscle',
     gender: 'non-binary'
   });
 
@@ -914,7 +914,7 @@ const MealSwipeApp = () => {
       },
       'protein-target': {
         title: '💪 Protein Target',
-        content: `Your protein goal of ${profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} is optimized for ${profile.goal}. You've consumed ${Math.round(totalMacros.protein)}g so far. Protein helps build muscle, keeps you full, and supports recovery.`
+        content: `Your protein goal of ${profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'Gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} is optimized for ${profile.goal}. You've consumed ${Math.round(totalMacros.protein)}g so far. Protein helps build muscle, keeps you full, and supports recovery.`
       },
       'macro-balance': {
         title: '⚖️ Macro Balance',
@@ -1200,7 +1200,7 @@ const MealSwipeApp = () => {
 
     const recommendations = [];
     const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
-      profile.goal === 'gain-muscle' ? 130 :
+      profile.goal === 'Gain-muscle' ? 130 :
         profile.goal === 'lose' ? 120 : 100;
 
     const proteinGap = proteinTarget - totalMacros.protein;
@@ -1265,7 +1265,7 @@ const MealSwipeApp = () => {
   const getQuickActionSuggestions = () => {
     const actions = [];
     const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
-      profile.goal === 'gain-muscle' ? 130 :
+      profile.goal === 'Gain-muscle' ? 130 :
         profile.goal === 'lose' ? 120 : 100;
 
     const proteinGap = proteinTarget - totalMacros.protein;
@@ -1445,7 +1445,7 @@ const MealSwipeApp = () => {
       return {
         bmr: 1800,
         tdee: 2200,
-        targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500
+        targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'Gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500
       };
     }
 
@@ -1481,7 +1481,7 @@ const MealSwipeApp = () => {
       case 'lose':
         targetCalories = tdee - 500; // 500 cal deficit for 1lb/week loss
         break;
-      case 'gain-muscle':
+      case 'Gain-muscle':
         targetCalories = tdee + 300; // 300 cal surplus for lean gains
         break;
       case 'dirty-bulk':
@@ -1522,7 +1522,7 @@ const MealSwipeApp = () => {
     // Enhanced user profile for messaging
     const userProfileForMessages = {
       firstName: profile.firstName || profile.name || 'Champion',
-      goal: profile.goal || 'gain-muscle',
+      goal: profile.goal || 'Gain-muscle',
       weight: profile.weight || 150
     };
 
@@ -1670,7 +1670,7 @@ const MealSwipeApp = () => {
     }
 
     const proteinTarget = profile.goal === 'dirty-bulk' ? 150 :
-      profile.goal === 'gain-muscle' ? 130 :
+      profile.goal === 'Gain-muscle' ? 130 :
         profile.goal === 'lose' ? 120 : 100;
 
     const proteinProgress = (totalMacros.protein / proteinTarget) * 100;
@@ -1685,7 +1685,7 @@ const MealSwipeApp = () => {
       } else {
         return `${profile.firstName}, solid bulk progress at ${Math.round(totalMacros.calories)} calories - keep feeding the machine for maximum gains!`;
       }
-    } else if (profile.goal === 'gain-muscle') {
+    } else if (profile.goal === 'Gain-muscle') {
       if (proteinProgress >= 85 && calorieProgress >= 80 && calorieProgress <= 120) {
         return `${profile.firstName}, LEAN MUSCLE PERFECTION! ${Math.round(totalMacros.protein)}g protein and ${Math.round(totalMacros.calories)} calories - textbook muscle building!`;
       } else if (proteinProgress < 60) {
@@ -1734,7 +1734,7 @@ const MealSwipeApp = () => {
                   <div className="text-xs text-blue-600 font-medium">Protein</div>
                   <div className="text-lg font-bold text-blue-800">{Math.round(totalMacros.protein)}g</div>
                   <div className="text-xs text-blue-500">
-                    {profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} target
+                    {profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'Gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} target
                   </div>
                 </div>
                 <div className="bg-green-100 rounded-lg p-2">
@@ -2118,7 +2118,7 @@ const MealSwipeApp = () => {
                   allMeals={formatMealsForMessaging()}
                   userProfile={{
                     firstName: profile.firstName || profile.name || 'Champion',
-                    goal: profile.goal || 'gain-muscle',
+                    goal: profile.goal || 'Gain-muscle',
                     weight: profile.weight,
                     gender: profile.gender || 'non-binary'
                   }}
