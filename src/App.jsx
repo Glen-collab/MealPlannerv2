@@ -46,6 +46,30 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
       setSelectedUnit(currentUnit || 'servings');
     }
   }, [isOpen, currentServing, currentUnit]);
+  
+  // Add these helper functions near the top of App.jsx, after imports
+  const timeToMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const [time, period] = timeStr.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+    let totalMinutes = hours * 60 + (minutes || 0);
+
+    if (period === 'PM' && hours !== 12) {
+      totalMinutes += 12 * 60;
+    } else if (period === 'AM' && hours === 12) {
+      totalMinutes -= 12 * 60;
+    }
+
+    return totalMinutes;
+  };
+
+  const getSortedMealsByTime = (meals) => {
+    return [...meals].sort((a, b) => {
+      const timeA = timeToMinutes(a.time);
+      const timeB = timeToMinutes(b.time);
+      return timeA - timeB;
+    });
+  };
 
   const handleConfirm = () => {
     const totalAmount = selectedAmount + selectedFraction;
@@ -706,7 +730,7 @@ function FullScreenSwipeInterface({
         </div>
 
         <div className="flex-1 relative px-4 pb-4">
-          {meals.map((meal, index) => {
+          {getSortedMealsByTime(meals).map((meal) => {
             const isActive = index === currentCard;
             const position = cardPositions[index];
             const zIndex = isActive ? 20 : meals.length - Math.abs(index - currentCard);
@@ -853,14 +877,14 @@ const MealSwipeApp = () => {
   };
 
   const [meals, setMeals] = useState([
-    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },
-    { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },
-    { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },
-    { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },
-    { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] },
-    { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },
-    { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] },
-    { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] }
+    { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] }, // FIRST - 5:00 AM
+    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },      // SECOND - 7:00 AM  
+    { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },    // THIRD - 9:30 AM
+    { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },  // FOURTH - 11:00 AM
+    { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },        // FIFTH - 12:30 PM
+    { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] }, // SIXTH - 3:30 PM
+    { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },        // SEVENTH - 6:30 PM
+    { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] }     // EIGHTH - 8:30 PM
   ]);
 
   const [currentCard, setCurrentCard] = useState(0);
@@ -1039,9 +1063,24 @@ const MealSwipeApp = () => {
     setShowMealIdeas(false);
   };
 
-  // Add WeekPlan handler function
   const handleAddWeekPlan = (weekPlan) => {
-    const mealTypes = ['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'];
+    // Create meal name mapping from plan names to app meal names
+    const mealNameMapping = {
+      'Breakfast': 'Breakfast',
+      'Morning Snack': 'FirstSnack',
+      'Mid-Morning Snack': 'SecondSnack',
+      'Pre-Lunch': 'SecondSnack',
+      'Lunch': 'Lunch',
+      'Afternoon Snack': 'MidAfternoon Snack',
+      'Mid-Afternoon': 'MidAfternoon Snack',
+      'Dinner': 'Dinner',
+      'Late Snack': 'Late Snack',
+      'Evening Snack': 'Late Snack',
+      'Post-Workout': 'PostWorkout',
+      'Post Workout': 'PostWorkout',
+      'Pre-Workout': 'PostWorkout',
+      'Mid-Morning': 'FirstSnack',
+    };
 
     // Create new meals object with cleared items for ALL meals (weekplan overrides everything)
     const newMeals = meals.map(meal => ({
@@ -1054,64 +1093,65 @@ const MealSwipeApp = () => {
       items: []
     }));
 
-    // Update meals with week plan data
+    // Update meals with week plan data - FIXED TO USE MEAL NAMES
     if (weekPlan.allMeals) {
-      weekPlan.allMeals.forEach((planMeal, index) => {
-        if (index < mealTypes.length) {
-          const mealName = mealTypes[index];
-          const mealIndex = newMeals.findIndex(m => m.name === mealName);
+      weekPlan.allMeals.forEach((planMeal) => {
+        // Find the correct meal by name mapping, not array index
+        const appMealName = mealNameMapping[planMeal.mealName] || planMeal.mealName;
+        const mealIndex = newMeals.findIndex(m => m.name === appMealName);
 
-          if (mealIndex !== -1 && planMeal.items) {
-            // Calculate totals from the plan meal items
-            let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
+        console.log(`Mapping plan meal "${planMeal.mealName}" to app meal "${appMealName}", found at index ${mealIndex}`);
 
-            const processedItems = planMeal.items.map(item => {
-              if (item.food && item.category) {
-                const foodData = FoodDatabase[item.category]?.[item.food];
-                if (foodData) {
-                  const serving = item.serving || 1;
-                  const protein = foodData.protein * serving;
-                  const carbs = foodData.carbs * serving;
-                  const fat = foodData.fat * serving;
-                  const sugar = (foodData.sugar || 0) * serving;
-                  const calories = foodData.calories * serving;
+        if (mealIndex !== -1 && planMeal.items) {
+          // Calculate totals from the plan meal items
+          let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
 
-                  totalProtein += protein;
-                  totalCarbs += carbs;
-                  totalFat += fat;
-                  totalSugar += sugar;
-                  totalCalories += calories;
+          const processedItems = planMeal.items.map(item => {
+            if (item.food && item.category) {
+              const foodData = FoodDatabase[item.category]?.[item.food];
+              if (foodData) {
+                const serving = item.serving || 1;
+                const protein = foodData.protein * serving;
+                const carbs = foodData.carbs * serving;
+                const fat = foodData.fat * serving;
+                const sugar = (foodData.sugar || 0) * serving;
+                const calories = foodData.calories * serving;
 
-                  return {
-                    food: item.food,
-                    category: item.category,
-                    servings: serving,
-                    protein: Math.round(protein),
-                    carbs: Math.round(carbs),
-                    fat: Math.round(fat),
-                    sugar: Math.round(sugar),
-                    calories: Math.round(calories),
-                    source: 'weekplan'
-                  };
-                }
+                totalProtein += protein;
+                totalCarbs += carbs;
+                totalFat += fat;
+                totalSugar += sugar;
+                totalCalories += calories;
+
+                return {
+                  food: item.food,
+                  category: item.category,
+                  servings: serving,
+                  protein: Math.round(protein),
+                  carbs: Math.round(carbs),
+                  fat: Math.round(fat),
+                  sugar: Math.round(sugar),
+                  calories: Math.round(calories),
+                  source: 'weekplan'
+                };
               }
-              return null;
-            }).filter(item => item !== null);
+            }
+            return null;
+          }).filter(item => item !== null);
 
-            newMeals[mealIndex] = {
-              ...newMeals[mealIndex],
-              time: planMeal.time || newMeals[mealIndex].time,
-              items: processedItems,
-              protein: Math.round(totalProtein),
-              carbs: Math.round(totalCarbs),
-              fat: Math.round(totalFat),
-              sugar: Math.round(totalSugar),
-              calories: Math.round(totalCalories)
-            };
+          newMeals[mealIndex] = {
+            ...newMeals[mealIndex],
+            time: planMeal.time || newMeals[mealIndex].time,
+            items: processedItems,
+            protein: Math.round(totalProtein),
+            carbs: Math.round(totalCarbs),
+            fat: Math.round(totalFat),
+            sugar: Math.round(totalSugar),
+            calories: Math.round(totalCalories)
+          };
 
-            // Claim the meal for weekplan (this overrides any existing ownership)
-            claimMeal(mealName, 'weekplan');
-          }
+          // Claim the meal for weekplan (this overrides any existing ownership)
+          claimMeal(appMealName, 'weekplan');
         }
       });
     }
@@ -1554,6 +1594,10 @@ const MealSwipeApp = () => {
   const enterSwipeMode = () => {
     setIsSwipeMode(true);
     document.body.style.overflow = 'hidden';
+    // ADD THESE LINES:
+    setCurrentCard(0);
+    const sortedMeals = getSortedMealsByTime(meals);
+    setCardPositions(sortedMeals.map(() => ({ x: 0, y: 0, rotation: 0 })));
   };
 
   const exitSwipeMode = () => {
@@ -1577,6 +1621,10 @@ const MealSwipeApp = () => {
   const enterFullScreenSwipe = () => {
     setIsFullScreenSwipe(true);
     document.body.style.overflow = 'hidden';
+    // ADD THESE LINES:
+    setCurrentCard(0);
+    const sortedMeals = getSortedMealsByTime(meals);
+    setCardPositions(sortedMeals.map(() => ({ x: 0, y: 0, rotation: 0 })));
   };
 
   const exitFullScreenSwipe = () => {
@@ -1926,7 +1974,7 @@ const MealSwipeApp = () => {
 
         {(isSwipeMode || isFullScreenSwipe) && (
           <FullScreenSwipeInterface
-            meals={meals}
+            meals={getSortedMealsByTime(meals)}
             currentCard={currentCard}
             setCurrentCard={setCurrentCard}
             cardPositions={cardPositions}
@@ -1968,7 +2016,7 @@ const MealSwipeApp = () => {
               {/* Scrollable Meals Section */}
               <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                 <div className="space-y-4 max-w-md mx-auto">
-                  {meals.map((meal) => {
+                  {sortedMeals.map((meal) => {
                     const source = mealSources[meal.name];
                     const isUSDAOwned = source === 'usda';
 
