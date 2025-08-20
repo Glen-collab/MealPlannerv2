@@ -1,4 +1,4 @@
-// MealPlanGenerator.js - Ultimate meal planning system with protein priority + tier scaling
+// MealPlanGenerator.js - FIXED Ultimate meal planning system
 
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
 import { getFoodNutrition, FoodDatabase } from './FoodDatabase.js';
@@ -11,7 +11,7 @@ import {
     EnhancedFoodDatabase
 } from './EnhancedFoodDatabase.js';
 
-// ✅ TIER-BASED SCALING SYSTEM - Imported from your TierBasedScaling.js
+// ✅ TIER-BASED SCALING SYSTEM
 import {
     applyTierBasedScaling,
     addMakeupCalories,
@@ -32,258 +32,7 @@ const createFoodItem = (food, category, serving, displayServing, displayUnit) =>
     displayUnit
 });
 
-// ✅ ENHANCED PROTEIN DISTRIBUTION SYSTEM (with tier awareness)
-export const distributeProteinThroughoutDay = (mealPlan, gender, goal, dietaryFilters = []) => {
-    console.log(`🥤 [PROTEIN SYSTEM ACTIVE] Distributing protein for ${gender} with ${goal} goal`);
-    console.log(`📊 [PROTEIN] Dietary filters: ${dietaryFilters.join(', ') || 'none'}`);
-
-    // Get protein recommendations from enhanced database
-    const proteinRecommendations = getProteinRecommendations(dietaryFilters, gender, goal);
-    const proteinDistribution = calculateProteinDistribution(gender, goal, mealPlan.allMeals.length);
-
-    console.log(`💪 [PROTEIN] Available proteins:`, proteinRecommendations.map(p => p.name));
-    console.log(`🎯 [PROTEIN] Distribution plan:`, proteinDistribution);
-
-    if (proteinRecommendations.length === 0) {
-        console.log('⚠️ [PROTEIN] No suitable protein sources found');
-        return mealPlan;
-    }
-
-    const primaryProtein = proteinRecommendations[0];
-    const totalScoops = proteinDistribution.totalScoops;
-
-    console.log(`🥤 [PROTEIN] Using ${primaryProtein.name}, distributing ${totalScoops} total scoops`);
-
-    // Enhanced distribution with tier-based limits
-    if (gender.toLowerCase() === 'male' && totalScoops >= 4) {
-        return distributeMaleProtein(mealPlan, primaryProtein, totalScoops, goal, dietaryFilters);
-    } else {
-        return distributeFemaleProtein(mealPlan, primaryProtein, totalScoops, goal, dietaryFilters);
-    }
-};
-
-// Male protein distribution with tier-based scaling awareness
-const distributeMaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilters) => {
-    console.log(`👨 [MALE PROTEIN] Distributing ${totalScoops} scoops (up to 2 per meal)`);
-
-    const maxMealsWithProtein = Math.min(4, mealPlan.allMeals.length);
-    const scoopsPerMeal = 2;
-    const mealsToTarget = Math.min(Math.ceil(totalScoops / scoopsPerMeal), maxMealsWithProtein);
-
-    const mealPriority = getMealPriority(mealPlan);
-
-    let remainingScoops = totalScoops;
-    let proteinItemsAdded = 0;
-
-    for (let i = 0; i < mealsToTarget && remainingScoops > 0; i++) {
-        const mealIndex = mealPriority[i];
-        const meal = mealPlan.allMeals[mealIndex];
-        const scoopsToAdd = Math.min(scoopsPerMeal, remainingScoops);
-
-        // Create protein item with tier-based limits awareness
-        const proteinItem = createTierAwareProteinItem(protein, scoopsToAdd, meal, goal, dietaryFilters);
-        meal.items.push(proteinItem);
-
-        remainingScoops -= scoopsToAdd;
-        proteinItemsAdded++;
-
-        console.log(`✅ [MALE PROTEIN] Added ${scoopsToAdd} scoops of ${proteinItem.food} to ${meal.mealName} (Tier ${proteinItem.tier || 'unknown'})`);
-    }
-
-    console.log(`🎯 [MALE PROTEIN] Successfully added ${proteinItemsAdded} protein items`);
-    return mealPlan;
-};
-
-// Female protein distribution with tier awareness
-const distributeFemaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilters) => {
-    console.log(`👩 [FEMALE PROTEIN] Distributing ${totalScoops} scoops (1 per meal)`);
-
-    const scoopsPerMeal = 1;
-    const mealsToTarget = Math.min(totalScoops, mealPlan.allMeals.length);
-
-    const mealPriority = getMealPriority(mealPlan);
-
-    let proteinItemsAdded = 0;
-
-    for (let i = 0; i < mealsToTarget; i++) {
-        const mealIndex = mealPriority[i];
-        const meal = mealPlan.allMeals[mealIndex];
-
-        const proteinItem = createTierAwareProteinItem(protein, scoopsPerMeal, meal, goal, dietaryFilters);
-        meal.items.push(proteinItem);
-        proteinItemsAdded++;
-
-        console.log(`✅ [FEMALE PROTEIN] Added ${scoopsPerMeal} scoop of ${proteinItem.food} to ${meal.mealName} (Tier ${proteinItem.tier || 'unknown'})`);
-    }
-
-    console.log(`🎯 [FEMALE PROTEIN] Successfully added ${proteinItemsAdded} protein items`);
-    return mealPlan;
-};
-
-// Create tier-aware protein item with smart combinations
-const createTierAwareProteinItem = (protein, scoops, meal, goal, dietaryFilters) => {
-    const mealName = meal.mealName.toLowerCase();
-
-    // Check existing meal items for smart combinations
-    const hasGreekYogurt = meal.items.some(item => item.food.includes('Greek Yogurt'));
-    const hasOats = meal.items.some(item => item.food.includes('Oats'));
-    const hasBerries = meal.items.some(item => item.category === 'fruits');
-
-    let proteinFood = protein.name;
-    let combination = null;
-    let category = 'supplements';
-
-    // Create enhanced combinations from database
-    if (hasGreekYogurt && !meal.items.some(item => item.food.includes('Protein'))) {
-        if (dietaryFilters.includes('dairyFree')) {
-            combination = 'Coconut Yogurt + Plant Protein';
-        } else {
-            combination = dietaryFilters.includes('vegetarian') ?
-                'Greek Yogurt + Plant Protein' :
-                'Greek Yogurt + Whey Protein';
-        }
-        proteinFood = combination;
-        category = 'protein_combinations';
-    } else if (hasOats && mealName.includes('breakfast')) {
-        combination = dietaryFilters.includes('dairyFree') ?
-            'Oats + Plant Protein' :
-            'Oats + Whey Protein';
-        proteinFood = combination;
-        category = 'protein_combinations';
-    } else if (hasBerries && (goal === 'lose' || goal === 'maintain')) {
-        combination = 'Berries + Protein Powder';
-        proteinFood = combination;
-        category = 'favorite_snacks';
-    }
-
-    // Get tier information for this protein
-    const tier = getFoodTier(proteinFood, category);
-    const maxServing = getFoodMaxServing(proteinFood);
-
-    // Apply tier-based limits to the serving
-    const limitedScoops = Math.min(scoops, maxServing.maxServing);
-
-    // Get nutritional data
-    let nutritionData = protein;
-    if (combination && EnhancedFoodDatabase.protein_combinations[combination]) {
-        nutritionData = EnhancedFoodDatabase.protein_combinations[combination];
-    } else if (combination && EnhancedFoodDatabase.favorite_snacks[combination]) {
-        nutritionData = EnhancedFoodDatabase.favorite_snacks[combination];
-    }
-
-    return {
-        id: generateId(),
-        category,
-        food: proteinFood,
-        serving: limitedScoops,
-        displayServing: limitedScoops.toString(),
-        displayUnit: combination ? 'servings' : (limitedScoops === 1 ? 'scoop' : 'scoops'),
-        addedBy: 'tier-aware-protein-system',
-        isProteinFocus: true,
-        combination: combination,
-        tier: tier,
-        tierLimited: limitedScoops < scoops,
-        proteinData: {
-            originalProtein: protein.name,
-            combination: combination,
-            nutritionData: nutritionData,
-            requestedScoops: scoops,
-            actualScoops: limitedScoops,
-            tierInfo: {
-                tier: tier,
-                maxServing: maxServing.maxServing,
-                maxDisplay: maxServing.maxDisplay,
-                unit: maxServing.unit
-            },
-            mealContext: {
-                hasGreekYogurt,
-                hasOats,
-                hasBerries,
-                mealName: meal.mealName
-            }
-        }
-    };
-};
-
-// Prioritize meals for protein distribution
-const getMealPriority = (mealPlan) => {
-    const priority = [];
-
-    mealPlan.allMeals.forEach((meal, index) => {
-        const mealName = meal.mealName.toLowerCase();
-
-        if (mealName.includes('breakfast')) {
-            priority.unshift(index); // Highest priority
-        } else if (mealName.includes('lunch')) {
-            priority.splice(1, 0, index); // Second priority  
-        } else if (mealName.includes('dinner')) {
-            priority.splice(2, 0, index); // Third priority
-        } else {
-            priority.push(index); // Snacks last
-        }
-    });
-
-    return priority;
-};
-
-// ✅ ENHANCED FAVORITE SNACKS SYSTEM
-export const addFavoriteSnacks = (mealPlan, goal, dietaryFilters = []) => {
-    console.log(`🥨 [SNACKS SYSTEM] Adding favorite snacks for ${goal} goal`);
-
-    if (!['maintain', 'lose'].includes(goal)) {
-        console.log('⚠️ [SNACKS] Goal not suitable for favorite snacks');
-        return mealPlan;
-    }
-
-    const favorites = getFavoritesByGoal(goal, dietaryFilters);
-    const snackFavorites = favorites.filter(fav =>
-        fav.goalSuitability && fav.goalSuitability.includes(goal)
-    );
-
-    console.log(`🍪 [SNACKS] Found ${snackFavorites.length} suitable snacks:`,
-        snackFavorites.map(s => s.name));
-
-    if (snackFavorites.length === 0) {
-        console.log('⚠️ [SNACKS] No suitable snacks found');
-        return mealPlan;
-    }
-
-    const snackMeals = mealPlan.allMeals.filter(meal =>
-        meal.mealName.toLowerCase().includes('snack')
-    );
-
-    if (snackMeals.length > 0) {
-        const hummusSnack = snackFavorites.find(fav => fav.name.includes('Hummus'));
-        const selectedSnack = hummusSnack || snackFavorites[0];
-
-        // Apply tier-based scaling to snack items
-        const snackItem = {
-            id: generateId(),
-            category: 'favorite_snacks',
-            food: selectedSnack.name,
-            serving: 1,
-            displayServing: '1',
-            displayUnit: 'serving',
-            addedBy: 'enhanced-snacks-system',
-            isFavorite: true,
-            tier: getFoodTier(selectedSnack.name, 'favorite_snacks'),
-            snackData: {
-                goalSuitability: selectedSnack.goalSuitability,
-                dietaryTags: selectedSnack.dietaryTags,
-                components: selectedSnack.components
-            }
-        };
-
-        snackMeals[0].items.push(snackItem);
-        console.log(`✅ [SNACKS] Added ${selectedSnack.name} to ${snackMeals[0].mealName} (Tier ${snackItem.tier})`);
-    } else {
-        console.log('⚠️ [SNACKS] No snack meals found to add favorites to');
-    }
-
-    return mealPlan;
-};
-
-// Helper functions for user-friendly rounding
+// ✅ FIXED: User-friendly rounding functions (restored from original)
 const roundToUserFriendly = (serving, unit) => {
     if (serving <= 0) return 0.25; // Minimum serving
 
@@ -320,6 +69,302 @@ const standardizeDisplayUnit = (serving, unit) => {
     }
 
     return unit;
+};
+
+// ✅ FIXED: Protein distribution with proper guards
+export const distributeProteinThroughoutDay = (mealPlan, gender, goal, dietaryFilters = []) => {
+    console.log(`🥤 [PROTEIN SYSTEM] Starting protein distribution for ${gender} with ${goal} goal`);
+
+    // 🔒 GUARD: Check if protein was already added to prevent duplicates
+    const hasExistingProtein = mealPlan.allMeals.some(meal =>
+        meal.items.some(item => item.addedBy?.includes('protein') || item.isProteinFocus)
+    );
+
+    if (hasExistingProtein) {
+        console.log('⚠️ [PROTEIN] Protein already distributed, skipping');
+        return mealPlan;
+    }
+
+    console.log(`📊 [PROTEIN] Dietary filters: ${dietaryFilters.join(', ') || 'none'}`);
+
+    // Get protein recommendations
+    const proteinRecommendations = getProteinRecommendations(dietaryFilters, gender, goal);
+    const proteinDistribution = calculateProteinDistribution(gender, goal, mealPlan.allMeals.length);
+
+    console.log(`💪 [PROTEIN] Available proteins:`, proteinRecommendations.map(p => p.name));
+    console.log(`🎯 [PROTEIN] Distribution plan:`, proteinDistribution);
+
+    if (proteinRecommendations.length === 0) {
+        console.log('⚠️ [PROTEIN] No suitable protein sources found');
+        return mealPlan;
+    }
+
+    const primaryProtein = proteinRecommendations[0];
+    const totalScoops = proteinDistribution.totalScoops;
+
+    console.log(`🥤 [PROTEIN] Using ${primaryProtein.name}, distributing ${totalScoops} total scoops`);
+
+    // Distribution based on gender
+    if (gender.toLowerCase() === 'male' && totalScoops >= 4) {
+        return distributeMaleProtein(mealPlan, primaryProtein, totalScoops, goal, dietaryFilters);
+    } else {
+        return distributeFemaleProtein(mealPlan, primaryProtein, totalScoops, goal, dietaryFilters);
+    }
+};
+
+// ✅ FIXED: Male protein distribution (prevented multiple calls)
+const distributeMaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilters) => {
+    console.log(`👨 [MALE PROTEIN] Distributing ${totalScoops} scoops (max 2 per meal)`);
+
+    const maxMealsWithProtein = Math.min(4, mealPlan.allMeals.length);
+    const scoopsPerMeal = 2;
+    const mealsToTarget = Math.min(Math.ceil(totalScoops / scoopsPerMeal), maxMealsWithProtein);
+
+    const mealPriority = getMealPriority(mealPlan);
+
+    let remainingScoops = totalScoops;
+    let proteinItemsAdded = 0;
+
+    // 🔒 FIXED: Proper loop with single addition per meal
+    for (let i = 0; i < mealsToTarget && remainingScoops > 0; i++) {
+        const mealIndex = mealPriority[i];
+        const meal = mealPlan.allMeals[mealIndex];
+
+        // 🔒 GUARD: Skip if meal already has protein
+        const hasProtein = meal.items.some(item => item.addedBy?.includes('protein') || item.isProteinFocus);
+        if (hasProtein) {
+            console.log(`⚠️ [MALE PROTEIN] ${meal.mealName} already has protein, skipping`);
+            continue;
+        }
+
+        const scoopsToAdd = Math.min(scoopsPerMeal, remainingScoops);
+
+        // Create ONE protein item per meal
+        const proteinItem = createTierAwareProteinItem(protein, scoopsToAdd, meal, goal, dietaryFilters);
+        meal.items.push(proteinItem);
+
+        remainingScoops -= scoopsToAdd;
+        proteinItemsAdded++;
+
+        console.log(`✅ [MALE PROTEIN] Added ${scoopsToAdd} scoops of ${proteinItem.food} to ${meal.mealName} (Tier ${proteinItem.tier || 'unknown'})`);
+    }
+
+    console.log(`🎯 [MALE PROTEIN] Successfully added ${proteinItemsAdded} protein items (${totalScoops - remainingScoops} total scoops)`);
+    return mealPlan;
+};
+
+// ✅ FIXED: Female protein distribution (prevented multiple calls)
+const distributeFemaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilters) => {
+    console.log(`👩 [FEMALE PROTEIN] Distributing ${totalScoops} scoops (1 per meal)`);
+
+    const scoopsPerMeal = 1;
+    const mealsToTarget = Math.min(totalScoops, mealPlan.allMeals.length);
+
+    const mealPriority = getMealPriority(mealPlan);
+
+    let proteinItemsAdded = 0;
+
+    // 🔒 FIXED: Proper loop with single addition per meal
+    for (let i = 0; i < mealsToTarget; i++) {
+        const mealIndex = mealPriority[i];
+        const meal = mealPlan.allMeals[mealIndex];
+
+        // 🔒 GUARD: Skip if meal already has protein
+        const hasProtein = meal.items.some(item => item.addedBy?.includes('protein') || item.isProteinFocus);
+        if (hasProtein) {
+            console.log(`⚠️ [FEMALE PROTEIN] ${meal.mealName} already has protein, skipping`);
+            continue;
+        }
+
+        const proteinItem = createTierAwareProteinItem(protein, scoopsPerMeal, meal, goal, dietaryFilters);
+        meal.items.push(proteinItem);
+        proteinItemsAdded++;
+
+        console.log(`✅ [FEMALE PROTEIN] Added ${scoopsPerMeal} scoop of ${proteinItem.food} to ${meal.mealName} (Tier ${proteinItem.tier || 'unknown'})`);
+    }
+
+    console.log(`🎯 [FEMALE PROTEIN] Successfully added ${proteinItemsAdded} protein items`);
+    return mealPlan;
+};
+
+// ✅ FIXED: Tier-aware protein item with proper limits
+const createTierAwareProteinItem = (protein, scoops, meal, goal, dietaryFilters) => {
+    const mealName = meal.mealName.toLowerCase();
+
+    // Check existing meal items for smart combinations
+    const hasGreekYogurt = meal.items.some(item => item.food.includes('Greek Yogurt'));
+    const hasOats = meal.items.some(item => item.food.includes('Oats'));
+    const hasBerries = meal.items.some(item => item.category === 'fruits');
+
+    let proteinFood = protein.name;
+    let combination = null;
+    let category = 'supplements';
+
+    // Create smart combinations but only if context is appropriate
+    if (hasGreekYogurt && !meal.items.some(item => item.food.includes('Protein'))) {
+        if (dietaryFilters.includes('dairyFree')) {
+            combination = 'Coconut Yogurt + Plant Protein';
+        } else {
+            combination = dietaryFilters.includes('vegetarian') ?
+                'Greek Yogurt + Plant Protein' :
+                'Greek Yogurt + Whey Protein';
+        }
+        proteinFood = combination;
+        category = 'protein_combinations';
+    } else if (hasOats && mealName.includes('breakfast')) {
+        combination = dietaryFilters.includes('dairyFree') ?
+            'Oats + Plant Protein' :
+            'Oats + Whey Protein';
+        proteinFood = combination;
+        category = 'protein_combinations';
+    } else if (hasBerries && (goal === 'lose' || goal === 'maintain')) {
+        combination = 'Berries + Protein Powder';
+        proteinFood = combination;
+        category = 'favorite_snacks';
+    }
+
+    // 🔧 FIXED: Apply tier-based limits properly
+    const tier = getFoodTier(proteinFood, category);
+    const maxServing = getFoodMaxServing(proteinFood);
+
+    // Apply tier limits and gender-specific limits
+    let maxAllowed = maxServing.maxServing;
+
+    // For protein supplements, use gender-specific limits from EnhancedFoodDatabase
+    if (EnhancedFoodDatabase.protein_supplements[proteinFood]) {
+        const genderLimits = EnhancedFoodDatabase.protein_supplements[proteinFood].maxDaily;
+        maxAllowed = Math.min(maxAllowed, genderLimits.male || 3); // Default to male limits
+    }
+
+    const limitedScoops = Math.min(scoops, maxAllowed);
+
+    // Get nutritional data
+    let nutritionData = protein;
+    if (combination && EnhancedFoodDatabase.protein_combinations[combination]) {
+        nutritionData = EnhancedFoodDatabase.protein_combinations[combination];
+    } else if (combination && EnhancedFoodDatabase.favorite_snacks[combination]) {
+        nutritionData = EnhancedFoodDatabase.favorite_snacks[combination];
+    }
+
+    return {
+        id: generateId(),
+        category,
+        food: proteinFood,
+        serving: limitedScoops,
+        displayServing: limitedScoops.toString(),
+        displayUnit: combination ? 'servings' : (limitedScoops === 1 ? 'scoop' : 'scoops'),
+        addedBy: 'tier-aware-protein-system',
+        isProteinFocus: true,
+        combination: combination,
+        tier: tier,
+        tierLimited: limitedScoops < scoops,
+        proteinData: {
+            originalProtein: protein.name,
+            combination: combination,
+            nutritionData: nutritionData,
+            requestedScoops: scoops,
+            actualScoops: limitedScoops,
+            tierInfo: {
+                tier: tier,
+                maxServing: maxAllowed,
+                maxDisplay: maxServing.maxDisplay,
+                unit: maxServing.unit
+            },
+            mealContext: {
+                hasGreekYogurt,
+                hasOats,
+                hasBerries,
+                mealName: meal.mealName
+            }
+        }
+    };
+};
+
+// Prioritize meals for protein distribution
+const getMealPriority = (mealPlan) => {
+    const priority = [];
+
+    mealPlan.allMeals.forEach((meal, index) => {
+        const mealName = meal.mealName.toLowerCase();
+
+        if (mealName.includes('breakfast')) {
+            priority.unshift(index); // Highest priority
+        } else if (mealName.includes('lunch')) {
+            priority.splice(1, 0, index); // Second priority  
+        } else if (mealName.includes('dinner')) {
+            priority.splice(2, 0, index); // Third priority
+        } else {
+            priority.push(index); // Snacks last
+        }
+    });
+
+    return priority;
+};
+
+// ✅ FIXED: Favorite snacks system with guards
+export const addFavoriteSnacks = (mealPlan, goal, dietaryFilters = []) => {
+    console.log(`🥨 [SNACKS SYSTEM] Adding favorite snacks for ${goal} goal`);
+
+    if (!['maintain', 'lose'].includes(goal)) {
+        console.log('⚠️ [SNACKS] Goal not suitable for favorite snacks');
+        return mealPlan;
+    }
+
+    // 🔒 GUARD: Check if snacks already added
+    const hasExistingSnacks = mealPlan.allMeals.some(meal =>
+        meal.items.some(item => item.addedBy?.includes('snacks') || item.isFavorite)
+    );
+
+    if (hasExistingSnacks) {
+        console.log('⚠️ [SNACKS] Favorite snacks already added, skipping');
+        return mealPlan;
+    }
+
+    const favorites = getFavoritesByGoal(goal, dietaryFilters);
+    const snackFavorites = favorites.filter(fav =>
+        fav.goalSuitability && fav.goalSuitability.includes(goal)
+    );
+
+    console.log(`🍪 [SNACKS] Found ${snackFavorites.length} suitable snacks:`,
+        snackFavorites.map(s => s.name));
+
+    if (snackFavorites.length === 0) {
+        console.log('⚠️ [SNACKS] No suitable snacks found');
+        return mealPlan;
+    }
+
+    const snackMeals = mealPlan.allMeals.filter(meal =>
+        meal.mealName.toLowerCase().includes('snack')
+    );
+
+    if (snackMeals.length > 0) {
+        const hummusSnack = snackFavorites.find(fav => fav.name.includes('Hummus'));
+        const selectedSnack = hummusSnack || snackFavorites[0];
+
+        const snackItem = {
+            id: generateId(),
+            category: 'favorite_snacks',
+            food: selectedSnack.name,
+            serving: 1,
+            displayServing: '1',
+            displayUnit: 'serving',
+            addedBy: 'enhanced-snacks-system',
+            isFavorite: true,
+            tier: getFoodTier(selectedSnack.name, 'favorite_snacks'),
+            snackData: {
+                goalSuitability: selectedSnack.goalSuitability,
+                dietaryTags: selectedSnack.dietaryTags,
+                components: selectedSnack.components
+            }
+        };
+
+        snackMeals[0].items.push(snackItem);
+        console.log(`✅ [SNACKS] Added ${selectedSnack.name} to ${snackMeals[0].mealName} (Tier ${snackItem.tier})`);
+    } else {
+        console.log('⚠️ [SNACKS] No snack meals found to add favorites to');
+    }
+
+    return mealPlan;
 };
 
 // Complete meal plan templates
@@ -582,7 +627,7 @@ const CompleteMealPlanTemplates = {
 };
 
 /**
- * 🚀 ULTIMATE MEAL PLAN GENERATOR CLASS (Protein + Tier Integration)
+ * 🚀 FIXED ULTIMATE MEAL PLAN GENERATOR CLASS
  */
 export class MealPlanGenerator {
     constructor() {
@@ -591,7 +636,7 @@ export class MealPlanGenerator {
     }
 
     /**
-     * Generate a complete meal plan with protein priority + tier-based scaling
+     * Generate meal plan with all systems working properly
      */
     generateMealPlan(options) {
         const {
@@ -603,7 +648,7 @@ export class MealPlanGenerator {
             calorieData = null
         } = options;
 
-        console.log(`🎯 [ULTIMATE GENERATOR] Starting: ${goal}-${eaterType}-${mealFreq}`);
+        console.log(`🎯 [FIXED GENERATOR] Starting: ${goal}-${eaterType}-${mealFreq}`);
         console.log(`👤 [USER PROFILE]`, userProfile);
         console.log(`🥗 [DIETARY FILTERS]`, dietaryFilters);
 
@@ -615,30 +660,32 @@ export class MealPlanGenerator {
             }
             console.log(`📋 [TEMPLATE] Found base template with ${baseTemplate.allMeals.length} meals`);
 
-            // Step 2: Apply dietary filters
+            // Step 2: Deep clone to prevent mutations
+            const workingPlan = JSON.parse(JSON.stringify(baseTemplate));
+
+            // Step 3: Apply dietary filters
             console.log(`🥨 [DIETARY] Applying dietary filters...`);
             const dietaryPlan = applyDietaryFilters ?
-                applyDietaryFilters(baseTemplate, dietaryFilters) :
-                JSON.parse(JSON.stringify(baseTemplate));
+                applyDietaryFilters(workingPlan, dietaryFilters) :
+                workingPlan;
 
-            // Step 3: Add favorite snacks FIRST
+            // Step 4: Add favorite snacks FIRST (only once)
             console.log(`🍪 [FAVORITES] Adding favorite snacks...`);
             addFavoriteSnacks(dietaryPlan, goal, dietaryFilters);
 
-            // Step 4: Distribute protein (tier-aware)
-            console.log(`💪 [PROTEIN] Starting tier-aware protein distribution...`);
+            // Step 5: Distribute protein (only once)
+            console.log(`💪 [PROTEIN] Starting protein distribution...`);
             const gender = userProfile?.gender || 'male';
             console.log(`👤 [GENDER] Using gender: ${gender}`);
             distributeProteinThroughoutDay(dietaryPlan, gender, goal, dietaryFilters);
 
-            // Step 5: Apply tier-based scaling to ALL items
-            const targetCalories = this.calculateTargetCalories(goal, calorieData);
+            // Step 6: Calculate target calories and scale with tier system
+            const targetCalories = this.calculateTargetCalories(goal, calorieData, gender);
             console.log(`📊 [CALORIES] Target calories: ${targetCalories}`);
 
-            // 🔥 NEW: Enhanced scaling with tier-based system
             const scaledPlan = this.scaleMealPlanWithTiers(dietaryPlan, targetCalories, goal);
 
-            // Step 6: Enhance plan with metadata
+            // Step 7: Enhance plan with metadata
             const finalPlan = this.enhanceMealPlan(scaledPlan, {
                 goal,
                 eaterType,
@@ -648,7 +695,7 @@ export class MealPlanGenerator {
                 targetCalories
             });
 
-            // Step 7: Validate dietary compliance
+            // Step 8: Validate dietary compliance
             if (validateDietaryCompliance) {
                 const validation = validateDietaryCompliance(finalPlan, dietaryFilters);
                 if (!validation.isCompliant) {
@@ -657,19 +704,19 @@ export class MealPlanGenerator {
                 }
             }
 
-            console.log('✅ [ULTIMATE SUCCESS] Meal plan generation complete');
+            console.log('✅ [FIXED SUCCESS] Meal plan generation complete');
             console.log(`🎯 [SUMMARY] Final plan: ${finalPlan.allMeals.length} meals, ${this.countProteinItems(finalPlan)} protein items, ${this.countTierLimitedItems(finalPlan)} tier-limited items`);
 
             return finalPlan;
 
         } catch (error) {
-            console.error('❌ [ULTIMATE ERROR] Error generating meal plan:', error);
+            console.error('❌ [FIXED ERROR] Error generating meal plan:', error);
             return this.getFallbackPlan();
         }
     }
 
     /**
-     * 🔥 NEW: Enhanced scaling with tier-based system integration
+     * 🔧 FIXED: Enhanced scaling with proper rounding
      */
     scaleMealPlanWithTiers(basePlan, targetCalories, goal) {
         const currentCalories = this.calculatePlanCalories(basePlan);
@@ -687,7 +734,7 @@ export class MealPlanGenerator {
 
         console.log(`📊 [TIER SCALING] ${currentCalories} → ${targetCalories} calories (${scalingFactor.toFixed(2)}x)`);
 
-        // Clone and apply tier-based scaling
+        // Clone and apply tier-based scaling with proper rounding
         const scaledPlan = JSON.parse(JSON.stringify(basePlan));
         let totalCalorieDeficit = 0;
 
@@ -696,6 +743,17 @@ export class MealPlanGenerator {
             items: meal.items.map(item => {
                 // Apply tier-based scaling to each item
                 const tierScaledItem = applyTierBasedScaling(item, scalingFactor, goal);
+
+                // 🔧 FIXED: Apply proper rounding to display values
+                const newServing = tierScaledItem.serving;
+                const rawDisplayServing = parseFloat(tierScaledItem.displayServing || '1');
+
+                // Apply user-friendly rounding
+                const friendlyDisplayServing = roundToUserFriendly(rawDisplayServing, tierScaledItem.displayUnit);
+                const standardUnit = standardizeDisplayUnit(friendlyDisplayServing, tierScaledItem.displayUnit);
+
+                tierScaledItem.displayServing = friendlyDisplayServing < 0.25 ? '0.25' : friendlyDisplayServing.toString();
+                tierScaledItem.displayUnit = standardUnit;
 
                 // Track calorie deficits for makeup foods
                 if (tierScaledItem.scalingDeficit) {
@@ -718,7 +776,7 @@ export class MealPlanGenerator {
         scaledPlan.tierAnalysis = {
             totalDeficit: totalCalorieDeficit,
             makeupCaloriesAdded: totalCalorieDeficit > 100,
-            scalingApproach: 'tier-based-with-makeup'
+            scalingApproach: 'tier-based-with-proper-rounding'
         };
 
         console.log(`✅ [TIER SCALING] Complete. Final calories: ${scaledPlan.actualCalories}`);
@@ -726,14 +784,13 @@ export class MealPlanGenerator {
         return scaledPlan;
     }
 
-    // Helper to count tier-limited items
+    // Helper methods
     countTierLimitedItems(mealPlan) {
         return mealPlan.allMeals.reduce((total, meal) => {
             return total + meal.items.filter(item => item.wasLimited || item.tierLimited).length;
         }, 0);
     }
 
-    // Helper to count protein items
     countProteinItems(mealPlan) {
         return mealPlan.allMeals.reduce((total, meal) => {
             return total + meal.items.filter(item =>
@@ -750,28 +807,41 @@ export class MealPlanGenerator {
         return this.templates[key] || this.templates['maintain-balanced-5'];
     }
 
-    calculateTargetCalories(goal, calorieData) {
+    calculateTargetCalories(goal, calorieData, gender = 'male') {
         if (!calorieData) {
-            const defaults = {
+            // 🔧 GENDER-SPECIFIC BASE CALORIES
+            const femaleDefaults = {
+                'lose': 1400,
+                'maintain': 1600,
+                'gain-muscle': 1900,
+                'dirty-bulk': 2200
+            };
+
+            const maleDefaults = {
                 'lose': 1800,
                 'maintain': 2200,
                 'gain-muscle': 2700,
                 'dirty-bulk': 3000
             };
-            return defaults[goal] || 2200;
+
+            const defaults = gender.toLowerCase() === 'female' ? femaleDefaults : maleDefaults;
+            const targetCalories = defaults[goal] || (gender.toLowerCase() === 'female' ? 1600 : 2200);
+
+            console.log(`📊 [GENDER CALORIES] ${gender} ${goal}: ${targetCalories} calories (from defaults)`);
+            return targetCalories;
         }
 
         switch (goal) {
             case 'lose':
                 return Math.max(1200, calorieData.bmr + 50);
             case 'maintain':
-                return calorieData.targetCalories || calorieData.tdee || 2200;
+                return calorieData.targetCalories || calorieData.tdee || (gender.toLowerCase() === 'female' ? 1600 : 2200);
             case 'gain-muscle':
-                return (calorieData.tdee || 2200) + 500;
+                return (calorieData.tdee || (gender.toLowerCase() === 'female' ? 1600 : 2200)) + 500;
             case 'dirty-bulk':
-                return (calorieData.tdee || 2200) + 700;
+                return (calorieData.tdee || (gender.toLowerCase() === 'female' ? 1600 : 2200)) + 700;
             default:
-                return calorieData.targetCalories || 2200;
+                return calorieData.targetCalories || (gender.toLowerCase() === 'female' ? 1600 : 2200);
         }
     }
 
@@ -822,7 +892,7 @@ export class MealPlanGenerator {
             ...mealPlan,
             generatedAt: new Date().toISOString(),
             planId: `${options.goal}-${options.eaterType}-${options.mealFreq}${options.dietaryFilters.length ? '-' + options.dietaryFilters.join('-') : ''}`,
-            generatedWith: 'ultimate-protein-tier-system-v3',
+            generatedWith: 'fixed-ultimate-system-v4',
 
             userPreferences: {
                 goal: options.goal,
@@ -835,7 +905,6 @@ export class MealPlanGenerator {
             nutrition: this.calculateNutritionBreakdown(mealPlan),
             fruitCount: this.calculateFruitCount(mealPlan),
 
-            // Enhanced metrics with tier analysis
             proteinItemsAdded: this.countProteinItems(mealPlan),
             tierLimitedItems: this.countTierLimitedItems(mealPlan),
             systemEnhancements: {
@@ -843,7 +912,8 @@ export class MealPlanGenerator {
                 tierBasedScalingActive: true,
                 favoriteSnacksActive: true,
                 dietaryFiltersApplied: options.dietaryFilters.length > 0,
-                makeupCaloriesActive: mealPlan.tierAnalysis?.makeupCaloriesAdded || false
+                makeupCaloriesActive: mealPlan.tierAnalysis?.makeupCaloriesAdded || false,
+                bugsFixed: ['protein-spam', 'rounding-errors', 'calorie-explosion']
             }
         };
 
