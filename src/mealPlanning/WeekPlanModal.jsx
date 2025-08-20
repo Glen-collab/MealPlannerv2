@@ -1,8 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { generateMealPlan } from './MealPlanGenerator.js';
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
-
+import { generateMealPlan } from './MealPlanGenerator.js';
 // This should be saved as src/mealPlanning/WeekPlanModal.jsx
+// Add this function inside your component
+const quickTest = () => {
+    console.log('🧪 Quick test starting...');
+
+    try {
+        // Test basic meal plan generation
+        const testPlan = generateMealPlan({
+            goal: 'maintain',
+            eaterType: 'balanced',
+            mealFreq: 3,
+            dietaryFilters: [],
+            userProfile: { gender: 'male' },
+            calorieData: { targetCalories: 2200 }
+        });
+
+        console.log('✅ Basic test PASSED!');
+        console.log('📊 Plan details:', {
+            calories: testPlan.actualCalories || testPlan.targetCalories,
+            meals: testPlan.allMeals?.length,
+            firstMeal: testPlan.allMeals?.[0]?.mealName,
+            totalItems: testPlan.allMeals?.reduce((total, meal) => total + meal.items.length, 0)
+        });
+
+        // Test protein focus
+        const proteinItems = testPlan.allMeals?.flatMap(meal =>
+            meal.items.filter(item =>
+                item.food?.includes('Protein') ||
+                item.category === 'supplements'
+            )
+        ) || [];
+
+        console.log('🥤 Protein items found:', proteinItems.length);
+        proteinItems.forEach(item => {
+            console.log(`  • ${item.food} (${item.displayServing} ${item.displayUnit})`);
+        });
+
+        return true;
+    } catch (error) {
+        console.error('❌ Test FAILED:', error.message);
+        console.error('Full error:', error);
+        return false;
+    }
+};
 
 function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieData, isMobile = false }) {
     const [selectedGoal, setSelectedGoal] = useState(userProfile?.goal || 'maintain');
@@ -243,6 +286,13 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                             </div>
                         </div>
 
+                        <button
+                            onClick={quickTest}
+                            className="bg-red-500 text-white px-4 py-2 rounded"
+                        >
+                            🧪 Quick Test
+                        </button>
+                        
                         {/* Generate Button */}
                         <div className="flex justify-center">
                             <button
