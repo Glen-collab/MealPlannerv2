@@ -2,6 +2,9 @@
 
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
 import { getFoodNutrition, FoodDatabase } from './FoodDatabase.js';
+import { distributeProteinThroughoutDay, addFavoriteSnacks } from './ProteinPrioritySystem.js';
+import { addEscalationCalories } from './TierBasedScaling.js';
+import { getProteinRecommendations } from './ProteinPrioritySystem.js';
 
 // Generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -370,10 +373,15 @@ export class MealPlanGenerator {
 
             // Step 2: Apply dietary filters
             const dietaryPlan = applyDietaryFilters(baseTemplate, dietaryFilters);
+            console.log('🥨 Adding favorite snacks...');
+            addFavoriteSnacks(dietaryPlan, goal, dietaryFilters);
 
             // Step 3: Scale to target calories if needed
             const targetCalories = this.calculateTargetCalories(goal, calorieData);
             const scaledPlan = this.scaleMealPlan(dietaryPlan, targetCalories, goal);
+            console.log('🥤 Distributing protein based on gender and goal...');
+            const gender = userProfile?.gender || 'male';
+            distributeProteinThroughoutDay(scaledPlan, gender, goal, dietaryFilters);
 
             // Step 4: Enhance plan with metadata
             const finalPlan = this.enhanceMealPlan(scaledPlan, {
