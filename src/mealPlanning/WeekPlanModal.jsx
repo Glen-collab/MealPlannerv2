@@ -1,51 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateMealPlan } from './MealPlanGenerator.js';
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
-// This should be saved as src/mealPlanning/WeekPlanModal.jsx
-// Add this function inside your component
-const quickTest = () => {
-
-    console.log('🧪 Quick test starting...');
-
-    try {
-        // Test basic meal plan generation
-        const testPlan = generateMealPlan({
-            goal: 'maintain',
-            eaterType: 'balanced',
-            mealFreq: 3,
-            dietaryFilters: [],
-            userProfile: { gender: 'male' },
-            calorieData: { targetCalories: 2200 }
-        });
-
-        console.log('✅ Basic test PASSED!');
-        console.log('📊 Plan details:', {
-            calories: testPlan.actualCalories || testPlan.targetCalories,
-            meals: testPlan.allMeals?.length,
-            firstMeal: testPlan.allMeals?.[0]?.mealName,
-            totalItems: testPlan.allMeals?.reduce((total, meal) => total + meal.items.length, 0)
-        });
-
-        // Test protein focus
-        const proteinItems = testPlan.allMeals?.flatMap(meal =>
-            meal.items.filter(item =>
-                item.food?.includes('Protein') ||
-                item.category === 'supplements'
-            )
-        ) || [];
-
-        console.log('🥤 Protein items found:', proteinItems.length);
-        proteinItems.forEach(item => {
-            console.log(`  • ${item.food} (${item.displayServing} ${item.displayUnit})`);
-        });
-
-        return true;
-    } catch (error) {
-        console.error('❌ Test FAILED:', error.message);
-        console.error('Full error:', error);
-        return false;
-    }
-};
 
 function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieData, isMobile = false }) {
     const [selectedGoal, setSelectedGoal] = useState(userProfile?.goal || 'maintain');
@@ -58,17 +13,15 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
     const [showPreview, setShowPreview] = useState(false);
     const [testResult, setTestResult] = useState(null);
 
-    // 3. Add this test function inside your WeekPlanModal component:
+    // Test function INSIDE the component
     const runVisibleTest = () => {
-        console.log('🧪 Test button clicked!'); // This should show in console
+        console.log('🧪 Test button clicked!');
         setTestResult('🔄 Testing... please wait...');
 
-        // Small delay to show the "testing" message
         setTimeout(() => {
             try {
                 console.log('🔄 About to generate meal plan...');
 
-                // Test basic meal plan generation
                 const testPlan = generateMealPlan({
                     goal: 'maintain',
                     eaterType: 'balanced',
@@ -80,14 +33,13 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
 
                 console.log('✅ Plan generated successfully!', testPlan);
 
-                // Create visible result
                 const result = `
 ✅ TEST PASSED!
 📊 Calories: ${testPlan.actualCalories || testPlan.targetCalories || 'unknown'}
 🍽️ Meals: ${testPlan.allMeals?.length || 'unknown'}
 📝 Total items: ${testPlan.allMeals?.reduce((total, meal) => total + (meal.items?.length || 0), 0) || 'unknown'}
 🥗 First meal: ${testPlan.allMeals?.[0]?.mealName || 'unknown'}
-            `;
+                `;
 
                 setTestResult(result);
 
@@ -171,7 +123,6 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
 
         return plan.allMeals.reduce((total, meal) => {
             return total + (meal.items?.reduce((mealTotal, item) => {
-                // Use the food database to calculate calories
                 return mealTotal + (item.calories || 0);
             }, 0) || 0);
         }, 0);
@@ -182,7 +133,7 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
     const goalOptions = [
         { value: 'lose', label: '🔥 Lose Weight', desc: 'Calorie deficit for fat loss' },
         { value: 'maintain', label: '⚖️ Maintain', desc: 'Balanced nutrition' },
-        { value: 'Gain-muscle', label: '💪 Gain Muscle', desc: 'Lean muscle building' },
+        { value: 'gain-muscle', label: '💪 Gain Muscle', desc: 'Lean muscle building' },
         { value: 'dirty-bulk', label: '🚀 Dirty Bulk', desc: 'Maximum muscle gain' }
     ];
 
@@ -204,29 +155,6 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
         { value: 'dairyFree', label: '🥛 Dairy-Free', desc: 'No dairy products' }
     ];
 
-    // 4. Add this test button in your JSX (put it right after your eater type selection):
-
-    {/* DEBUG TEST BUTTON - Remove after testing */ }
-    <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-        <h4 className="font-semibold text-red-800 mb-2">🧪 Debug Test</h4>
-        <button
-            onClick={runVisibleTest}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
-        >
-            🧪 Test New System (Click Me!)
-        </button>
-
-        {testResult && (
-            <div className="mt-3 p-3 bg-white rounded border">
-                <pre className="text-sm whitespace-pre-wrap">{testResult}</pre>
-            </div>
-        )}
-
-        <div className="text-xs text-red-600 mt-2">
-            💡 Also check browser console (F12) for detailed logs
-        </div>
-    </div>
-    
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-screen overflow-y-auto">
@@ -249,6 +177,27 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                     /* Configuration Phase */
                     <div className="p-6 space-y-8">
 
+                        {/* DEBUG TEST BUTTON - PROPERLY PLACED NOW */}
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                            <h4 className="font-semibold text-red-800 mb-2">🧪 Debug Test</h4>
+                            <button
+                                onClick={runVisibleTest}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
+                            >
+                                🧪 Test New System (Click Me!)
+                            </button>
+
+                            {testResult && (
+                                <div className="mt-3 p-3 bg-white rounded border">
+                                    <pre className="text-sm whitespace-pre-wrap">{testResult}</pre>
+                                </div>
+                            )}
+
+                            <div className="text-xs text-red-600 mt-2">
+                                💡 Also check browser console (F12) for detailed logs
+                            </div>
+                        </div>
+
                         {/* Goal Selection */}
                         <div>
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">🎯 Fitness Goal</h3>
@@ -258,8 +207,8 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                                         key={option.value}
                                         onClick={() => setSelectedGoal(option.value)}
                                         className={`p-4 rounded-xl border-2 text-left transition-all ${selectedGoal === option.value
-                                                ? 'border-blue-500 bg-blue-50 shadow-lg'
-                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            ? 'border-blue-500 bg-blue-50 shadow-lg'
+                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className="font-semibold text-gray-800">{option.label}</div>
@@ -278,8 +227,8 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                                         key={option.value}
                                         onClick={() => setSelectedEaterType(option.value)}
                                         className={`p-4 rounded-xl border-2 text-left transition-all ${selectedEaterType === option.value
-                                                ? 'border-green-500 bg-green-50 shadow-lg'
-                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            ? 'border-green-500 bg-green-50 shadow-lg'
+                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className="font-semibold text-gray-800">{option.label}</div>
@@ -298,8 +247,8 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                                         key={option.value}
                                         onClick={() => setSelectedMealFreq(option.value)}
                                         className={`p-4 rounded-xl border-2 text-center transition-all ${selectedMealFreq === option.value
-                                                ? 'border-purple-500 bg-purple-50 shadow-lg'
-                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            ? 'border-purple-500 bg-purple-50 shadow-lg'
+                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className="font-semibold text-gray-800">{option.label}</div>
@@ -318,8 +267,8 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                                         key={option.value}
                                         onClick={() => handleDietaryFilterToggle(option.value)}
                                         className={`p-4 rounded-xl border-2 text-left transition-all ${selectedDietaryFilters.includes(option.value)
-                                                ? 'border-orange-500 bg-orange-50 shadow-lg'
-                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            ? 'border-orange-500 bg-orange-50 shadow-lg'
+                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
@@ -349,13 +298,6 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                                 )}
                             </div>
                         </div>
-
-                        <button
-                            onClick={quickTest}
-                            className="bg-red-500 text-white px-4 py-2 rounded"
-                        >
-                            🧪 Quick Test
-                        </button>
 
                         {/* Generate Button */}
                         <div className="flex justify-center">
@@ -430,8 +372,8 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                                 {/* Dietary Compliance Status */}
                                 {generatedPlan.validationResults && (
                                     <div className={`p-3 rounded-lg mb-4 ${generatedPlan.validationResults.isCompliant
-                                            ? 'bg-green-50 border border-green-200'
-                                            : 'bg-yellow-50 border border-yellow-200'
+                                        ? 'bg-green-50 border border-green-200'
+                                        : 'bg-yellow-50 border border-yellow-200'
                                         }`}>
                                         <div className="text-sm font-medium">
                                             {generatedPlan.validationResults.isCompliant ? '✅' : '⚠️'}
