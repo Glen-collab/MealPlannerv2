@@ -368,7 +368,11 @@ export const addFavoriteSnacks = (mealPlan, goal, dietaryFilters = []) => {
 };
 
 // Complete meal plan templates
+// CORRECTED meal plan templates with your EXACT modal names
+// Replace the templates in your MealPlanGenerator.js with these
+
 const CompleteMealPlanTemplates = {
+    // MAINTAIN WEIGHT PLANS
     'maintain-balanced-3': {
         targetCalories: 2200,
         goalType: 'maintain',
@@ -376,7 +380,7 @@ const CompleteMealPlanTemplates = {
         mealFrequency: 3,
         allMeals: [
             {
-                mealName: 'Breakfast',
+                mealName: 'Breakfast', // ✅ Matches modal
                 time: '7:00 AM',
                 items: [
                     createFoodItem('Oats (dry)', 'carbohydrate', 1, '1/2', 'cup'),
@@ -385,7 +389,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Lunch',
+                mealName: 'Lunch', // ✅ Matches modal
                 time: '12:30 PM',
                 items: [
                     createFoodItem('Chicken Breast', 'protein', 2, '7', 'oz'),
@@ -395,7 +399,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Dinner',
+                mealName: 'Dinner', // ✅ Matches modal
                 time: '6:30 PM',
                 items: [
                     createFoodItem('Salmon', 'protein', 2, '7', 'oz'),
@@ -414,7 +418,7 @@ const CompleteMealPlanTemplates = {
         mealFrequency: 5,
         allMeals: [
             {
-                mealName: 'Breakfast',
+                mealName: 'Breakfast', // ✅ Matches modal
                 time: '7:00 AM',
                 items: [
                     createFoodItem('Oats (dry)', 'carbohydrate', 0.75, '3/8', 'cup'),
@@ -423,7 +427,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Morning Snack',
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
                 time: '10:00 AM',
                 items: [
                     createFoodItem('Greek Yogurt (non-fat)', 'protein', 1, '1', 'cup'),
@@ -431,7 +435,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Lunch',
+                mealName: 'Lunch', // ✅ Matches modal
                 time: '1:00 PM',
                 items: [
                     createFoodItem('Chicken Breast', 'protein', 1.5, '5.25', 'oz'),
@@ -441,7 +445,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Afternoon Snack',
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
                 time: '4:00 PM',
                 items: [
                     createFoodItem('Apple', 'fruits', 1, '1', 'medium'),
@@ -449,13 +453,114 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Dinner',
+                mealName: 'Dinner', // ✅ Matches modal
                 time: '7:00 PM',
                 items: [
                     createFoodItem('Salmon', 'protein', 1.5, '5.25', 'oz'),
                     createFoodItem('Sweet Potato', 'carbohydrate', 1.5, '1.5', 'medium'),
                     createFoodItem('Asparagus', 'vegetables', 2, '2', 'cups'),
                     createFoodItem('Avocado', 'fat', 0.75, '3/4', 'medium')
+                ]
+            }
+        ]
+    },
+
+    'maintain-balanced-6': {
+        targetCalories: 2000,
+        goalType: 'maintain',
+        eaterType: 'balanced',
+        mealFrequency: 6,
+        allMeals: [
+            {
+                mealName: 'Breakfast', // ✅ Matches modal
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.6, '3/10', 'cup'),
+                    createFoodItem('Blueberries', 'fruits', 0.8, '4/5', 'cup'),
+                    createFoodItem('Almonds', 'fat', 0.4, '0.4', 'oz')
+                ]
+            },
+            {
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
+                time: '9:30 AM',
+                items: [
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 0.8, '4/5', 'cup'),
+                    createFoodItem('Strawberries', 'fruits', 0.8, '4/5', 'cup')
+                ]
+            },
+            {
+                mealName: 'SecondSnack', // 🔧 FIXED: No space
+                time: '11:00 AM',
+                items: [
+                    createFoodItem('String Cheese', 'protein', 1, '1', 'stick'),
+                    createFoodItem('Almonds', 'fat', 0.3, '0.3', 'oz')
+                ]
+            },
+            {
+                mealName: 'Lunch', // ✅ Matches modal
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 1.2, '4.2', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 1.2, '3/5', 'cup'),
+                    createFoodItem('Bell Peppers', 'vegetables', 0.8, '4/5', 'cup'),
+                    createFoodItem('Olive Oil', 'fat', 0.4, '2/5', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
+                time: '3:00 PM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 0.8, '4/5', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 0.4, '2/5', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner', // ✅ Matches modal
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 1.2, '4.2', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 1.2, '1.2', 'medium'),
+                    createFoodItem('Asparagus', 'vegetables', 1.6, '1.6', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.6, '3/5', 'medium')
+                ]
+            }
+        ]
+    },
+
+    // LOSE WEIGHT PLANS
+    'lose-balanced-3': {
+        targetCalories: 1600,
+        goalType: 'lose',
+        eaterType: 'balanced',
+        mealFrequency: 3,
+        allMeals: [
+            {
+                mealName: 'Breakfast', // ✅ Matches modal
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Egg Whites', 'protein', 4, '4', 'egg whites'),
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.5, '1/4', 'cup'),
+                    createFoodItem('Blueberries', 'fruits', 0.75, '3/4', 'cup')
+                ]
+            },
+            {
+                mealName: 'Lunch', // ✅ Matches modal
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 1.8, '6.3', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 1, '1/2', 'cup'),
+                    createFoodItem('Bell Peppers', 'vegetables', 1.5, '1.5', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 0.5, '1/2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner', // ✅ Matches modal
+                time: '6:30 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 1.5, '5.25', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 1, '1', 'medium'),
+                    createFoodItem('Spinach', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.5, '1/2', 'medium')
                 ]
             }
         ]
@@ -468,7 +573,7 @@ const CompleteMealPlanTemplates = {
         mealFrequency: 5,
         allMeals: [
             {
-                mealName: 'Breakfast',
+                mealName: 'Breakfast', // ✅ Matches modal
                 time: '7:00 AM',
                 items: [
                     createFoodItem('Egg Whites', 'protein', 5, '5', 'egg whites'),
@@ -477,7 +582,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Morning Snack',
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
                 time: '10:00 AM',
                 items: [
                     createFoodItem('Greek Yogurt (non-fat)', 'protein', 1, '1', 'cup'),
@@ -485,7 +590,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Lunch',
+                mealName: 'Lunch', // ✅ Matches modal
                 time: '1:00 PM',
                 items: [
                     createFoodItem('Chicken Breast', 'protein', 2, '7', 'oz'),
@@ -495,7 +600,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Afternoon Snack',
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
                 time: '4:00 PM',
                 items: [
                     createFoodItem('Apple', 'fruits', 1, '1', 'medium'),
@@ -503,13 +608,114 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Dinner',
+                mealName: 'Dinner', // ✅ Matches modal
                 time: '7:00 PM',
                 items: [
                     createFoodItem('Salmon', 'protein', 1.75, '6.1', 'oz'),
                     createFoodItem('Sweet Potato', 'carbohydrate', 1.25, '1.25', 'medium'),
                     createFoodItem('Spinach', 'vegetables', 2, '2', 'cups'),
                     createFoodItem('Avocado', 'fat', 0.75, '3/4', 'medium')
+                ]
+            }
+        ]
+    },
+
+    'lose-balanced-6': {
+        targetCalories: 1600,
+        goalType: 'lose',
+        eaterType: 'balanced',
+        mealFrequency: 6,
+        allMeals: [
+            {
+                mealName: 'Breakfast', // ✅ Matches modal
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Egg Whites', 'protein', 3, '3', 'egg whites'),
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.4, '1/5', 'cup'),
+                    createFoodItem('Blueberries', 'fruits', 0.5, '1/2', 'cup')
+                ]
+            },
+            {
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
+                time: '9:30 AM',
+                items: [
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 0.75, '3/4', 'cup'),
+                    createFoodItem('Almonds', 'fat', 0.3, '0.3', 'oz')
+                ]
+            },
+            {
+                mealName: 'SecondSnack', // 🔧 FIXED: No space
+                time: '11:00 AM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 0.5, '1/2', 'medium'),
+                    createFoodItem('String Cheese', 'protein', 1, '1', 'stick')
+                ]
+            },
+            {
+                mealName: 'Lunch', // ✅ Matches modal
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 1.2, '4.2', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 0.75, '3/8', 'cup'),
+                    createFoodItem('Bell Peppers', 'vegetables', 1, '1', 'cup')
+                ]
+            },
+            {
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
+                time: '3:00 PM',
+                items: [
+                    createFoodItem('Cottage Cheese (low-fat)', 'protein', 0.5, '1/2', 'cup'),
+                    createFoodItem('Cucumber', 'vegetables', 1, '1', 'cup')
+                ]
+            },
+            {
+                mealName: 'Dinner', // ✅ Matches modal
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 1.2, '4.2', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 0.8, '0.8', 'medium'),
+                    createFoodItem('Spinach', 'vegetables', 1.5, '1.5', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.4, '0.4', 'medium')
+                ]
+            }
+        ]
+    },
+
+    // GAIN MUSCLE PLANS
+    'gain-muscle-balanced-3': {
+        targetCalories: 2500,
+        goalType: 'gain-muscle',
+        eaterType: 'balanced',
+        mealFrequency: 3,
+        allMeals: [
+            {
+                mealName: 'Breakfast', // ✅ Matches modal
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 1.2, '3/5', 'cup'),
+                    createFoodItem('Banana', 'fruits', 1.5, '1.5', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 1.5, '1.5', 'tbsp'),
+                    createFoodItem('Whole Milk', 'fat', 1, '1', 'cup')
+                ]
+            },
+            {
+                mealName: 'Lunch', // ✅ Matches modal
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 2.5, '8.75', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 2.2, '1.1', 'cups'),
+                    createFoodItem('Broccoli', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 1.2, '1.2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner', // ✅ Matches modal
+                time: '6:30 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 2.8, '9.8', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 2.2, '2.2', 'medium'),
+                    createFoodItem('Spinach', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Avocado', 'fat', 1.2, '1.2', 'medium')
                 ]
             }
         ]
@@ -522,7 +728,7 @@ const CompleteMealPlanTemplates = {
         mealFrequency: 5,
         allMeals: [
             {
-                mealName: 'Breakfast',
+                mealName: 'Breakfast', // ✅ Matches modal
                 time: '7:00 AM',
                 items: [
                     createFoodItem('Oats (dry)', 'carbohydrate', 1, '1/2', 'cup'),
@@ -531,7 +737,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Morning Snack',
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
                 time: '10:00 AM',
                 items: [
                     createFoodItem('Greek Yogurt (non-fat)', 'protein', 1.5, '1.5', 'cups'),
@@ -540,7 +746,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Lunch',
+                mealName: 'Lunch', // ✅ Matches modal
                 time: '1:00 PM',
                 items: [
                     createFoodItem('Chicken Breast', 'protein', 2, '7', 'oz'),
@@ -550,7 +756,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Afternoon Snack',
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
                 time: '4:00 PM',
                 items: [
                     createFoodItem('Apple', 'fruits', 1.5, '1.5', 'medium'),
@@ -558,13 +764,116 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Dinner',
+                mealName: 'Dinner', // ✅ Matches modal
                 time: '7:00 PM',
                 items: [
                     createFoodItem('Salmon', 'protein', 2.5, '8.75', 'oz'),
                     createFoodItem('Sweet Potato', 'carbohydrate', 2, '2', 'medium'),
                     createFoodItem('Asparagus', 'vegetables', 2, '2', 'cups'),
                     createFoodItem('Avocado', 'fat', 1, '1', 'medium')
+                ]
+            }
+        ]
+    },
+
+    'gain-muscle-balanced-6': {
+        targetCalories: 2500,
+        goalType: 'gain-muscle',
+        eaterType: 'balanced',
+        mealFrequency: 6,
+        allMeals: [
+            {
+                mealName: 'Breakfast', // ✅ Matches modal
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.8, '2/5', 'cup'),
+                    createFoodItem('Banana', 'fruits', 1, '1', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 0.8, '4/5', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
+                time: '9:30 AM',
+                items: [
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 1.2, '1.2', 'cups'),
+                    createFoodItem('Blueberries', 'fruits', 1.2, '1.2', 'cups'),
+                    createFoodItem('Almonds', 'fat', 0.8, '4/5', 'oz')
+                ]
+            },
+            {
+                mealName: 'SecondSnack', // 🔧 FIXED: No space
+                time: '11:00 AM',
+                items: [
+                    createFoodItem('Quest Bar', 'supplements', 1, '1', 'bar'),
+                    createFoodItem('Almonds', 'fat', 0.5, '1/2', 'oz')
+                ]
+            },
+            {
+                mealName: 'Lunch', // ✅ Matches modal
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 1.6, '5.6', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 1.6, '4/5', 'cup'),
+                    createFoodItem('Bell Peppers', 'vegetables', 1.2, '1.2', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 0.8, '4/5', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
+                time: '3:00 PM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 1.2, '1.2', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 0.8, '4/5', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner', // ✅ Matches modal
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 1.6, '1.6', 'medium'),
+                    createFoodItem('Asparagus', 'vegetables', 1.6, '1.6', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.8, '4/5', 'medium')
+                ]
+            }
+        ]
+    },
+
+    // DIRTY BULK PLANS
+    'dirty-bulk-balanced-3': {
+        targetCalories: 3200,
+        goalType: 'dirty-bulk',
+        eaterType: 'balanced',
+        mealFrequency: 3,
+        allMeals: [
+            {
+                mealName: 'Breakfast', // ✅ Matches modal
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 1.5, '3/4', 'cup'),
+                    createFoodItem('Banana', 'fruits', 2, '2', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 2, '2', 'tbsp'),
+                    createFoodItem('Whole Milk', 'fat', 1.5, '1.5', 'cups')
+                ]
+            },
+            {
+                mealName: 'Lunch', // ✅ Matches modal
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 3, '10.5', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 3, '1.5', 'cups'),
+                    createFoodItem('Broccoli', 'vegetables', 2.5, '2.5', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 1.8, '1.8', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner', // ✅ Matches modal
+                time: '6:30 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 3.5, '12.25', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 3, '3', 'medium'),
+                    createFoodItem('Spinach', 'vegetables', 2.5, '2.5', 'cups'),
+                    createFoodItem('Avocado', 'fat', 1.8, '1.8', 'medium')
                 ]
             }
         ]
@@ -577,7 +886,7 @@ const CompleteMealPlanTemplates = {
         mealFrequency: 5,
         allMeals: [
             {
-                mealName: 'Breakfast',
+                mealName: 'Breakfast', // ✅ Matches modal
                 time: '7:00 AM',
                 items: [
                     createFoodItem('Oats (dry)', 'carbohydrate', 1.25, '5/8', 'cup'),
@@ -586,7 +895,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Morning Snack',
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
                 time: '10:00 AM',
                 items: [
                     createFoodItem('Greek Yogurt (non-fat)', 'protein', 2, '2', 'cups'),
@@ -595,7 +904,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Lunch',
+                mealName: 'Lunch', // ✅ Matches modal
                 time: '1:00 PM',
                 items: [
                     createFoodItem('Chicken Breast', 'protein', 2.5, '8.75', 'oz'),
@@ -605,7 +914,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Afternoon Snack',
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
                 time: '4:00 PM',
                 items: [
                     createFoodItem('Apple', 'fruits', 2, '2', 'medium'),
@@ -613,7 +922,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'Dinner',
+                mealName: 'Dinner', // ✅ Matches modal
                 time: '7:00 PM',
                 items: [
                     createFoodItem('Salmon', 'protein', 3, '10.5', 'oz'),
@@ -623,9 +932,72 @@ const CompleteMealPlanTemplates = {
                 ]
             }
         ]
+    },
+
+    'dirty-bulk-balanced-6': {
+        targetCalories: 3200,
+        goalType: 'dirty-bulk',
+        eaterType: 'balanced',
+        mealFrequency: 6,
+        allMeals: [
+            {
+                mealName: 'Breakfast', // ✅ Matches modal
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 1, '1/2', 'cup'),
+                    createFoodItem('Banana', 'fruits', 1.2, '1.2', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 1.2, '1.2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'FirstSnack', // 🔧 FIXED: No space
+                time: '9:30 AM',
+                items: [
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 1.6, '1.6', 'cups'),
+                    createFoodItem('Blueberries', 'fruits', 1.6, '1.6', 'cups'),
+                    createFoodItem('Almonds', 'fat', 1.2, '1.2', 'oz')
+                ]
+            },
+            {
+                mealName: 'SecondSnack', // 🔧 FIXED: No space
+                time: '11:00 AM',
+                items: [
+                    createFoodItem('Quest Bar', 'supplements', 1.5, '1.5', 'bars'),
+                    createFoodItem('Almonds', 'fat', 1, '1', 'oz')
+                ]
+            },
+            {
+                mealName: 'Lunch', // ✅ Matches modal
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 2, '1', 'cup'),
+                    createFoodItem('Bell Peppers', 'vegetables', 1.6, '1.6', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 1.2, '1.2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'MidAfternoon Snack', // ✅ Matches modal exactly
+                time: '3:00 PM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 1.6, '1.6', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 1.2, '1.2', 'tbsp'),
+                    createFoodItem('Granola', 'carbohydrate', 0.5, '1/2', 'cup')
+                ]
+            },
+            {
+                mealName: 'Dinner', // ✅ Matches modal
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 2.4, '8.4', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 2, '2', 'medium'),
+                    createFoodItem('Asparagus', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Avocado', 'fat', 1.2, '1.2', 'medium')
+                ]
+            }
+        ]
     }
 };
-
 /**
  * 🚀 FIXED ULTIMATE MEAL PLAN GENERATOR CLASS
  */
