@@ -21,22 +21,25 @@ const createFoodItem = (food, category, serving, displayServing, displayUnit) =>
 const roundToUserFriendly = (serving, unit) => {
     if (serving <= 0) return 0.25; // Minimum serving
 
-    if (unit === 'oz') {
+    // Normalize unit to lowercase for consistent matching
+    const normalizedUnit = unit?.toLowerCase() || '';
+
+    if (normalizedUnit === 'oz') {
         // Round oz to nearest 0.5: 7.7oz → 8oz, 7.2oz → 7oz  
         return Math.round(serving * 2) / 2;
-    } else if (unit === 'cups' || unit === 'cup') {
-        // Round cups to nearest 0.25: 1.1 cups → 1 cup, 1.7 cups → 1.75 cups
+    } else if (normalizedUnit.includes('cup')) {
+        // Handle both "cup" and "cups": 3.3 cups → 3.25 cups, 1.1 cup → 1 cup
         return Math.round(serving * 4) / 4;
-    } else if (unit === 'tbsp') {
+    } else if (normalizedUnit === 'tbsp') {
         // Round tbsp to nearest 0.5: 2.3 tbsp → 2.5 tbsp
         return Math.round(serving * 2) / 2;
-    } else if (unit === 'tsp') {
+    } else if (normalizedUnit === 'tsp') {
         // Round tsp to whole numbers: 1.7 tsp → 2 tsp
         return Math.round(serving);
-    } else if (unit === 'medium' || unit === 'large' || unit === 'small' || unit === 'pieces') {
+    } else if (normalizedUnit === 'medium' || normalizedUnit === 'large' || normalizedUnit === 'small' || normalizedUnit === 'pieces') {
         // Round pieces to nearest 0.5: 1.1 medium → 1 medium, 1.7 medium → 1.5 medium
         return Math.round(serving * 2) / 2;
-    } else if (unit === 'scoops' || unit === 'bars' || unit === 'slices') {
+    } else if (normalizedUnit === 'scoops' || normalizedUnit === 'scoop' || normalizedUnit === 'bars' || normalizedUnit === 'slices') {
         // Round protein scoops/bars to nearest 0.5
         return Math.round(serving * 2) / 2;
     } else {
@@ -44,6 +47,26 @@ const roundToUserFriendly = (serving, unit) => {
         return Math.round(serving * 2) / 2;
     }
 };
+
+// Also, let's add a function to standardize display units:
+const standardizeDisplayUnit = (serving, unit) => {
+    const normalizedUnit = unit?.toLowerCase() || '';
+
+    if (normalizedUnit.includes('cup')) {
+        // Use "cup" for 1, "cups" for anything else
+        return serving === 1 ? 'cup' : 'cups';
+    } else if (normalizedUnit === 'medium' || normalizedUnit === 'large' || normalizedUnit === 'small') {
+        // Keep as-is for pieces
+        return unit;
+    } else if (normalizedUnit === 'scoop' && serving !== 1) {
+        return 'scoops';
+    } else if (normalizedUnit === 'scoops' && serving === 1) {
+        return 'scoop';
+    }
+
+    return unit; // Keep original unit for everything else
+};
+
 
 // Complete meal plan templates (24 base combinations)
 const CompleteMealPlanTemplates = {
@@ -458,6 +481,9 @@ export class MealPlanGenerator {
         // Apply user-friendly rounding
         const friendlyDisplayServing = roundToUserFriendly(rawDisplayServing, item.displayUnit);
 
+        // Standardize the unit display
+        const standardUnit = standardizeDisplayUnit(friendlyDisplayServing, item.displayUnit);
+
         // Special handling for different food categories
         let finalServing = newServing;
         let finalDisplayServing = friendlyDisplayServing;
@@ -476,7 +502,8 @@ export class MealPlanGenerator {
         return {
             ...item,
             serving: finalServing,
-            displayServing: finalDisplayServing < 0.1 ? '0.1' : finalDisplayServing.toFixed(1)
+            displayServing: finalDisplayServing < 0.25 ? '0.25' : finalDisplayServing.toString(),
+            displayUnit: standardizeDisplayUnit(finalDisplayServing, item.displayUnit)
         };
     }
 
