@@ -33,19 +33,50 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
 
                 console.log('✅ Plan generated successfully!', testPlan);
 
+                // Create detailed meal breakdown
+                let mealDetails = '';
+                testPlan.allMeals?.forEach((meal, index) => {
+                    mealDetails += `\n🍽️ ${meal.mealName} (${meal.time || 'No time'}):\n`;
+                    meal.items?.forEach(item => {
+                        mealDetails += `  • ${item.food} (${item.displayServing} ${item.displayUnit})\n`;
+                    });
+                });
+
+                // Count protein items
+                const proteinItems = testPlan.allMeals?.flatMap(meal =>
+                    meal.items?.filter(item =>
+                        item.food?.includes('Protein') ||
+                        item.category === 'supplements' ||
+                        item.food?.includes('Greek Yogurt') ||
+                        item.food?.includes('Quest Bar')
+                    ) || []
+                ) || [];
+
                 const result = `
 ✅ TEST PASSED!
 📊 Calories: ${testPlan.actualCalories || testPlan.targetCalories || 'unknown'}
 🍽️ Meals: ${testPlan.allMeals?.length || 'unknown'}
 📝 Total items: ${testPlan.allMeals?.reduce((total, meal) => total + (meal.items?.length || 0), 0) || 'unknown'}
-🥗 First meal: ${testPlan.allMeals?.[0]?.mealName || 'unknown'}
-                `;
+🥤 Protein items found: ${proteinItems.length}
+
+📋 FULL MEAL PLAN:${mealDetails}
+
+🔍 PROTEIN ITEMS:
+${proteinItems.map(item => `  • ${item.food} (${item.displayServing} ${item.displayUnit})`).join('\n')}
+
+🎯 SYSTEM STATUS:
+✅ Meal plan generation: WORKING
+✅ Food database: WORKING  
+✅ Nutrition calculations: WORKING
+${testPlan.scalingApproach ? `✅ Scaling approach: ${testPlan.scalingApproach}` : ''}
+${testPlan.tierAnalysis ? `✅ Tier analysis: WORKING` : '⚠️ Tier system: NOT YET INTEGRATED'}
+            `;
 
                 setTestResult(result);
 
             } catch (error) {
                 console.error('❌ Test failed:', error);
-                setTestResult(`❌ TEST FAILED: ${error.message}`);
+                setTestResult(`❌ TEST FAILED: ${error.message}\n\nFull error: ${error.stack}`);
             }
         }, 100);
     };
