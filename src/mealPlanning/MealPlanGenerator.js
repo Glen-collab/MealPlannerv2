@@ -112,7 +112,7 @@ export const distributeProteinThroughoutDay = (mealPlan, gender, goal, dietaryFi
     }
 };
 
-// ✅ FIXED: Male protein distribution (prevented multiple calls)
+// ✅ FIXED: Smart male protein distribution (checks for oats/yogurt first)
 const distributeMaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilters) => {
     console.log(`👨 [MALE PROTEIN] Distributing ${totalScoops} scoops (max 2 per meal)`);
 
@@ -122,10 +122,13 @@ const distributeMaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilt
 
     const mealPriority = getMealPriority(mealPlan);
 
+    // Track which foods we've already paired with protein
+    const alreadyPaired = { oats: false, greekYogurt: false };
+
     let remainingScoops = totalScoops;
     let proteinItemsAdded = 0;
 
-    // 🔒 FIXED: Proper loop with single addition per meal
+    // 🔒 FIXED: Smart protein distribution - prefer meals with oats/yogurt
     for (let i = 0; i < mealsToTarget && remainingScoops > 0; i++) {
         const mealIndex = mealPriority[i];
         const meal = mealPlan.allMeals[mealIndex];
@@ -137,23 +140,32 @@ const distributeMaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilt
             continue;
         }
 
+        // Check if this meal has oats or greek yogurt that we haven't paired yet
+        const hasOats = meal.items.some(item => item.food.includes('Oats')) && !alreadyPaired.oats;
+        const hasGreekYogurt = meal.items.some(item => item.food.includes('Greek Yogurt')) && !alreadyPaired.greekYogurt;
+
         const scoopsToAdd = Math.min(scoopsPerMeal, remainingScoops);
 
         // Create ONE protein item per meal
         const proteinItem = createTierAwareProteinItem(protein, scoopsToAdd, meal, goal, dietaryFilters);
         meal.items.push(proteinItem);
 
+        // Track what we've paired
+        if (hasOats) alreadyPaired.oats = true;
+        if (hasGreekYogurt) alreadyPaired.greekYogurt = true;
+
         remainingScoops -= scoopsToAdd;
         proteinItemsAdded++;
 
-        console.log(`✅ [MALE PROTEIN] Added ${scoopsToAdd} scoops of ${proteinItem.food} to ${meal.mealName} (Tier ${proteinItem.tier || 'unknown'})`);
+        const contextNote = hasOats ? ' (with oats)' : hasGreekYogurt ? ' (with yogurt)' : '';
+        console.log(`✅ [MALE PROTEIN] Added ${scoopsToAdd} scoops of ${proteinItem.food} to ${meal.mealName}${contextNote}`);
     }
 
     console.log(`🎯 [MALE PROTEIN] Successfully added ${proteinItemsAdded} protein items (${totalScoops - remainingScoops} total scoops)`);
     return mealPlan;
 };
 
-// ✅ FIXED: Female protein distribution (prevented multiple calls)
+// ✅ FIXED: Smart female protein distribution (checks for oats/yogurt first)
 const distributeFemaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFilters) => {
     console.log(`👩 [FEMALE PROTEIN] Distributing ${totalScoops} scoops (1 per meal)`);
 
@@ -162,9 +174,12 @@ const distributeFemaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFi
 
     const mealPriority = getMealPriority(mealPlan);
 
+    // Track which foods we've already paired with protein
+    const alreadyPaired = { oats: false, greekYogurt: false };
+
     let proteinItemsAdded = 0;
 
-    // 🔒 FIXED: Proper loop with single addition per meal
+    // 🔒 FIXED: Smart protein distribution - prefer meals with oats/yogurt
     for (let i = 0; i < mealsToTarget; i++) {
         const mealIndex = mealPriority[i];
         const meal = mealPlan.allMeals[mealIndex];
@@ -176,52 +191,31 @@ const distributeFemaleProtein = (mealPlan, protein, totalScoops, goal, dietaryFi
             continue;
         }
 
+        // Check if this meal has oats or greek yogurt that we haven't paired yet
+        const hasOats = meal.items.some(item => item.food.includes('Oats')) && !alreadyPaired.oats;
+        const hasGreekYogurt = meal.items.some(item => item.food.includes('Greek Yogurt')) && !alreadyPaired.greekYogurt;
+
         const proteinItem = createTierAwareProteinItem(protein, scoopsPerMeal, meal, goal, dietaryFilters);
         meal.items.push(proteinItem);
         proteinItemsAdded++;
 
-        console.log(`✅ [FEMALE PROTEIN] Added ${scoopsPerMeal} scoop of ${proteinItem.food} to ${meal.mealName} (Tier ${proteinItem.tier || 'unknown'})`);
+        // Track what we've paired
+        if (hasOats) alreadyPaired.oats = true;
+        if (hasGreekYogurt) alreadyPaired.greekYogurt = true;
+
+        const contextNote = hasOats ? ' (with oats)' : hasGreekYogurt ? ' (with yogurt)' : '';
+        console.log(`✅ [FEMALE PROTEIN] Added ${scoopsPerMeal} scoop of ${proteinItem.food} to ${meal.mealName}${contextNote}`);
     }
 
     console.log(`🎯 [FEMALE PROTEIN] Successfully added ${proteinItemsAdded} protein items`);
     return mealPlan;
 };
 
-// ✅ FIXED: Tier-aware protein item with proper limits
+// ✅ FIXED: Simple protein item - no confusing combinations
 const createTierAwareProteinItem = (protein, scoops, meal, goal, dietaryFilters) => {
-    const mealName = meal.mealName.toLowerCase();
-
-    // Check existing meal items for smart combinations
-    const hasGreekYogurt = meal.items.some(item => item.food.includes('Greek Yogurt'));
-    const hasOats = meal.items.some(item => item.food.includes('Oats'));
-    const hasBerries = meal.items.some(item => item.category === 'fruits');
-
+    // Just add the protein powder as a separate item - no combinations
     let proteinFood = protein.name;
-    let combination = null;
     let category = 'supplements';
-
-    // Create smart combinations but only if context is appropriate
-    if (hasGreekYogurt && !meal.items.some(item => item.food.includes('Protein'))) {
-        if (dietaryFilters.includes('dairyFree')) {
-            combination = 'Coconut Yogurt + Plant Protein';
-        } else {
-            combination = dietaryFilters.includes('vegetarian') ?
-                'Greek Yogurt + Plant Protein' :
-                'Greek Yogurt + Whey Protein';
-        }
-        proteinFood = combination;
-        category = 'protein_combinations';
-    } else if (hasOats && mealName.includes('breakfast')) {
-        combination = dietaryFilters.includes('dairyFree') ?
-            'Oats + Plant Protein' :
-            'Oats + Whey Protein';
-        proteinFood = combination;
-        category = 'protein_combinations';
-    } else if (hasBerries && (goal === 'lose' || goal === 'maintain')) {
-        combination = 'Berries + Protein Powder';
-        proteinFood = combination;
-        category = 'favorite_snacks';
-    }
 
     // 🔧 FIXED: Apply tier-based limits properly
     const tier = getFoodTier(proteinFood, category);
@@ -238,30 +232,19 @@ const createTierAwareProteinItem = (protein, scoops, meal, goal, dietaryFilters)
 
     const limitedScoops = Math.min(scoops, maxAllowed);
 
-    // Get nutritional data
-    let nutritionData = protein;
-    if (combination && EnhancedFoodDatabase.protein_combinations[combination]) {
-        nutritionData = EnhancedFoodDatabase.protein_combinations[combination];
-    } else if (combination && EnhancedFoodDatabase.favorite_snacks[combination]) {
-        nutritionData = EnhancedFoodDatabase.favorite_snacks[combination];
-    }
-
     return {
         id: generateId(),
-        category,
+        category: 'supplements',
         food: proteinFood,
         serving: limitedScoops,
         displayServing: limitedScoops.toString(),
-        displayUnit: combination ? 'servings' : (limitedScoops === 1 ? 'scoop' : 'scoops'),
-        addedBy: 'tier-aware-protein-system',
+        displayUnit: limitedScoops === 1 ? 'scoop' : 'scoops',
+        addedBy: 'simple-protein-system',
         isProteinFocus: true,
-        combination: combination,
         tier: tier,
         tierLimited: limitedScoops < scoops,
         proteinData: {
             originalProtein: protein.name,
-            combination: combination,
-            nutritionData: nutritionData,
             requestedScoops: scoops,
             actualScoops: limitedScoops,
             tierInfo: {
@@ -269,12 +252,6 @@ const createTierAwareProteinItem = (protein, scoops, meal, goal, dietaryFilters)
                 maxServing: maxAllowed,
                 maxDisplay: maxServing.maxDisplay,
                 unit: maxServing.unit
-            },
-            mealContext: {
-                hasGreekYogurt,
-                hasOats,
-                hasBerries,
-                mealName: meal.mealName
             }
         }
     };
@@ -998,6 +975,16 @@ const CompleteMealPlanTemplates = {
         ]
     }
 };
+
+// Helper function for missing dietary filter toggle
+const handleDietaryFilterToggle = (filter) => {
+    if (selectedDietaryFilters.includes(filter)) {
+        return selectedDietaryFilters.filter(f => f !== filter);
+    } else {
+        return [...selectedDietaryFilters, filter];
+    }
+};
+
 /**
  * 🚀 FIXED ULTIMATE MEAL PLAN GENERATOR CLASS
  */
