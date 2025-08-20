@@ -12,6 +12,8 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
     const [error, setError] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [testResult, setTestResult] = useState(null);
+    const [selectedGender, setSelectedGender] = useState(userProfile?.gender || 'male');
+
 
     // Test function INSIDE the component
     const runVisibleTest = () => {
@@ -114,7 +116,7 @@ ${testPlan.tierAnalysis ? `✅ Tier analysis: WORKING` : '⚠️ Tier system: NO
                 eaterType: selectedEaterType,
                 mealFreq: selectedMealFreq,
                 dietaryFilters: selectedDietaryFilters,
-                userProfile: userProfile,
+                userProfile: { ...userProfile, gender: selectedGender },
                 calorieData: calorieData
             };
 
@@ -187,6 +189,7 @@ ${testPlan.tierAnalysis ? `✅ Tier analysis: WORKING` : '⚠️ Tier system: NO
     ];
 
     return (
+        
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-screen overflow-y-auto">
 
@@ -202,6 +205,33 @@ ${testPlan.tierAnalysis ? `✅ Tier analysis: WORKING` : '⚠️ Tier system: NO
                     >
                         ×
                     </button>
+                </div>
+                
+                {/* Gender Selection */}
+                <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (for protein distribution)</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => setSelectedGender('male')}
+                            className={`p-4 rounded-xl border-2 text-center transition-all ${selectedGender === 'male'
+                                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                        >
+                            <div className="font-semibold text-gray-800">🚹 Male</div>
+                            <div className="text-xs text-gray-600 mt-1">Up to 8 protein scoops/day</div>
+                        </button>
+                        <button
+                            onClick={() => setSelectedGender('female')}
+                            className={`p-4 rounded-xl border-2 text-center transition-all ${selectedGender === 'female'
+                                ? 'border-pink-500 bg-pink-50 shadow-lg'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                        >
+                            <div className="font-semibold text-gray-800">🚺 Female</div>
+                            <div className="text-xs text-gray-600 mt-1">Up to 2 protein scoops/day</div>
+                        </button>
+                    </div>
                 </div>
 
                 {!showPreview ? (
@@ -324,6 +354,7 @@ ${testPlan.tierAnalysis ? `✅ Tier analysis: WORKING` : '⚠️ Tier system: NO
                                 <div><strong>Style:</strong> {eaterTypeOptions.find(e => e.value === selectedEaterType)?.label}</div>
                                 <div><strong>Meals:</strong> {selectedMealFreq} meals per day</div>
                                 <div><strong>Dietary:</strong> {selectedDietaryFilters.length > 0 ? selectedDietaryFilters.join(', ') : 'None'}</div>
+                                <div><strong>Gender:</strong> {selectedGender}</div>
                                 {calorieData && (
                                     <div><strong>Target Calories:</strong> ~{calorieData.targetCalories} cal/day</div>
                                 )}
