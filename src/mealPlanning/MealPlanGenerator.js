@@ -32,6 +32,11 @@ const createFoodItem = (food, category, serving, displayServing, displayUnit) =>
     displayUnit
 });
 
+// 📝 NOTES: Combinations to avoid/skip in future updates
+// - Milk + Heavy Cream + Whey combo (too complex, save for notes section)
+// - Any "X + Y" combinations should be split into separate items for clarity
+// - Users prefer seeing individual ingredients they can prepare separately
+
 // ✅ FIXED: User-friendly rounding functions (restored from original)
 const roundToUserFriendly = (serving, unit) => {
     if (serving <= 0) return 0.25; // Minimum serving
@@ -278,7 +283,7 @@ const getMealPriority = (mealPlan) => {
     return priority;
 };
 
-// ✅ FIXED: Favorite snacks system with guards
+// ✅ FIXED: Favorite snacks system - split combinations into separate items
 export const addFavoriteSnacks = (mealPlan, goal, dietaryFilters = []) => {
     console.log(`🥨 [SNACKS SYSTEM] Adding favorite snacks for ${goal} goal`);
 
@@ -297,51 +302,80 @@ export const addFavoriteSnacks = (mealPlan, goal, dietaryFilters = []) => {
         return mealPlan;
     }
 
-    const favorites = getFavoritesByGoal(goal, dietaryFilters);
-    const snackFavorites = favorites.filter(fav =>
-        fav.goalSuitability && fav.goalSuitability.includes(goal)
-    );
-
-    console.log(`🍪 [SNACKS] Found ${snackFavorites.length} suitable snacks:`,
-        snackFavorites.map(s => s.name));
-
-    if (snackFavorites.length === 0) {
-        console.log('⚠️ [SNACKS] No suitable snacks found');
-        return mealPlan;
-    }
-
     const snackMeals = mealPlan.allMeals.filter(meal =>
         meal.mealName.toLowerCase().includes('snack')
     );
 
     if (snackMeals.length > 0) {
-        const hummusSnack = snackFavorites.find(fav => fav.name.includes('Hummus'));
-        const selectedSnack = hummusSnack || snackFavorites[0];
-
-        const snackItem = {
-            id: generateId(),
-            category: 'favorite_snacks',
-            food: selectedSnack.name,
-            serving: 1,
-            displayServing: '1',
-            displayUnit: 'serving',
-            addedBy: 'enhanced-snacks-system',
-            isFavorite: true,
-            tier: getFoodTier(selectedSnack.name, 'favorite_snacks'),
-            snackData: {
-                goalSuitability: selectedSnack.goalSuitability,
-                dietaryTags: selectedSnack.dietaryTags,
-                components: selectedSnack.components
-            }
-        };
-
-        snackMeals[0].items.push(snackItem);
-        console.log(`✅ [SNACKS] Added ${selectedSnack.name} to ${snackMeals[0].mealName} (Tier ${snackItem.tier})`);
+        // Add individual components instead of combinations
+        addSeparateSnackComponents(snackMeals[0], goal, dietaryFilters);
     } else {
         console.log('⚠️ [SNACKS] No snack meals found to add favorites to');
     }
 
     return mealPlan;
+};
+
+// ✅ NEW: Add separate snack components (no more confusing combinations)
+const addSeparateSnackComponents = (snackMeal, goal, dietaryFilters) => {
+    // Choose snack based on dietary filters
+    let snackComponents = [];
+
+    if (dietaryFilters.includes('glutenFree')) {
+        // Hummus + Gluten-Free Crackers → separate items
+        snackComponents = [
+            {
+                food: 'Hummus',
+                category: 'condiments', // Use correct category from FoodDatabase
+                serving: 1,
+                displayServing: '2',
+                displayUnit: 'tbsp'
+            },
+            {
+                food: 'Rice Cakes',
+                category: 'carbohydrate', // Use Rice Cakes as gluten-free alternative
+                serving: 3,
+                displayServing: '3',
+                displayUnit: 'cakes'
+            }
+        ];
+    } else {
+        // Default: Hummus + Pretzels → separate items  
+        snackComponents = [
+            {
+                food: 'Hummus',
+                category: 'condiments', // Correct category from FoodDatabase
+                serving: 1,
+                displayServing: '2',
+                displayUnit: 'tbsp'
+            },
+            {
+                food: 'Pretzels (mini)',
+                category: 'carbohydrate', // Add to carbohydrate category
+                serving: 1,
+                displayServing: '20',
+                displayUnit: 'mini pretzels'
+            }
+        ];
+    }
+
+    // Add each component as a separate item
+    snackComponents.forEach(component => {
+        const snackItem = {
+            id: generateId(),
+            category: component.category,
+            food: component.food,
+            serving: component.serving,
+            displayServing: component.displayServing,
+            displayUnit: component.displayUnit,
+            addedBy: 'separate-snacks-system',
+            isFavorite: true,
+            tier: getFoodTier(component.food, component.category)
+        };
+
+        snackMeal.items.push(snackItem);
+        console.log(`✅ [SNACKS] Added ${component.food} (${component.displayServing} ${component.displayUnit}) to ${snackMeal.mealName}`);
+    });
 };
 
 // Complete meal plan templates
@@ -973,15 +1007,6 @@ const CompleteMealPlanTemplates = {
                 ]
             }
         ]
-    }
-};
-
-// Helper function for missing dietary filter toggle
-const handleDietaryFilterToggle = (filter) => {
-    if (selectedDietaryFilters.includes(filter)) {
-        return selectedDietaryFilters.filter(f => f !== filter);
-    } else {
-        return [...selectedDietaryFilters, filter];
     }
 };
 
