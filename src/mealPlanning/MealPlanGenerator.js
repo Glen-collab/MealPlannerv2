@@ -1010,6 +1010,74 @@ const CompleteMealPlanTemplates = {
     }
 };
 
+// 🚺 GENDER-AWARE TIER SCALING - stricter carb limits for females
+const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
+    const maxServing = getFoodTier(item.food);
+    const tier = getFoodTier(item.food);
+
+    // Calculate desired serving after scaling
+    const desiredServing = item.serving * targetScaling;
+
+    // 🚺 FEMALE CARB LIMITS - no more giant portions!
+    const femaleMaxLimits = {
+        'Oats (dry)': 0.75,           // Max 3/4 cup dry (was unlimited)
+        'Brown Rice (cooked)': 0.75,   // Max 3/4 cup cooked 
+        'White Rice (cooked)': 0.75,   // Max 3/4 cup cooked
+        'Quinoa (cooked)': 0.75,       // Max 3/4 cup cooked
+        'Pasta (cooked)': 0.75,        // Max 3/4 cup cooked
+        'Sweet Potato': 1.0,           // Max 1 medium
+        'Potato (baked)': 1.0,         // Max 1 medium
+        'Whole Wheat Bread': 2,        // Max 2 slices
+        'Bagel (plain)': 0.5,          // Max 1/2 bagel
+        'Avocado': 1.0,                // Max 1 medium (was 2)
+        'Greek Yogurt (non-fat)': 1.0, // Max 1 cup
+        'Coconut Yogurt': 1.0          // Max 1 cup
+    };
+
+    let finalServing = desiredServing;
+
+    // Apply female-specific limits
+    if (gender === 'female' && femaleMaxLimits[item.food]) {
+        const femaleLimit = femaleMaxLimits[item.food];
+        finalServing = Math.min(desiredServing, femaleLimit);
+
+        if (finalServing < desiredServing) {
+            console.log(`🚺 [FEMALE LIMIT] ${item.food}: ${desiredServing.toFixed(2)} → ${finalServing} (max ${femaleLimit})`);
+        }
+    }
+
+    // Apply normal tier limits
+    const tierMaxServing = getFoodMaxServing(item.food);
+    finalServing = Math.min(finalServing, tierMaxServing.maxServing);
+
+    // Special rules based on goal (less aggressive for females)
+    if (goal === 'dirty-bulk' && tier >= 6 && gender === 'male') {
+        // Only allow males more flexibility for fats in dirty bulk
+        finalServing = Math.min(desiredServing, tierMaxServing.maxServing * 1.5);
+    } else if (goal === 'lose' && tier <= 4) {
+        // Be more conservative with portions for weight loss
+        const conservativeFactor = gender === 'female' ? 0.7 : 0.8;
+        finalServing = Math.min(finalServing, tierMaxServing.maxServing * conservativeFactor);
+    }
+
+    // Calculate how much we "lost" due to limits
+    const scalingDeficit = desiredServing - finalServing;
+
+    const finalDisplayServing = parseFloat(item.displayServing || '1') * (finalServing / item.serving);
+
+    return {
+        ...item,
+        serving: finalServing,
+        displayServing: finalDisplayServing < 0.1 ? '0.1' : finalDisplayServing.toFixed(1),
+        tier,
+        wasLimited: scalingDeficit > 0.1,
+        scalingDeficit: scalingDeficit > 0.1 ? scalingDeficit : 0,
+        maxPossible: tierMaxServing.maxServing,
+        genderLimited: gender === 'female' && femaleMaxLimits[item.food] && finalServing < desiredServing,
+        genderApplied: gender
+    };
+};
+
 /**
  * 🚀 FIXED ULTIMATE MEAL PLAN GENERATOR CLASS
  */
@@ -1067,6 +1135,9 @@ export class MealPlanGenerator {
             const targetCalories = this.calculateTargetCalories(goal, calorieData, gender);
             console.log(`📊 [CALORIES] Target calories: ${targetCalories}`);
 
+            // 🚺 PASS GENDER INFO to scaling system
+            dietaryPlan.userPreferences = { gender, goal, eaterType, mealFreq, dietaryFilters };
+
             const scaledPlan = this.scaleMealPlanWithTiers(dietaryPlan, targetCalories, goal);
 
             // Step 7: Enhance plan with metadata
@@ -1100,33 +1171,47 @@ export class MealPlanGenerator {
     }
 
     /**
-     * 🔧 FIXED: Enhanced scaling with proper rounding
+     * 🔧 FIXED: Enhanced scaling with gender-specific limits and carb restrictions
      */
     scaleMealPlanWithTiers(basePlan, targetCalories, goal) {
         const currentCalories = this.calculatePlanCalories(basePlan);
         let scalingFactor = targetCalories / currentCalories;
 
+        // 🚺 GENDER-SPECIFIC scaling limits 
+        const gender = basePlan.userPreferences?.gender || 'male';
         const scalingLimits = {
-            'lose': { min: 0.4, max: 1.2 },
-            'maintain': { min: 0.7, max: 1.3 },
-            'gain-muscle': { min: 0.8, max: 1.5 },
-            'dirty-bulk': { min: 0.9, max: 2.0 }
+            'lose': {
+                min: 0.4,
+                max: gender === 'female' ? 0.9 : 1.2  // More conservative for females
+            },
+            'maintain': {
+                min: 0.7,
+                max: gender === 'female' ? 1.0 : 1.3  // Much more conservative
+            },
+            'gain-muscle': {
+                min: 0.8,
+                max: gender === 'female' ? 1.1 : 1.5  // Way more conservative
+            },
+            'dirty-bulk': {
+                min: 0.9,
+                max: gender === 'female' ? 1.2 : 2.0  // Much more conservative
+            }
         };
 
-        const limits = scalingLimits[goal] || { min: 0.5, max: 2.0 };
+        const limits = scalingLimits[goal] || { min: 0.5, max: gender === 'female' ? 1.0 : 2.0 };
         scalingFactor = Math.max(limits.min, Math.min(limits.max, scalingFactor));
 
-        console.log(`📊 [TIER SCALING] ${currentCalories} → ${targetCalories} calories (${scalingFactor.toFixed(2)}x)`);
+        console.log(`📊 [GENDER SCALING] ${gender} ${currentCalories} → ${targetCalories} calories (${scalingFactor.toFixed(2)}x, max: ${limits.max})`);
 
-        // Clone and apply tier-based scaling with proper rounding
+        // Clone and apply tier-based scaling with gender-specific carb limits
         const scaledPlan = JSON.parse(JSON.stringify(basePlan));
         let totalCalorieDeficit = 0;
 
         scaledPlan.allMeals = scaledPlan.allMeals.map(meal => ({
             ...meal,
             items: meal.items.map(item => {
-                // Apply tier-based scaling to each item
-                const tierScaledItem = applyTierBasedScaling(item, scalingFactor, goal);
+                // 🚺 FEMALE CARB LIMITS - no more giant portions!
+                const tierScaledItem = applyGenderAwareTierScaling(item, scalingFactor, goal, gender);
 
                 // 🔧 FIXED: Apply proper rounding to display values
                 const newServing = tierScaledItem.serving;
@@ -1148,9 +1233,10 @@ export class MealPlanGenerator {
             })
         }));
 
-        // Add makeup calories if needed
-        if (totalCalorieDeficit > 100) {
-            console.log(`🔄 [MAKEUP CALORIES] Adding ${Math.round(totalCalorieDeficit)} makeup calories`);
+        // Add makeup calories if needed (but more conservative for females)
+        const makeupThreshold = gender === 'female' ? 150 : 100;
+        if (totalCalorieDeficit > makeupThreshold) {
+            console.log(`🔄 [MAKEUP CALORIES] Adding ${Math.round(totalCalorieDeficit)} makeup calories (${gender} threshold: ${makeupThreshold})`);
             addMakeupCalories(scaledPlan, totalCalorieDeficit, goal, []);
         }
 
@@ -1159,11 +1245,12 @@ export class MealPlanGenerator {
         scaledPlan.targetCalories = targetCalories;
         scaledPlan.tierAnalysis = {
             totalDeficit: totalCalorieDeficit,
-            makeupCaloriesAdded: totalCalorieDeficit > 100,
-            scalingApproach: 'tier-based-with-proper-rounding'
+            makeupCaloriesAdded: totalCalorieDeficit > makeupThreshold,
+            scalingApproach: `gender-aware-scaling-${gender}`,
+            genderLimitsApplied: gender === 'female'
         };
 
-        console.log(`✅ [TIER SCALING] Complete. Final calories: ${scaledPlan.actualCalories}`);
+        console.log(`✅ [GENDER SCALING] Complete. Final calories: ${scaledPlan.actualCalories} (${gender})`);
 
         return scaledPlan;
     }
@@ -1193,12 +1280,12 @@ export class MealPlanGenerator {
 
     calculateTargetCalories(goal, calorieData, gender = 'male') {
         if (!calorieData) {
-            // 🔧 GENDER-SPECIFIC BASE CALORIES
+            // 🔧 REDUCED FEMALE CALORIES - more realistic portions
             const femaleDefaults = {
-                'lose': 1400,
-                'maintain': 1600,
-                'gain-muscle': 1900,
-                'dirty-bulk': 2200
+                'lose': 1200,        // Reduced from 1400
+                'maintain': 1400,    // Reduced from 1600  
+                'gain-muscle': 1600, // Reduced from 1900
+                'dirty-bulk': 1800   // Reduced from 2200
             };
 
             const maleDefaults = {
@@ -1209,23 +1296,27 @@ export class MealPlanGenerator {
             };
 
             const defaults = gender.toLowerCase() === 'female' ? femaleDefaults : maleDefaults;
-            const targetCalories = defaults[goal] || (gender.toLowerCase() === 'female' ? 1600 : 2200);
+            const targetCalories = defaults[goal] || (gender.toLowerCase() === 'female' ? 1400 : 2200);
 
-            console.log(`📊 [GENDER CALORIES] ${gender} ${goal}: ${targetCalories} calories (from defaults)`);
+            console.log(`📊 [GENDER CALORIES] ${gender} ${goal}: ${targetCalories} calories (REDUCED for realistic portions)`);
             return targetCalories;
         }
 
         switch (goal) {
             case 'lose':
-                return Math.max(1200, calorieData.bmr + 50);
+                const loseCalories = Math.max(1200, calorieData.bmr + 50);
+                return gender.toLowerCase() === 'female' ? Math.min(loseCalories, 1300) : loseCalories;
             case 'maintain':
-                return calorieData.targetCalories || calorieData.tdee || (gender.toLowerCase() === 'female' ? 1600 : 2200);
+                const maintainCalories = calorieData.targetCalories || calorieData.tdee || (gender.toLowerCase() === 'female' ? 1400 : 2200);
+                return gender.toLowerCase() === 'female' ? Math.min(maintainCalories, 1500) : maintainCalories;
             case 'gain-muscle':
-                return (calorieData.tdee || (gender.toLowerCase() === 'female' ? 1600 : 2200)) + 500;
+                const gainCalories = (calorieData.tdee || (gender.toLowerCase() === 'female' ? 1400 : 2200)) + 500;
+                return gender.toLowerCase() === 'female' ? Math.min(gainCalories, 1700) : gainCalories;
             case 'dirty-bulk':
-                return (calorieData.tdee || (gender.toLowerCase() === 'female' ? 1600 : 2200)) + 700;
+                const bulkCalories = (calorieData.tdee || (gender.toLowerCase() === 'female' ? 1400 : 2200)) + 700;
+                return gender.toLowerCase() === 'female' ? Math.min(bulkCalories, 1900) : bulkCalories;
             default:
-                return calorieData.targetCalories || (gender.toLowerCase() === 'female' ? 1600 : 2200);
+                return calorieData.targetCalories || (gender.toLowerCase() === 'female' ? 1400 : 2200);
         }
     }
 
