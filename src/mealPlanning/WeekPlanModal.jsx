@@ -14,25 +14,23 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
     const [testResult, setTestResult] = useState(null);
     const [selectedGender, setSelectedGender] = useState(userProfile?.gender || 'male');
 
-
-    // Replace the runVisibleTest function in your WeekPlanModal.jsx with this updated version:
-
+    // 🧪 FIXED TEST FUNCTION - checks for female carb limits
     const runVisibleTest = () => {
         console.log('🧪 Test button clicked!');
-        setTestResult('🔄 Testing... please wait...');
+        setTestResult('🔄 Testing gender-specific carb limits... please wait...');
 
         setTimeout(() => {
             try {
                 console.log('🔄 About to generate meal plans for gender comparison...');
 
-                // 🔧 UPDATED: Test maintain goal for clear comparison
+                // Test maintain goal for clear comparison
                 const maleTestPlan = generateMealPlan({
                     goal: 'maintain',
                     eaterType: 'balanced',
                     mealFreq: 5,
                     dietaryFilters: [],
                     userProfile: { gender: 'male' },
-                    calorieData: null // Let it use gender-specific defaults
+                    calorieData: null
                 });
 
                 const femaleTestPlan = generateMealPlan({
@@ -41,11 +39,11 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                     mealFreq: 5,
                     dietaryFilters: [],
                     userProfile: { gender: 'female' },
-                    calorieData: null // Let it use gender-specific defaults
+                    calorieData: null
                 });
 
-                console.log('✅ Male plan generated successfully!', maleTestPlan);
-                console.log('✅ Female plan generated successfully!', femaleTestPlan);
+                console.log('✅ Male plan generated:', maleTestPlan);
+                console.log('✅ Female plan generated:', femaleTestPlan);
 
                 // Find carb items to compare
                 const findCarbItems = (plan, gender) => {
@@ -53,7 +51,12 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                     plan.allMeals?.forEach(meal => {
                         meal.items?.forEach(item => {
                             if (['Oats (dry)', 'Brown Rice (cooked)', 'Sweet Potato', 'Avocado'].includes(item.food)) {
-                                carbItems.push(`${item.food}: ${item.displayServing} ${item.displayUnit}${item.genderLimited ? ' (FEMALE LIMITED)' : ''}`);
+                                carbItems.push({
+                                    food: item.food,
+                                    amount: `${item.displayServing} ${item.displayUnit}`,
+                                    limited: item.genderLimited || false,
+                                    meal: meal.mealName
+                                });
                             }
                         });
                     });
@@ -63,8 +66,14 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                 const maleCarbItems = findCarbItems(maleTestPlan, 'male');
                 const femaleCarbItems = findCarbItems(femaleTestPlan, 'female');
 
+                // Check if female limits are working
+                const femaleOats = femaleCarbItems.find(item => item.food === 'Oats (dry)');
+                const maleOats = maleCarbItems.find(item => item.food === 'Oats (dry)');
+
+                const oatsTest = femaleOats ? parseFloat(femaleOats.amount) <= 0.75 : true;
+
                 const result = `
-✅ GENDER-SPECIFIC PORTION TEST PASSED!
+✅ FEMALE CARB LIMITS TEST
 
 🚹 MALE RESULTS (Target: ~2200 cal):
 📊 Actual Calories: ${Math.round(maleTestPlan.actualCalories || maleTestPlan.targetCalories || 0)}
@@ -81,30 +90,25 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
 🔍 CARB PORTION COMPARISON:
 
 🚹 MALE CARB PORTIONS:
-${maleCarbItems.length > 0 ? maleCarbItems.map(item => `• ${item}`).join('\n') : '• No carb items found'}
+${maleCarbItems.length > 0 ? maleCarbItems.map(item => `• ${item.food}: ${item.amount} (${item.meal})`).join('\n') : '• No carb items found'}
 
-🚺 FEMALE CARB PORTIONS (REDUCED):
-${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item}`).join('\n') : '• No carb items found'}
+🚺 FEMALE CARB PORTIONS (SHOULD BE LIMITED):
+${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item.food}: ${item.amount} (${item.meal})${item.limited ? ' ✅ LIMITED' : ''}`).join('\n') : '• No carb items found'}
 
 ────────────────────────────────────
 
-🎯 PORTION CONTROL STATUS:
-✅ Female calorie targets: REDUCED
-✅ Female carb limits: ${femaleCarbItems.some(item => item.includes('FEMALE LIMITED')) ? 'APPLIED' : 'READY TO APPLY'}
-✅ Oats max for females: 0.75 cups
-✅ Rice max for females: 0.75 cups  
-✅ Avocado max for females: 1 medium
-✅ Protein prioritized: ${femaleTestPlan.proteinItemsAdded > 0 ? 'YES' : 'NEEDS CHECK'}
+🎯 OATS TEST RESULTS:
+${maleOats ? `🚹 Male Oats: ${maleOats.amount}` : '🚹 Male: No oats found'}
+${femaleOats ? `🚺 Female Oats: ${femaleOats.amount}` : '🚺 Female: No oats found'}
+
+${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats > 0.75 cups'}
 
 📊 CALORIE DIFFERENCE:
 • Male: ${Math.round(maleTestPlan.actualCalories || maleTestPlan.targetCalories || 0)} cal
 • Female: ${Math.round(femaleTestPlan.actualCalories || femaleTestPlan.targetCalories || 0)} cal
 • Difference: ${Math.abs((maleTestPlan.actualCalories || maleTestPlan.targetCalories || 0) - (femaleTestPlan.actualCalories || femaleTestPlan.targetCalories || 0))} cal
 
-💡 EXPECTED:
-• Females should have 600-800 fewer calories
-• Female carb portions should be visibly smaller
-• No more 2-cup oat portions for females!
+🎯 STATUS: ${oatsTest && femaleCarbItems.length > 0 ? '✅ FEMALE LIMITS WORKING!' : '❌ FEMALE LIMITS NOT APPLIED'}
             `;
 
                 setTestResult(result);
@@ -163,6 +167,14 @@ ${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item}`).join('
         }
     };
 
+    const handleDietaryFilterToggle = (filter) => {
+        if (selectedDietaryFilters.includes(filter)) {
+            setSelectedDietaryFilters(selectedDietaryFilters.filter(f => f !== filter));
+        } else {
+            setSelectedDietaryFilters([...selectedDietaryFilters, filter]);
+        }
+    };
+
     const calculatePlanCalories = (plan) => {
         if (!plan?.allMeals) return 0;
 
@@ -200,16 +212,7 @@ ${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item}`).join('
         { value: 'dairyFree', label: '🥛 Dairy-Free', desc: 'No dairy products' }
     ];
 
-    const handleDietaryFilterToggle = (filter) => {
-        if (selectedDietaryFilters.includes(filter)) {
-            setSelectedDietaryFilters(selectedDietaryFilters.filter(f => f !== filter));
-        } else {
-            setSelectedDietaryFilters([...selectedDietaryFilters, filter]);
-        }
-    };
-
     return (
-        
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-screen overflow-y-auto">
 
@@ -226,46 +229,19 @@ ${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item}`).join('
                         ×
                     </button>
                 </div>
-                
-                {/* Gender Selection */}
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (for protein distribution)</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => setSelectedGender('male')}
-                            className={`p-4 rounded-xl border-2 text-center transition-all ${selectedGender === 'male'
-                                ? 'border-blue-500 bg-blue-50 shadow-lg'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                }`}
-                        >
-                            <div className="font-semibold text-gray-800">🚹 Male</div>
-                            <div className="text-xs text-gray-600 mt-1">Up to 8 protein scoops/day</div>
-                        </button>
-                        <button
-                            onClick={() => setSelectedGender('female')}
-                            className={`p-4 rounded-xl border-2 text-center transition-all ${selectedGender === 'female'
-                                ? 'border-pink-500 bg-pink-50 shadow-lg'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                }`}
-                        >
-                            <div className="font-semibold text-gray-800">🚺 Female</div>
-                            <div className="text-xs text-gray-600 mt-1">Up to 4 protein scoops/day</div>
-                        </button>
-                    </div>
-                </div>
 
                 {!showPreview ? (
                     /* Configuration Phase */
                     <div className="p-6 space-y-8">
 
-                        {/* DEBUG TEST BUTTON - PROPERLY PLACED NOW */}
+                        {/* DEBUG TEST BUTTON - PROPERLY PLACED */}
                         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-                            <h4 className="font-semibold text-red-800 mb-2">🧪 Debug Test</h4>
+                            <h4 className="font-semibold text-red-800 mb-2">🧪 Female Carb Limits Test</h4>
                             <button
                                 onClick={runVisibleTest}
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
                             >
-                                🧪 Test New System (Click Me!)
+                                🧪 Test Female Carb Limits (Click Me!)
                             </button>
 
                             {testResult && (
@@ -275,7 +251,34 @@ ${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item}`).join('
                             )}
 
                             <div className="text-xs text-red-600 mt-2">
-                                💡 Also check browser console (F12) for detailed logs
+                                💡 This tests if females get max 0.75 cups oats (not 3 cups!)
+                            </div>
+                        </div>
+
+                        {/* Gender Selection */}
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (for portion control)</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setSelectedGender('male')}
+                                    className={`p-4 rounded-xl border-2 text-center transition-all ${selectedGender === 'male'
+                                        ? 'border-blue-500 bg-blue-50 shadow-lg'
+                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <div className="font-semibold text-gray-800">🚹 Male</div>
+                                    <div className="text-xs text-gray-600 mt-1">Larger portions, up to 8 protein scoops</div>
+                                </button>
+                                <button
+                                    onClick={() => setSelectedGender('female')}
+                                    className={`p-4 rounded-xl border-2 text-center transition-all ${selectedGender === 'female'
+                                        ? 'border-pink-500 bg-pink-50 shadow-lg'
+                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <div className="font-semibold text-gray-800">🚺 Female</div>
+                                    <div className="text-xs text-gray-600 mt-1">Realistic portions, max 0.75 cups carbs</div>
+                                </button>
                             </div>
                         </div>
 
@@ -374,7 +377,7 @@ ${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item}`).join('
                                 <div><strong>Style:</strong> {eaterTypeOptions.find(e => e.value === selectedEaterType)?.label}</div>
                                 <div><strong>Meals:</strong> {selectedMealFreq} meals per day</div>
                                 <div><strong>Dietary:</strong> {selectedDietaryFilters.length > 0 ? selectedDietaryFilters.join(', ') : 'None'}</div>
-                                <div><strong>Gender:</strong> {selectedGender}</div>
+                                <div><strong>Gender:</strong> {selectedGender} {selectedGender === 'female' ? '(portion controlled)' : '(larger portions)'}</div>
                                 {calorieData && (
                                     <div><strong>Target Calories:</strong> ~{calorieData.targetCalories} cal/day</div>
                                 )}
@@ -477,6 +480,9 @@ ${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item}`).join('
                                                     <div key={itemIndex} className="text-sm text-gray-700 flex justify-between">
                                                         <span>
                                                             {item.food}
+                                                            {item.genderLimited && (
+                                                                <span className="text-pink-600 ml-1">(🚺 portion controlled)</span>
+                                                            )}
                                                             {item.originalFood && (
                                                                 <span className="text-orange-600 ml-1">(was {item.originalFood})</span>
                                                             )}
