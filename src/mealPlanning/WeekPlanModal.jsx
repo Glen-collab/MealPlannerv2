@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateMealPlan } from './MealPlanGenerator.js';
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
-import { generateMealPlan } from './MealPlanGenerator.js';
 // This should be saved as src/mealPlanning/WeekPlanModal.jsx
 // Add this function inside your component
 const quickTest = () => {
@@ -292,7 +291,7 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                         >
                             🧪 Quick Test
                         </button>
-                        
+
                         {/* Generate Button */}
                         <div className="flex justify-center">
                             <button
