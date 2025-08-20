@@ -4,6 +4,7 @@ import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterS
 // This should be saved as src/mealPlanning/WeekPlanModal.jsx
 // Add this function inside your component
 const quickTest = () => {
+
     console.log('🧪 Quick test starting...');
 
     try {
@@ -55,6 +56,47 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
     const [generatedPlan, setGeneratedPlan] = useState(null);
     const [error, setError] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
+    const [testResult, setTestResult] = useState(null);
+
+    // 3. Add this test function inside your WeekPlanModal component:
+    const runVisibleTest = () => {
+        console.log('🧪 Test button clicked!'); // This should show in console
+        setTestResult('🔄 Testing... please wait...');
+
+        // Small delay to show the "testing" message
+        setTimeout(() => {
+            try {
+                console.log('🔄 About to generate meal plan...');
+
+                // Test basic meal plan generation
+                const testPlan = generateMealPlan({
+                    goal: 'maintain',
+                    eaterType: 'balanced',
+                    mealFreq: 3,
+                    dietaryFilters: [],
+                    userProfile: { gender: 'male' },
+                    calorieData: { targetCalories: 2200 }
+                });
+
+                console.log('✅ Plan generated successfully!', testPlan);
+
+                // Create visible result
+                const result = `
+✅ TEST PASSED!
+📊 Calories: ${testPlan.actualCalories || testPlan.targetCalories || 'unknown'}
+🍽️ Meals: ${testPlan.allMeals?.length || 'unknown'}
+📝 Total items: ${testPlan.allMeals?.reduce((total, meal) => total + (meal.items?.length || 0), 0) || 'unknown'}
+🥗 First meal: ${testPlan.allMeals?.[0]?.mealName || 'unknown'}
+            `;
+
+                setTestResult(result);
+
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                setTestResult(`❌ TEST FAILED: ${error.message}`);
+            }
+        }, 100);
+    };
 
     // Reset state when modal opens
     useEffect(() => {
@@ -162,6 +204,29 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
         { value: 'dairyFree', label: '🥛 Dairy-Free', desc: 'No dairy products' }
     ];
 
+    // 4. Add this test button in your JSX (put it right after your eater type selection):
+
+    {/* DEBUG TEST BUTTON - Remove after testing */ }
+    <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+        <h4 className="font-semibold text-red-800 mb-2">🧪 Debug Test</h4>
+        <button
+            onClick={runVisibleTest}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
+        >
+            🧪 Test New System (Click Me!)
+        </button>
+
+        {testResult && (
+            <div className="mt-3 p-3 bg-white rounded border">
+                <pre className="text-sm whitespace-pre-wrap">{testResult}</pre>
+            </div>
+        )}
+
+        <div className="text-xs text-red-600 mt-2">
+            💡 Also check browser console (F12) for detailed logs
+        </div>
+    </div>
+    
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-screen overflow-y-auto">
