@@ -16,6 +16,35 @@ const createFoodItem = (food, category, serving, displayServing, displayUnit) =>
     displayUnit
 });
 
+// Add this function at the top of your MealPlanGenerator.js file:
+
+const roundToUserFriendly = (serving, unit) => {
+    if (serving <= 0) return 0.25; // Minimum serving
+
+    if (unit === 'oz') {
+        // Round oz to nearest 0.5: 7.7oz → 8oz, 7.2oz → 7oz  
+        return Math.round(serving * 2) / 2;
+    } else if (unit === 'cups' || unit === 'cup') {
+        // Round cups to nearest 0.25: 1.1 cups → 1 cup, 1.7 cups → 1.75 cups
+        return Math.round(serving * 4) / 4;
+    } else if (unit === 'tbsp') {
+        // Round tbsp to nearest 0.5: 2.3 tbsp → 2.5 tbsp
+        return Math.round(serving * 2) / 2;
+    } else if (unit === 'tsp') {
+        // Round tsp to whole numbers: 1.7 tsp → 2 tsp
+        return Math.round(serving);
+    } else if (unit === 'medium' || unit === 'large' || unit === 'small' || unit === 'pieces') {
+        // Round pieces to nearest 0.5: 1.1 medium → 1 medium, 1.7 medium → 1.5 medium
+        return Math.round(serving * 2) / 2;
+    } else if (unit === 'scoops' || unit === 'bars' || unit === 'slices') {
+        // Round protein scoops/bars to nearest 0.5
+        return Math.round(serving * 2) / 2;
+    } else {
+        // Default: round to nearest 0.5
+        return Math.round(serving * 2) / 2;
+    }
+};
+
 // Complete meal plan templates (24 base combinations)
 const CompleteMealPlanTemplates = {
     // MAINTAIN WEIGHT PLANS
@@ -424,20 +453,24 @@ export class MealPlanGenerator {
      */
     scaleIndividualItem(item, scalingFactor) {
         const newServing = item.serving * scalingFactor;
-        const newDisplayServing = parseFloat(item.displayServing || '1') * scalingFactor;
+        const rawDisplayServing = parseFloat(item.displayServing || '1') * scalingFactor;
+
+        // Apply user-friendly rounding
+        const friendlyDisplayServing = roundToUserFriendly(rawDisplayServing, item.displayUnit);
 
         // Special handling for different food categories
         let finalServing = newServing;
-        let finalDisplayServing = newDisplayServing;
+        let finalDisplayServing = friendlyDisplayServing;
 
         if (item.category === 'fruits') {
             // Limit fruits to reasonable portions
             finalServing = Math.min(newServing, 1.5);
-            finalDisplayServing = Math.min(newDisplayServing, 1.5);
+            finalDisplayServing = Math.min(friendlyDisplayServing, 1.5);
         } else if (item.category === 'condiments') {
             // Limit condiments scaling
             finalServing = Math.min(newServing, item.serving * 1.5);
-            finalDisplayServing = Math.min(newDisplayServing, parseFloat(item.displayServing || '1') * 1.5);
+            finalDisplayServing = Math.min(friendlyDisplayServing, parseFloat(item.displayServing || '1') * 1.5);
+            finalDisplayServing = roundToUserFriendly(finalDisplayServing, item.displayUnit);
         }
 
         return {
