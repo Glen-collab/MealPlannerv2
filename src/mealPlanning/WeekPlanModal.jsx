@@ -16,6 +16,9 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
 
 
     // Test function INSIDE the component
+    // Updated test function for your WeekPlanModal.jsx
+    // Replace the runVisibleTest function with this version:
+
     const runVisibleTest = () => {
         console.log('🧪 Test button clicked!');
         setTestResult('🔄 Testing... please wait...');
@@ -24,54 +27,108 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
             try {
                 console.log('🔄 About to generate meal plan...');
 
-                const testPlan = generateMealPlan({
+                // 🔧 UPDATED: Test both male and female with gender-specific calories
+                const maleTestPlan = generateMealPlan({
                     goal: 'maintain',
                     eaterType: 'balanced',
                     mealFreq: 3,
                     dietaryFilters: [],
                     userProfile: { gender: 'male' },
-                    calorieData: { targetCalories: 2200 }
+                    calorieData: null // Let it use gender-specific defaults
                 });
 
-                console.log('✅ Plan generated successfully!', testPlan);
+                const femaleTestPlan = generateMealPlan({
+                    goal: 'maintain',
+                    eaterType: 'balanced',
+                    mealFreq: 3,
+                    dietaryFilters: [],
+                    userProfile: { gender: 'female' },
+                    calorieData: null // Let it use gender-specific defaults
+                });
 
-                // Create detailed meal breakdown
-                let mealDetails = '';
-                testPlan.allMeals?.forEach((meal, index) => {
-                    mealDetails += `\n🍽️ ${meal.mealName} (${meal.time || 'No time'}):\n`;
-                    meal.items?.forEach(item => {
-                        mealDetails += `  • ${item.food} (${item.displayServing} ${item.displayUnit})\n`;
+                console.log('✅ Male plan generated successfully!', maleTestPlan);
+                console.log('✅ Female plan generated successfully!', femaleTestPlan);
+
+                // Create detailed comparison
+                const createMealDetails = (plan, gender) => {
+                    let mealDetails = '';
+                    plan.allMeals?.forEach((meal, index) => {
+                        mealDetails += `\n🍽️ ${meal.mealName} (${meal.time || 'No time'}):\n`;
+                        meal.items?.forEach(item => {
+                            mealDetails += `  • ${item.food} (${item.displayServing} ${item.displayUnit})\n`;
+                        });
                     });
-                });
 
-                // Count protein items
-                const proteinItems = testPlan.allMeals?.flatMap(meal =>
-                    meal.items?.filter(item =>
-                        item.food?.includes('Protein') ||
-                        item.category === 'supplements' ||
-                        item.food?.includes('Greek Yogurt') ||
-                        item.food?.includes('Quest Bar')
-                    ) || []
-                ) || [];
+                    // Count protein items
+                    const proteinItems = plan.allMeals?.flatMap(meal =>
+                        meal.items?.filter(item =>
+                            item.food?.includes('Protein') ||
+                            item.category === 'supplements' ||
+                            item.food?.includes('Greek Yogurt') ||
+                            item.food?.includes('Quest Bar') ||
+                            item.isProteinFocus
+                        ) || []
+                    ) || [];
+
+                    return {
+                        gender,
+                        calories: plan.actualCalories || plan.targetCalories || 'unknown',
+                        meals: plan.allMeals?.length || 'unknown',
+                        totalItems: plan.allMeals?.reduce((total, meal) => total + (meal.items?.length || 0), 0) || 'unknown',
+                        proteinItems: proteinItems.length,
+                        proteinDetails: proteinItems.map(item => `  • ${item.food} (${item.displayServing} ${item.displayUnit})`).join('\n'),
+                        mealDetails
+                    };
+                };
+
+                const maleResults = createMealDetails(maleTestPlan, 'MALE');
+                const femaleResults = createMealDetails(femaleTestPlan, 'FEMALE');
 
                 const result = `
-✅ TEST PASSED!
-📊 Calories: ${testPlan.actualCalories || testPlan.targetCalories || 'unknown'}
-🍽️ Meals: ${testPlan.allMeals?.length || 'unknown'}
-📝 Total items: ${testPlan.allMeals?.reduce((total, meal) => total + (meal.items?.length || 0), 0) || 'unknown'}
-🥤 Protein items found: ${proteinItems.length}
+✅ GENDER-SPECIFIC TEST PASSED!
 
-📋 FULL MEAL PLAN:${mealDetails}
+🚹 MALE RESULTS (Target: ~2200 cal):
+📊 Calories: ${maleResults.calories}
+🍽️ Meals: ${maleResults.meals}
+📝 Total items: ${maleResults.totalItems}
+🥤 Protein items: ${maleResults.proteinItems}
 
-🔍 PROTEIN ITEMS:
-${proteinItems.map(item => `  • ${item.food} (${item.displayServing} ${item.displayUnit})`).join('\n')}
+📋 MALE MEAL PLAN:${maleResults.mealDetails}
+
+🔍 MALE PROTEIN ITEMS:
+${maleResults.proteinDetails}
+
+────────────────────────────────────
+
+🚺 FEMALE RESULTS (Target: ~1600 cal):
+📊 Calories: ${femaleResults.calories}
+🍽️ Meals: ${femaleResults.meals}
+📝 Total items: ${femaleResults.totalItems}
+🥤 Protein items: ${femaleResults.proteinItems}
+
+📋 FEMALE MEAL PLAN:${femaleResults.mealDetails}
+
+🔍 FEMALE PROTEIN ITEMS:
+${femaleResults.proteinDetails}
+
+────────────────────────────────────
 
 🎯 SYSTEM STATUS:
 ✅ Meal plan generation: WORKING
-✅ Food database: WORKING  
-✅ Nutrition calculations: WORKING
-${testPlan.scalingApproach ? `✅ Scaling approach: ${testPlan.scalingApproach}` : ''}
-${testPlan.tierAnalysis ? `✅ Tier analysis: WORKING` : '⚠️ Tier system: NOT YET INTEGRATED'}
+✅ Gender-specific calories: WORKING
+✅ Protein distribution: ${maleResults.proteinItems > 0 && femaleResults.proteinItems > 0 ? 'WORKING' : 'NEEDS CHECK'}
+✅ Food scaling: ${Math.abs(maleResults.calories - 2200) < 300 ? 'WORKING' : 'NEEDS ADJUSTMENT'}
+✅ No protein spam: ${maleResults.proteinItems <= 4 && femaleResults.proteinItems <= 2 ? 'WORKING' : 'STILL HAS ISSUES'}
+
+📊 CALORIE COMPARISON:
+• Male: ${maleResults.calories} cal (should be ~2200)
+• Female: ${femaleResults.calories} cal (should be ~1600)
+• Difference: ${Math.abs(maleResults.calories - femaleResults.calories)} cal
+
+💡 EXPECTED DIFFERENCES:
+• Males should have ~600 more calories
+• Males should have more/larger protein servings
+• Food portions should scale with calorie targets
             `;
 
                 setTestResult(result);
@@ -81,27 +138,6 @@ ${testPlan.tierAnalysis ? `✅ Tier analysis: WORKING` : '⚠️ Tier system: NO
                 setTestResult(`❌ TEST FAILED: ${error.message}\n\nFull error: ${error.stack}`);
             }
         }, 100);
-    };
-
-    // Reset state when modal opens
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedGoal(userProfile?.goal || 'maintain');
-            setSelectedEaterType('balanced');
-            setSelectedMealFreq(5);
-            setSelectedDietaryFilters([]);
-            setGeneratedPlan(null);
-            setError(null);
-            setShowPreview(false);
-        }
-    }, [isOpen, userProfile]);
-
-    const handleDietaryFilterToggle = (filter) => {
-        setSelectedDietaryFilters(prev =>
-            prev.includes(filter)
-                ? prev.filter(f => f !== filter)
-                : [...prev, filter]
-        );
     };
 
     const generatePlan = async () => {
