@@ -109,6 +109,10 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
 • Difference: ${Math.abs((maleTestPlan.actualCalories || maleTestPlan.targetCalories || 0) - (femaleTestPlan.actualCalories || femaleTestPlan.targetCalories || 0))} cal
 
 🎯 STATUS: ${oatsTest && femaleCarbItems.length > 0 ? '✅ FEMALE LIMITS WORKING!' : '❌ FEMALE LIMITS NOT APPLIED'}
+
+💪 PROTEIN EXPECTATIONS:
+• Males: Up to 8 scoops/day (2 scoops per meal × 4 meals)
+• Females: Up to 4 scoops/day (1 scoop per meal × 4 meals)
             `;
 
                 setTestResult(result);
@@ -236,12 +240,12 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
 
                         {/* DEBUG TEST BUTTON - PROPERLY PLACED */}
                         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-                            <h4 className="font-semibold text-red-800 mb-2">🧪 Female Carb Limits Test</h4>
+                            <h4 className="font-semibold text-red-800 mb-2">🧪 Female Limits Test (Carbs + Protein)</h4>
                             <button
                                 onClick={runVisibleTest}
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
                             >
-                                🧪 Test Female Carb Limits (Click Me!)
+                                🧪 Test Female Limits: 0.75 cups carbs + 4 protein max
                             </button>
 
                             {testResult && (
@@ -251,7 +255,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                             )}
 
                             <div className="text-xs text-red-600 mt-2">
-                                💡 This tests if females get max 0.75 cups oats (not 3 cups!)
+                                💡 This tests if females get max 0.75 cups oats + max 4 protein scoops!
                             </div>
                         </div>
 
@@ -267,7 +271,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                         }`}
                                 >
                                     <div className="font-semibold text-gray-800">🚹 Male</div>
-                                    <div className="text-xs text-gray-600 mt-1">Larger portions, up to 8 protein scoops</div>
+                                    <div className="text-xs text-gray-600 mt-1">Larger portions, up to 8 protein scoops/day</div>
                                 </button>
                                 <button
                                     onClick={() => setSelectedGender('female')}
@@ -277,7 +281,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                         }`}
                                 >
                                     <div className="font-semibold text-gray-800">🚺 Female</div>
-                                    <div className="text-xs text-gray-600 mt-1">Realistic portions, max 0.75 cups carbs</div>
+                                    <div className="text-xs text-gray-600 mt-1">Realistic portions, max 4 protein scoops/day</div>
                                 </button>
                             </div>
                         </div>
@@ -377,7 +381,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                 <div><strong>Style:</strong> {eaterTypeOptions.find(e => e.value === selectedEaterType)?.label}</div>
                                 <div><strong>Meals:</strong> {selectedMealFreq} meals per day</div>
                                 <div><strong>Dietary:</strong> {selectedDietaryFilters.length > 0 ? selectedDietaryFilters.join(', ') : 'None'}</div>
-                                <div><strong>Gender:</strong> {selectedGender} {selectedGender === 'female' ? '(portion controlled)' : '(larger portions)'}</div>
+                                <div><strong>Gender:</strong> {selectedGender} {selectedGender === 'female' ? '(max 4 protein, 0.75 cups carbs)' : '(up to 8 protein, larger portions)'}</div>
                                 {calorieData && (
                                     <div><strong>Target Calories:</strong> ~{calorieData.targetCalories} cal/day</div>
                                 )}
