@@ -340,6 +340,18 @@ const addSeparateSnackComponents = (snackMeal, goal, dietaryFilters) => {
     });
 };
 
+// 🔍 DEBUG: Helper function to check food name matches
+const debugFoodNameMatches = () => {
+    console.log('\n🔍 [DEBUG] Available realistic limits:');
+    console.log('🚺 Female limits:', Object.keys(RealisticPortionLimits.female));
+    console.log('🚹 Male limits:', Object.keys(RealisticPortionLimits.male));
+
+    console.log('\n🔍 [DEBUG] Available foods in database:');
+    Object.keys(FoodDatabase).forEach(category => {
+        console.log(`  ${category}:`, Object.keys(FoodDatabase[category]));
+    });
+};
+
 // 🔧 FIXED: Apply realistic limits for BOTH genders (no more 5-cup oatmeal!)
 const RealisticPortionLimits = {
     // 🚺 Female limits (conservative, realistic)
@@ -407,6 +419,15 @@ const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
     const genderLimits = RealisticPortionLimits[genderKey] || RealisticPortionLimits.male;
     const realisticLimit = genderLimits[item.food];
 
+    // 🔎 DEBUG: Log what we're working with
+    console.log(`[DEBUG] Scaling "${item.food}" for ${gender}:`, {
+        originalServing: item.serving,
+        targetScaling: targetScaling,
+        desiredServing: desiredServing,
+        realisticLimit: realisticLimit,
+        hasRealisticLimit: realisticLimit !== undefined
+    });
+
     let finalServing = desiredServing;
 
     // Apply gender-specific realistic limit FIRST
@@ -417,10 +438,27 @@ const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
         if (finalServing < originalServing) {
             console.log(`${gender === 'female' ? '🚺' : '🚹'} [${gender.toUpperCase()} REALISTIC LIMIT] ${item.food}: ${desiredServing.toFixed(2)} → ${finalServing} (max: ${realisticLimit})`);
         }
+    } else {
+        console.log(`⚠️ [MISSING LIMIT] No realistic limit found for "${item.food}" in ${gender} limits`);
     }
 
     // Apply tier limits second (as backup safety)
     finalServing = Math.min(finalServing, tierMaxServing.maxServing);
+
+    // 🔒 HARD SAFEGUARD: Force clamp to gender limits as final protection
+    if (gender.toLowerCase() === 'female' && RealisticPortionLimits.female[item.food] !== undefined) {
+        const femaleMax = RealisticPortionLimits.female[item.food];
+        if (finalServing > femaleMax) {
+            console.log(`🚨 [EMERGENCY CLAMP] Female ${item.food}: ${finalServing} → ${femaleMax} (HARD LIMIT)`);
+            finalServing = femaleMax;
+        }
+    } else if (gender.toLowerCase() === 'male' && RealisticPortionLimits.male[item.food] !== undefined) {
+        const maleMax = RealisticPortionLimits.male[item.food];
+        if (finalServing > maleMax) {
+            console.log(`🚨 [EMERGENCY CLAMP] Male ${item.food}: ${finalServing} → ${maleMax} (HARD LIMIT)`);
+            finalServing = maleMax;
+        }
+    }
 
     // Calculate deficit for makeup calories
     const scalingDeficit = desiredServing - finalServing;
@@ -530,6 +568,9 @@ export class MealPlanGenerator {
         console.log(`🎯 [FIXED GENERATOR] Starting: ${goal}-${eaterType}-${mealFreq}`);
         console.log(`👤 [USER PROFILE]`, userProfile);
 
+        // 🔍 DEBUG: Show available food names and limits
+        debugFoodNameMatches();
+
         try {
             // Step 1: Get base template
             const baseTemplate = this.getMealPlanTemplate(goal, eaterType, mealFreq);
@@ -544,10 +585,14 @@ export class MealPlanGenerator {
             const gender = userProfile?.gender || 'male';
             console.log(`🎯 [REALISTIC LIMITS] Applying ${gender} realistic portions to base template items...`);
 
-            workingPlan.allMeals.forEach(meal => {
-                meal.items = meal.items.map(item =>
-                    applyGenderAwareTierScaling(item, 1, goal, gender)
-                );
+            workingPlan.allMeals.forEach((meal, mealIndex) => {
+                console.log(`\n🍽️ [MEAL ${mealIndex + 1}] Processing ${meal.mealName}:`);
+                meal.items = meal.items.map((item, itemIndex) => {
+                    console.log(`  📋 [ITEM ${itemIndex + 1}] Original: ${item.food} = ${item.serving} ${item.displayUnit}`);
+                    const limitedItem = applyGenderAwareTierScaling(item, 1, goal, gender);
+                    console.log(`  ✅ [ITEM ${itemIndex + 1}] Limited: ${limitedItem.food} = ${limitedItem.serving} ${limitedItem.displayUnit}`);
+                    return limitedItem;
+                });
             });
 
             console.log(`✅ [REALISTIC LIMITS] Base template processed with realistic ${gender} portions`);
@@ -586,6 +631,9 @@ export class MealPlanGenerator {
             console.log('✅ [FIXED SUCCESS] Meal plan generation complete');
             console.log(`🎯 [SUMMARY] Final plan: ${finalPlan.allMeals.length} meals, ${this.countProteinItems(finalPlan)} protein items`);
 
+            // 🔒 FINAL VERIFICATION: Check that no items exceed gender limits
+            this.verifyGenderLimits(finalPlan, gender);
+
             return finalPlan;
 
         } catch (error) {
@@ -623,6 +671,12 @@ export class MealPlanGenerator {
 
         const limits = scalingLimits[goal] || { min: 0.5, max: gender.toLowerCase() === 'female' ? 1.0 : 2.0 };
         scalingFactor = Math.max(limits.min, Math.min(limits.max, scalingFactor));
+
+        // 🔒 ADDITIONAL SAFEGUARD: Never scale female portions above 1.0x
+        if (gender.toLowerCase() === 'female' && scalingFactor > 1.0) {
+            console.log(`🚺 [FEMALE PROTECTION] Limiting scaling factor from ${scalingFactor.toFixed(2)} to 1.0 for female`);
+            scalingFactor = 1.0;
+        }
 
         console.log(`📊 [GENDER SCALING] ${gender}: ${currentCalories} → ${targetCalories} cal (${scalingFactor.toFixed(2)}x, max: ${limits.max})`);
 
@@ -670,6 +724,37 @@ export class MealPlanGenerator {
         console.log(`✅ [SCALING COMPLETE] ${gender}: ${scaledPlan.actualCalories} cal, ${scaledPlan.genderAnalysis.itemsLimited} items limited with realistic portions`);
 
         return scaledPlan;
+    }
+
+    // 🔒 VERIFICATION: Ensure no items exceed gender limits
+    verifyGenderLimits(mealPlan, gender) {
+        console.log(`\n🔍 [FINAL VERIFICATION] Checking ${gender} limits compliance...`);
+
+        const genderKey = gender.toLowerCase();
+        const limits = RealisticPortionLimits[genderKey] || RealisticPortionLimits.male;
+        let violationsFound = 0;
+
+        mealPlan.allMeals.forEach((meal, mealIndex) => {
+            meal.items.forEach((item, itemIndex) => {
+                const limit = limits[item.food];
+                if (limit !== undefined && item.serving > limit) {
+                    console.log(`🚨 [VIOLATION] ${meal.mealName} Item ${itemIndex + 1}: ${item.food} = ${item.serving} (EXCEEDS ${gender} limit of ${limit})`);
+                    violationsFound++;
+
+                    // Auto-fix the violation
+                    item.serving = limit;
+                    item.displayServing = roundToUserFriendly(limit, item.displayUnit).toString();
+                    item.displayUnit = standardizeDisplayUnit(parseFloat(item.displayServing), item.displayUnit);
+                    console.log(`🔧 [AUTO-FIXED] Corrected to: ${item.serving} ${item.displayUnit}`);
+                }
+            });
+        });
+
+        if (violationsFound === 0) {
+            console.log(`✅ [VERIFICATION PASSED] All ${mealPlan.allMeals.flatMap(m => m.items).length} items comply with ${gender} limits`);
+        } else {
+            console.log(`⚠️ [VERIFICATION] Found and fixed ${violationsFound} gender limit violations`);
+        }
     }
 
     // Helper methods
