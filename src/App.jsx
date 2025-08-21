@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { FoodDatabase, getFoodsInCategory, getServingInfo, servingSizeConversions } from './FoodDatabase.js';
+// 🆕 UPDATED IMPORTS - Enhanced meal planning system
+import { FoodDatabase, getFoodsInCategory, getServingInfo, checkDietaryCompatibility } from './mealPlanning/FoodDatabase.js';
+import { generateMealPlan } from './mealPlanning/MealPlanGenerator.js';
+import { applyDietaryFilters } from './mealPlanning/DietaryFilterSystem.js';
 import { USDAMealCreator } from './USDAMealCreator.jsx';
 import MealSwipeGame from './MealSwipeGame.jsx';
 import DailyMealPlannerModule from './DailyMealPlannerModule.jsx';
@@ -351,7 +354,7 @@ function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, on
 
   const categories = [
     [
-      { name: 'Protein', icon: '🍗', color: 'bg-blue-500' },
+      { name: 'Protein', icon: '🗲', color: 'bg-blue-500' },
       { name: 'Carbs', icon: '🍞', color: 'bg-green-500' }
     ],
     [
@@ -624,17 +627,20 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
   );
 }
 
+// 🆕 ENHANCED MealFoodList Component with dietary information
 function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   if (!meal.items || meal.items.length === 0) return null;
 
   const source = mealSources[meal.name];
   const isUSDAOwned = source === 'usda';
+  const isEnhancedPlan = source?.includes('weekplan') || source?.includes('enhanced');
 
   return (
     <div className="mt-4 space-y-2">
       <h4 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
         Added Foods:
         {isUSDAOwned && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">USDA</span>}
+        {isEnhancedPlan && <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">Enhanced</span>}
       </h4>
       {meal.items.map((item, index) => {
         const servingInfo = item.category ? getServingInfo(item.category, item.food) : null;
@@ -642,7 +648,15 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
         return (
           <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
             <div className="flex-1">
-              <div className="font-medium text-sm text-gray-800">{item.food}</div>
+              <div className="font-medium text-sm text-gray-800 flex items-center gap-2">
+                {item.food}
+                {/* 🆕 Show if this was substituted */}
+                {item.originalFood && (
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                    Was: {item.originalFood}
+                  </span>
+                )}
+              </div>
               {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
               <div className="text-xs text-gray-600">
                 {Math.round(item.servings * 10) / 10}x serving • {Math.round(item.calories)} cal
@@ -652,7 +666,19 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
                 {item.source !== 'usda' && servingInfo && (
                   <div className="text-xs text-blue-500 mt-1">{servingInfo.palm}</div>
                 )}
+                {/* 🆕 Show dietary compliance */}
+                {item.dietaryTags && Object.keys(item.dietaryTags).length > 0 && (
+                  <div className="text-xs text-green-600 mt-1">
+                    Dietary: {Object.keys(item.dietaryTags).filter(tag => item.dietaryTags[tag]).join(', ')}
+                  </div>
+                )}
+                {item.substitutionReason && (
+                  <div className="text-xs text-orange-600 mt-1">
+                    Substituted for: {item.substitutionReason}
+                  </div>
+                )}
                 {item.source === 'usda' && <span className="ml-2 text-blue-500">USDA</span>}
+                {isEnhancedPlan && <span className="ml-2 text-green-500">Enhanced</span>}
               </div>
             </div>
             {!readOnly && !isUSDAOwned && (
@@ -776,7 +802,7 @@ function FullScreenSwipeInterface({
                           {meal.name === 'Lunch' && '🥗'}
                           {meal.name === 'MidAfternoon Snack' && '🥜'}
                           {meal.name === 'Dinner' && '🍽️'}
-                          {meal.name === 'Late Snack' && '🍓'}
+                          {meal.name === 'Late Snack' && '🍔'}
                           {meal.name === 'PostWorkout' && '💪'}
                           {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
                         </div>
@@ -792,7 +818,7 @@ function FullScreenSwipeInterface({
                           disabled={isUSDAOwned}
                           className={`px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${isUSDAOwned ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
                         >
-                          🕐 {meal.time}
+                          🕘 {meal.time}
                           {isUSDAOwned && <span className="text-xs">🔒</span>}
                         </button>
                       </div>
@@ -866,6 +892,10 @@ const MealSwipeApp = () => {
     'PostWorkout': null
   });
 
+  // 🆕 NEW: Dietary filter state management
+  const [selectedDietaryFilters, setSelectedDietaryFilters] = useState([]);
+  const [complianceCheck, setComplianceCheck] = useState({ isCompliant: true, violations: [] });
+
   const mealTypeMapping = {
     'Breakfast': 'breakfast',
     'FirstSnack': 'firstSnack',
@@ -922,6 +952,78 @@ const MealSwipeApp = () => {
   const [showGlenSays, setShowGlenSays] = useState(false);
 
   const dragRef = useRef({ startX: 0, startY: 0 });
+
+  // 🆕 NEW: Check dietary compliance when dietary filters change
+  useEffect(() => {
+    if (selectedDietaryFilters.length > 0) {
+      const compliance = checkMealPlanCompliance(selectedDietaryFilters);
+      setComplianceCheck(compliance);
+
+      if (!compliance.isCompliant) {
+        console.warn('Dietary compliance issues:', compliance.violations);
+      }
+    }
+  }, [selectedDietaryFilters, meals]);
+
+  // 🆕 NEW: Dietary compliance checking function
+  const checkMealPlanCompliance = (dietaryFilters = []) => {
+    if (dietaryFilters.length === 0) return { isCompliant: true, violations: [] };
+
+    const violations = [];
+
+    meals.forEach((meal, mealIndex) => {
+      meal.items?.forEach((item, itemIndex) => {
+        if (item.food && item.category) {
+          const isCompliant = checkDietaryCompatibility(item.food, item.category, dietaryFilters);
+          if (!isCompliant) {
+            violations.push({
+              meal: meal.name,
+              food: item.food,
+              category: item.category,
+              violatedFilters: dietaryFilters.filter(filter =>
+                !FoodDatabase[item.category]?.[item.food]?.dietaryTags?.[filter]
+              ),
+              mealIndex,
+              itemIndex
+            });
+          }
+        }
+      });
+    });
+
+    return {
+      isCompliant: violations.length === 0,
+      violations,
+      summary: violations.length === 0
+        ? `✅ All meals comply with ${dietaryFilters.join(', ')} restrictions`
+        : `⚠️ Found ${violations.length} dietary violations`
+    };
+  };
+
+  // 🆕 NEW: Generate custom meal plan using enhanced system
+  const generateCustomMealPlan = async () => {
+    try {
+      const options = {
+        goal: profile.goal || 'maintain',
+        eaterType: 'balanced',
+        mealFreq: 5,
+        dietaryFilters: selectedDietaryFilters,
+        userProfile: profile,
+        calorieData: calculateTDEE(profile)
+      };
+
+      console.log('🎯 Generating custom meal plan with options:', options);
+
+      const customPlan = generateMealPlan(options);
+
+      if (customPlan) {
+        handleAddWeekPlan(customPlan);
+        console.log('✅ Custom meal plan generated successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error generating custom meal plan:', error);
+    }
+  };
 
   // Handle Burn & Learn item clicks
   const handleBurnAndLearnClick = (item) => {
@@ -1041,7 +1143,10 @@ const MealSwipeApp = () => {
           fat: Math.round(fat),
           sugar: Math.round(sugar),
           calories: Math.round(calories),
-          source: 'mealideas'
+          source: 'mealideas',
+          // 🆕 NEW: Add dietary tag information
+          dietaryTags: foodData.dietaryTags || {},
+          dietaryCompliant: true // From meal ideas, so assumed compliant
         });
       } else {
         console.warn('Food not found in database:', item.food, 'category:', item.category);
@@ -1064,8 +1169,11 @@ const MealSwipeApp = () => {
     setShowMealIdeas(false);
   };
 
+  // 🆕 ENHANCED: Week Plan Handler with dietary support
   const handleAddWeekPlan = (weekPlan) => {
-    // Create meal name mapping from plan names to app meal names
+    console.log('🆕 Received enhanced week plan:', weekPlan);
+
+    // Create meal name mapping (same as before)
     const mealNameMapping = {
       'Breakfast': 'Breakfast',
       'Morning Snack': 'FirstSnack',
@@ -1083,7 +1191,7 @@ const MealSwipeApp = () => {
       'Mid-Morning': 'FirstSnack',
     };
 
-    // Create new meals object with cleared items for ALL meals (weekplan overrides everything)
+    // Clear existing meals
     const newMeals = meals.map(meal => ({
       ...meal,
       protein: 0,
@@ -1094,21 +1202,20 @@ const MealSwipeApp = () => {
       items: []
     }));
 
-    // Update meals with week plan data - FIXED TO USE MEAL NAMES
+    // Process the enhanced meal plan
     if (weekPlan.allMeals) {
       weekPlan.allMeals.forEach((planMeal) => {
-        // Find the correct meal by name mapping, not array index
         const appMealName = mealNameMapping[planMeal.mealName] || planMeal.mealName;
         const mealIndex = newMeals.findIndex(m => m.name === appMealName);
 
-        console.log(`Mapping plan meal "${planMeal.mealName}" to app meal "${appMealName}", found at index ${mealIndex}`);
+        console.log(`Processing meal: ${planMeal.mealName} → ${appMealName} (index: ${mealIndex})`);
 
         if (mealIndex !== -1 && planMeal.items) {
-          // Calculate totals from the plan meal items
           let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
 
           const processedItems = planMeal.items.map(item => {
             if (item.food && item.category) {
+              // Use the enhanced food database
               const foodData = FoodDatabase[item.category]?.[item.food];
               if (foodData) {
                 const serving = item.serving || 1;
@@ -1133,8 +1240,15 @@ const MealSwipeApp = () => {
                   fat: Math.round(fat),
                   sugar: Math.round(sugar),
                   calories: Math.round(calories),
-                  source: 'weekplan'
+                  source: weekPlan.generatedWith || 'weekplan-enhanced',
+                  // 🆕 NEW: Enhanced metadata for tracking substitutions
+                  originalFood: item.originalFood, // Track if this was substituted
+                  substitutionReason: item.substitutionReason, // Why it was substituted
+                  dietaryCompliant: !item.substitutionReason, // If no substitution, it's compliant
+                  dietaryTags: foodData.dietaryTags || {} // Dietary information
                 };
+              } else {
+                console.warn('Food not found in enhanced database:', item.food, item.category);
               }
             }
             return null;
@@ -1151,14 +1265,38 @@ const MealSwipeApp = () => {
             calories: Math.round(totalCalories)
           };
 
-          // Claim the meal for weekplan (this overrides any existing ownership)
-          claimMeal(appMealName, 'weekplan');
+          // Claim the meal for the enhanced system
+          claimMeal(appMealName, weekPlan.generatedWith || 'weekplan-enhanced');
         }
       });
     }
 
     setMeals(newMeals);
     setIsWeekPlanModalOpen(false);
+
+    // 🆕 NEW: Show success message with dietary info
+    if (weekPlan.dietaryFilters && weekPlan.dietaryFilters.length > 0) {
+      console.log(`✅ Applied dietary filters: ${weekPlan.dietaryFilters.join(', ')}`);
+
+      // Count substitutions made
+      const substitutionCount = newMeals.reduce((count, meal) => {
+        return count + (meal.items?.filter(item => item.substitutionReason).length || 0);
+      }, 0);
+
+      if (substitutionCount > 0) {
+        console.log(`🔄 Made ${substitutionCount} dietary substitutions`);
+      }
+    }
+
+    // 🆕 NEW: Log nutritional summary
+    const totalNutrition = newMeals.reduce((total, meal) => ({
+      calories: total.calories + meal.calories,
+      protein: total.protein + meal.protein,
+      carbs: total.carbs + meal.carbs,
+      fat: total.fat + meal.fat
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+    console.log('📊 Week plan nutrition summary:', totalNutrition);
   };
 
   const claimMeal = (mealName, source) => {
@@ -1373,9 +1511,13 @@ const MealSwipeApp = () => {
     return actions.slice(0, 3);
   };
 
+  // 🆕 ENHANCED: Add food with dietary support
   const addFoodToMeal = (mealId, category, foodName, servings = 1) => {
     const foodData = FoodDatabase[category]?.[foodName];
-    if (!foodData) return;
+    if (!foodData) {
+      console.error('Food not found in enhanced database:', foodName, category);
+      return;
+    }
 
     const meal = meals.find(m => m.id === mealId);
     if (!meal) return;
@@ -1403,7 +1545,10 @@ const MealSwipeApp = () => {
           fat: Math.round(foodData.fat * servings),
           sugar: Math.round((foodData.sugar || 0) * servings),
           calories: Math.round(foodData.calories * servings),
-          source: 'quickview'
+          source: 'quickview',
+          // 🆕 NEW: Add dietary tag information
+          dietaryTags: foodData.dietaryTags || {},
+          dietaryCompliant: true // User manually added, so assumed compliant
         };
 
         return {
@@ -1478,7 +1623,7 @@ const MealSwipeApp = () => {
     return allMeals;
   };
 
-  // Calculate calorie data from profile using ProfileModule's TDEE calculation
+  // 🆕 ENHANCED: Calculate calorie data with better meal planning support
   const calculateTDEE = (userProfile) => {
     const { heightFeet, heightInches, weight, exerciseLevel, goal, gender } = userProfile;
 
@@ -1486,7 +1631,9 @@ const MealSwipeApp = () => {
       return {
         bmr: 1800,
         tdee: 2200,
-        targetCalories: profile.goal === 'dirty-bulk' ? 3200 : profile.goal === 'Gain-muscle' ? 2800 : profile.goal === 'lose' ? 2000 : 2500
+        targetCalories: profile.goal === 'dirty-bulk' ? 3200 :
+          profile.goal === 'Gain-muscle' ? 2800 :
+            profile.goal === 'lose' ? 2000 : 2500
       };
     }
 
@@ -1497,11 +1644,10 @@ const MealSwipeApp = () => {
     // BMR calculation using Mifflin-St Jeor equation
     let bmr;
     if (gender === 'male') {
-      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 + 5; // Using age 25 as default
+      bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 + 5;
     } else if (gender === 'female') {
       bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 - 161;
     } else {
-      // Non-binary - use average
       bmr = 10 * weightKg + 6.25 * heightCm - 5 * 25 - 78;
     }
 
@@ -1516,17 +1662,17 @@ const MealSwipeApp = () => {
 
     const tdee = bmr * activityMultipliers[exerciseLevel];
 
-    // Goal adjustments
+    // Goal adjustments - 🆕 ENHANCED for better meal planning
     let targetCalories;
     switch (goal) {
       case 'lose':
-        targetCalories = tdee - 500; // 500 cal deficit for 1lb/week loss
+        targetCalories = Math.max(bmr + 100, tdee - 500); // Don't go below BMR + 100
         break;
       case 'Gain-muscle':
-        targetCalories = tdee + 300; // 300 cal surplus for lean gains
+        targetCalories = tdee + 300;
         break;
       case 'dirty-bulk':
-        targetCalories = tdee + 700; // 700 cal surplus for rapid gains
+        targetCalories = tdee + 700;
         break;
       case 'maintain':
       default:
