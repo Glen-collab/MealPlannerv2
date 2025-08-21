@@ -1,6 +1,6 @@
 // test-new-system.js - Quick test without breaking existing code
 
-import { generateMealPlan } from './MealPlanGenerator.js';
+import { generateMealPlan } from './mealPlanning/MealPlanGenerator.js';
 import { applyProteinPriorityScaling, distributeProteinThroughoutDay } from './ProteinPrioritySystem.js';
 
 // Test the new system on an existing meal plan
