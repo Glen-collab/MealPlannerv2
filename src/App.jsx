@@ -46,7 +46,38 @@ const getSortedMealsByTime = (meals) => {
     return timeA - timeB;
   });
 };
+// 🔧 ADDED: Rounding function for user-friendly serving sizes
+const roundToUserFriendly = (serving, unit) => {
+  if (serving <= 0) return 0.25; // Minimum serving
 
+  const normalizedUnit = unit?.toLowerCase() || '';
+
+  // 🥤 CUPS: Round to nice fractions
+  if (normalizedUnit.includes('cup')) {
+    if (serving <= 0.375) return 0.25;      // → 1/4 cup
+    if (serving <= 0.625) return 0.5;       // → 1/2 cup  
+    if (serving <= 0.875) return 0.75;      // → 3/4 cup
+    if (serving <= 1.25) return 1;          // → 1 cup
+    if (serving <= 1.625) return 1.5;       // → 1 1/2 cups
+    return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
+  }
+
+  // 🥄 SERVINGS: Round to whole numbers or halves
+  else if (normalizedUnit === 'serving' || normalizedUnit === 'servings') {
+    if (serving <= 0.75) return 0.5;        // → 1/2 serving
+    if (serving <= 1.25) return 1;          // → 1 serving
+    if (serving <= 1.75) return 1.5;        // → 1.5 servings
+    return Math.round(serving);              // → 2, 3, 4, etc.
+  }
+
+  // 🔢 DEFAULT: Round to halves
+  else {
+    if (serving <= 0.75) return 0.5;        // → 0.5
+    if (serving <= 1.25) return 1;          // → 1
+    if (serving <= 1.75) return 1.5;        // → 1.5
+    return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
+  }
+};
 // Serving Picker Modal Component
 function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, category, foodName, onSelectServing, onClose }) {
   const [selectedAmount, setSelectedAmount] = useState(1);
@@ -1536,15 +1567,18 @@ const MealSwipeApp = () => {
 
     setMeals(prev => prev.map(meal => {
       if (meal.id === mealId) {
+        // 🔧 FIXED: Round servings to user-friendly amounts
+        const roundedServings = roundToUserFriendly(servings, 'servings');
+
         const newItem = {
           food: foodName,
           category: category,
-          servings: servings,
-          protein: Math.round(foodData.protein * servings),
-          carbs: Math.round(foodData.carbs * servings),
-          fat: Math.round(foodData.fat * servings),
-          sugar: Math.round((foodData.sugar || 0) * servings),
-          calories: Math.round(foodData.calories * servings),
+          servings: roundedServings,  // ← USE ROUNDED SERVINGS
+          protein: Math.round(foodData.protein * roundedServings),  // ← USE ROUNDED FOR CALCULATIONS
+          carbs: Math.round(foodData.carbs * roundedServings),
+          fat: Math.round(foodData.fat * roundedServings),
+          sugar: Math.round((foodData.sugar || 0) * roundedServings),
+          calories: Math.round(foodData.calories * roundedServings),
           source: 'quickview',
           // 🆕 NEW: Add dietary tag information
           dietaryTags: foodData.dietaryTags || {},
@@ -1554,11 +1588,11 @@ const MealSwipeApp = () => {
         return {
           ...meal,
           items: [...(meal.items || []), newItem],
-          protein: Math.round(meal.protein + foodData.protein * servings),
-          carbs: Math.round(meal.carbs + foodData.carbs * servings),
-          fat: Math.round(meal.fat + foodData.fat * servings),
-          sugar: Math.round(meal.sugar + (foodData.sugar || 0) * servings),
-          calories: Math.round(meal.calories + foodData.calories * servings)
+          protein: Math.round(meal.protein + foodData.protein * roundedServings),
+          carbs: Math.round(meal.carbs + foodData.carbs * roundedServings),
+          fat: Math.round(meal.fat + foodData.fat * roundedServings),
+          sugar: Math.round(meal.sugar + (foodData.sugar || 0) * roundedServings),
+          calories: Math.round(meal.calories + foodData.calories * roundedServings)
         };
       }
       return meal;
