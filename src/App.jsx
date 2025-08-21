@@ -1168,7 +1168,7 @@ const MealSwipeApp = () => {
         processedItems.push({
           food: item.food,
           category: dbCategory,
-          servings: serving,
+          servings: roundToUserFriendly(serving, 'servings'), // ← APPLY ROUNDING HERE
           protein: Math.round(protein),
           carbs: Math.round(carbs),
           fat: Math.round(fat),
@@ -1265,7 +1265,7 @@ const MealSwipeApp = () => {
                 return {
                   food: item.food,
                   category: item.category,
-                  servings: serving,
+                  servings: roundToUserFriendly(serving, 'servings'), // ← APPLY ROUNDING HERE
                   protein: Math.round(protein),
                   carbs: Math.round(carbs),
                   fat: Math.round(fat),
