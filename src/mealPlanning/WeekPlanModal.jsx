@@ -111,7 +111,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
 🎯 STATUS: ${oatsTest && femaleCarbItems.length > 0 ? '✅ FEMALE LIMITS WORKING!' : '❌ FEMALE LIMITS NOT APPLIED'}
 
 💪 PROTEIN EXPECTATIONS:
-• Males: Up to 12 scoops/day (3 scoops per meal × 4 meals)
+• Males: Up to 8 scoops/day (2 scoops per meal × 4 meals)
 • Females: Up to 4 scoops/day (1 scoop per meal × 4 meals)
             `;
 
@@ -381,7 +381,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                 <div><strong>Style:</strong> {eaterTypeOptions.find(e => e.value === selectedEaterType)?.label}</div>
                                 <div><strong>Meals:</strong> {selectedMealFreq} meals per day</div>
                                 <div><strong>Dietary:</strong> {selectedDietaryFilters.length > 0 ? selectedDietaryFilters.join(', ') : 'None'}</div>
-                                <div><strong>Gender:</strong> {selectedGender} {selectedGender === 'female' ? '(max 4 protein, 0.75 cups carbs)' : '(up to 12 protein, larger portions)'}</div>
+                                <div><strong>Gender:</strong> {selectedGender} {selectedGender === 'female' ? '(max 4 protein, 0.75 cups carbs)' : '(up to 8 protein, larger portions)'}</div>
                                 {calorieData && (
                                     <div><strong>Target Calories:</strong> ~{calorieData.targetCalories} cal/day</div>
                                 )}
