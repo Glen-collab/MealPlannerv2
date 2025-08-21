@@ -1,7 +1,7 @@
 // MealPlanGenerator.js - FIXED: Apply gender-aware limits to base template items
 
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
-import { getFoodNutrition, FoodDatabase } from './FoodDatabase.js';
+import { getFoodNutrition, FoodDatabase } from './mealPlanning/FoodDatabase.js';
 
 // ✅ WORKING IMPORTS - Enhanced systems
 import {
