@@ -1,4 +1,4 @@
-// MealPlanGenerator.js - FIXED Ultimate meal planning system with STRICT gender-aware portion control
+// MealPlanGenerator.js - FIXED: Apply gender-aware limits to base template items
 
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
 import { getFoodNutrition, FoodDatabase } from './FoodDatabase.js';
@@ -71,7 +71,7 @@ const standardizeDisplayUnit = (serving, unit) => {
     return unit;
 };
 
-// 🔧 FIXED: Gender-Aware Protein Distribution with Correct Limits
+// 🔧 FIXED: Gender-Aware Protein Distribution with STRICT 12/4 Limits
 export const distributeProteinThroughoutDay = (mealPlan, gender, goal, dietaryFilters = []) => {
     console.log(`🥤 [PROTEIN SYSTEM] Starting protein distribution for ${gender} with ${goal} goal`);
 
@@ -96,9 +96,9 @@ export const distributeProteinThroughoutDay = (mealPlan, gender, goal, dietaryFi
 
     const primaryProtein = proteinRecommendations[0];
 
-    // 🔧 FIXED: Use correct max limits based on user requirements
+    // 🔧 FIXED: STRICT LIMITS - Males 12, Females 4
     const maxProteinLimits = {
-        male: 12,    // 🚹 12 scoops max for males
+        male: 12,    // 🚹 12 scoops max for males  
         female: 4    // 🚺 4 scoops max for females
     };
 
@@ -108,7 +108,7 @@ export const distributeProteinThroughoutDay = (mealPlan, gender, goal, dietaryFi
 
     console.log(`🥤 [PROTEIN] Using ${primaryProtein.name}, distributing ${totalScoops}/${maxScoops} max scoops for ${gender}`);
 
-    // Distribution based on gender with correct limits
+    // Distribution based on gender with STRICT limits
     if (gender.toLowerCase() === 'male') {
         return distributeMaleProtein(mealPlan, primaryProtein, totalScoops, goal, dietaryFilters, 12);
     } else {
@@ -211,7 +211,7 @@ const createTierAwareProteinItem = (protein, scoops, meal, goal, dietaryFilters)
         serving: limitedScoops,
         displayServing: limitedScoops.toString(),
         displayUnit: limitedScoops === 1 ? 'scoop' : 'scoops',
-        addedBy: 'fixed-protein-system-v2',
+        addedBy: 'fixed-protein-system-v3',
         isProteinFocus: true,
         tier: tier,
         tierLimited: limitedScoops < scoops,
@@ -340,7 +340,7 @@ const addSeparateSnackComponents = (snackMeal, goal, dietaryFilters) => {
     });
 };
 
-// 🔧 FIXED: Enforce female carb limits STRICTLY
+// 🔧 CRITICAL FIX: Enforce female carb limits STRICTLY
 const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
     const tier = getFoodTier(item.food, item.category);
     const tierMaxServing = getFoodMaxServing(item.food);
@@ -470,7 +470,7 @@ const CompleteMealPlanTemplates = {
 };
 
 /**
- * 🚀 FIXED ULTIMATE MEAL PLAN GENERATOR CLASS
+ * 🚀 CRITICAL FIX: ULTIMATE MEAL PLAN GENERATOR CLASS - Apply Gender Limits to Base Template
  */
 export class MealPlanGenerator {
     constructor() {
@@ -501,6 +501,18 @@ export class MealPlanGenerator {
             // Step 2: Deep clone to prevent mutations
             const workingPlan = JSON.parse(JSON.stringify(baseTemplate));
 
+            // 🔧 CRITICAL FIX: Step 2.5 - Apply gender-aware limits to BASE TEMPLATE items
+            const gender = userProfile?.gender || 'male';
+            console.log(`🚺 [GENDER LIMITS] Applying ${gender} limits to base template items...`);
+
+            workingPlan.allMeals.forEach(meal => {
+                meal.items = meal.items.map(item =>
+                    applyGenderAwareTierScaling(item, 1, goal, gender)
+                );
+            });
+
+            console.log(`✅ [GENDER LIMITS] Base template processed for ${gender}`);
+
             // Step 3: Apply dietary filters
             const dietaryPlan = applyDietaryFilters ?
                 applyDietaryFilters(workingPlan, dietaryFilters) :
@@ -510,7 +522,6 @@ export class MealPlanGenerator {
             addFavoriteSnacks(dietaryPlan, goal, dietaryFilters);
 
             // Step 5: Distribute protein (only once)
-            const gender = userProfile?.gender || 'male';
             console.log(`👤 [GENDER] Using gender: ${gender}`);
             distributeProteinThroughoutDay(dietaryPlan, gender, goal, dietaryFilters);
 
@@ -725,7 +736,7 @@ export class MealPlanGenerator {
             ...mealPlan,
             generatedAt: new Date().toISOString(),
             planId: `${options.goal}-${options.eaterType}-${options.mealFreq}${options.dietaryFilters.length ? '-' + options.dietaryFilters.join('-') : ''}`,
-            generatedWith: 'fixed-gender-aware-system-v3',
+            generatedWith: 'fixed-gender-aware-system-v4-CRITICAL-FIX',
 
             userPreferences: {
                 goal: options.goal,
@@ -743,7 +754,8 @@ export class MealPlanGenerator {
                 genderAwareLimitsActive: true,
                 femalePortionControlActive: true,
                 proteinLimitsFixed: true, // Males: 12, Females: 4
-                bugsFixed: ['female-carb-limits', 'protein-distribution-limits', 'scaling-factors']
+                baseTemplateLimitsApplied: true, // 🔧 CRITICAL FIX
+                bugsFixed: ['female-carb-limits', 'protein-distribution-limits', 'scaling-factors', 'base-template-gender-limits']
             }
         };
 
