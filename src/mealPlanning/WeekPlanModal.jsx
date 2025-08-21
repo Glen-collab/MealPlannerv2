@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateMealPlan } from './mealPlanning/MealPlanGenerator.js';
+import { generateMealPlan } from './MealPlanGenerator.js';
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
 
 function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieData, isMobile = false }) {
