@@ -340,7 +340,61 @@ const addSeparateSnackComponents = (snackMeal, goal, dietaryFilters) => {
     });
 };
 
-// 🔧 CRITICAL FIX: Enforce female carb limits STRICTLY
+// 🔧 FIXED: Apply realistic limits for BOTH genders (no more 5-cup oatmeal!)
+const RealisticPortionLimits = {
+    // 🚺 Female limits (conservative, realistic)
+    female: {
+        'Oats (dry)': 0.75,                    // 3/4 cup max
+        'Brown Rice (cooked)': 0.75,           // 3/4 cup max
+        'White Rice (cooked)': 0.75,           // 3/4 cup max
+        'Quinoa (cooked)': 0.75,               // 3/4 cup max
+        'Pasta (cooked)': 0.75,                // 3/4 cup max
+        'Sweet Potato': 1.0,                   // 1 medium max
+        'Potato (baked)': 1.0,                 // 1 medium max
+        'Whole Wheat Bread': 2,                // 2 slices max
+        'Bagel (plain)': 0.5,                  // 1/2 bagel max
+        'Avocado': 1.0,                        // 1 medium max
+        'Greek Yogurt (non-fat)': 1.0,         // 1 cup max
+        'Coconut Yogurt': 1.0,                 // 1 cup max
+        'Granola': 0.25,                       // 1/4 cup max
+        'Nuts (mixed)': 1.0,                   // 1 oz max
+        'Almonds': 1.0,                        // 1 oz max
+        'Peanut Butter': 2.0,                  // 2 tbsp max
+        'Almond Butter': 2.0,                  // 2 tbsp max
+        'Chicken Breast': 2.0,                 // 7 oz max
+        'Salmon': 2.0,                         // 7 oz max
+        'Eggs (whole)': 4,                     // 4 eggs max
+        'Whey Protein (generic)': 4,           // 4 scoops max
+        'Plant Protein (pea/rice)': 4          // 4 scoops max
+    },
+
+    // 🚹 Male limits (generous but still realistic - NO 5-CUP OATMEAL!)
+    male: {
+        'Oats (dry)': 1.5,                     // 1.5 cups max (not 5 cups!)
+        'Brown Rice (cooked)': 1.5,            // 1.5 cups max
+        'White Rice (cooked)': 1.5,            // 1.5 cups max
+        'Quinoa (cooked)': 1.25,               // 1.25 cups max
+        'Pasta (cooked)': 1.5,                 // 1.5 cups max
+        'Sweet Potato': 2.0,                   // 2 medium max
+        'Potato (baked)': 2.0,                 // 2 medium max
+        'Whole Wheat Bread': 4,                // 4 slices max
+        'Bagel (plain)': 1.0,                  // 1 whole bagel max
+        'Avocado': 2.0,                        // 2 medium max
+        'Greek Yogurt (non-fat)': 2.0,         // 2 cups max
+        'Coconut Yogurt': 2.0,                 // 2 cups max
+        'Granola': 0.75,                       // 3/4 cup max
+        'Nuts (mixed)': 2.0,                   // 2 oz max
+        'Almonds': 2.0,                        // 2 oz max
+        'Peanut Butter': 4.0,                  // 4 tbsp max
+        'Almond Butter': 4.0,                  // 4 tbsp max
+        'Chicken Breast': 4.0,                 // 14 oz max
+        'Salmon': 3.5,                         // 12 oz max
+        'Eggs (whole)': 8,                     // 8 eggs max
+        'Whey Protein (generic)': 12,          // 12 scoops max
+        'Plant Protein (pea/rice)': 12         // 12 scoops max
+    }
+};
+
 const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
     const tier = getFoodTier(item.food, item.category);
     const tierMaxServing = getFoodMaxServing(item.food);
@@ -348,40 +402,24 @@ const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
     // Calculate desired serving after scaling
     const desiredServing = item.serving * targetScaling;
 
-    // 🚺 STRICT FEMALE CARB LIMITS - ENFORCED FIRST
-    const femaleMaxLimits = {
-        'Oats (dry)': 0.75,             // ✅ MAX 3/4 cup dry
-        'Brown Rice (cooked)': 0.75,     // ✅ MAX 3/4 cup cooked 
-        'White Rice (cooked)': 0.75,     // ✅ MAX 3/4 cup cooked
-        'Quinoa (cooked)': 0.75,         // ✅ MAX 3/4 cup cooked
-        'Pasta (cooked)': 0.75,          // ✅ MAX 3/4 cup cooked
-        'Sweet Potato': 1.0,             // ✅ MAX 1 medium
-        'Potato (baked)': 1.0,           // ✅ MAX 1 medium
-        'Whole Wheat Bread': 2,          // ✅ MAX 2 slices
-        'Bagel (plain)': 0.5,            // ✅ MAX 1/2 bagel
-        'Avocado': 1.0,                  // ✅ MAX 1 medium
-        'Greek Yogurt (non-fat)': 1.0,   // ✅ MAX 1 cup
-        'Coconut Yogurt': 1.0,           // ✅ MAX 1 cup
-        'Granola': 0.25,                 // ✅ MAX 1/4 cup
-        'Nuts (mixed)': 1.0,             // ✅ MAX 1 oz
-        'Almonds': 1.0,                  // ✅ MAX 1 oz
-        'Peanut Butter': 2.0,            // ✅ MAX 2 tbsp
-        'Almond Butter': 2.0             // ✅ MAX 2 tbsp
-    };
+    // 🎯 Get gender-specific realistic limit
+    const genderKey = gender.toLowerCase();
+    const genderLimits = RealisticPortionLimits[genderKey] || RealisticPortionLimits.male;
+    const realisticLimit = genderLimits[item.food];
 
     let finalServing = desiredServing;
 
-    // 🚺 APPLY FEMALE LIMITS FIRST AND STRICTLY
-    if (gender.toLowerCase() === 'female' && femaleMaxLimits[item.food]) {
-        const femaleLimit = femaleMaxLimits[item.food];
-        finalServing = Math.min(desiredServing, femaleLimit);
+    // Apply gender-specific realistic limit FIRST
+    if (realisticLimit !== undefined) {
+        const originalServing = finalServing;
+        finalServing = Math.min(desiredServing, realisticLimit);
 
-        if (finalServing < desiredServing) {
-            console.log(`🚺 [FEMALE LIMIT APPLIED] ${item.food}: ${desiredServing.toFixed(2)} → ${finalServing} (max ${femaleLimit})`);
+        if (finalServing < originalServing) {
+            console.log(`${gender === 'female' ? '🚺' : '🚹'} [${gender.toUpperCase()} REALISTIC LIMIT] ${item.food}: ${desiredServing.toFixed(2)} → ${finalServing} (max: ${realisticLimit})`);
         }
     }
 
-    // Apply tier limits second (but female limits take precedence)
+    // Apply tier limits second (as backup safety)
     finalServing = Math.min(finalServing, tierMaxServing.maxServing);
 
     // Calculate deficit for makeup calories
@@ -405,8 +443,9 @@ const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
         wasLimited: scalingDeficit > 0.01,
         scalingDeficit: scalingDeficit > 0.01 ? scalingDeficit : 0,
         maxPossible: tierMaxServing.maxServing,
-        genderLimited: gender.toLowerCase() === 'female' && femaleMaxLimits[item.food] && finalServing < desiredServing,
-        femaleLimit: gender.toLowerCase() === 'female' ? femaleMaxLimits[item.food] : null,
+        genderLimited: realisticLimit !== undefined && finalServing < desiredServing,
+        genderLimit: realisticLimit,
+        realisticLimit: realisticLimit, // Track what the realistic limit was
         genderApplied: gender
     };
 };
@@ -501,9 +540,9 @@ export class MealPlanGenerator {
             // Step 2: Deep clone to prevent mutations
             const workingPlan = JSON.parse(JSON.stringify(baseTemplate));
 
-            // 🔧 CRITICAL FIX: Step 2.5 - Apply gender-aware limits to BASE TEMPLATE items
+            // 🔧 CRITICAL FIX: Step 2.5 - Apply realistic gender limits to BASE TEMPLATE items
             const gender = userProfile?.gender || 'male';
-            console.log(`🚺 [GENDER LIMITS] Applying ${gender} limits to base template items...`);
+            console.log(`🎯 [REALISTIC LIMITS] Applying ${gender} realistic portions to base template items...`);
 
             workingPlan.allMeals.forEach(meal => {
                 meal.items = meal.items.map(item =>
@@ -511,7 +550,7 @@ export class MealPlanGenerator {
                 );
             });
 
-            console.log(`✅ [GENDER LIMITS] Base template processed for ${gender}`);
+            console.log(`✅ [REALISTIC LIMITS] Base template processed with realistic ${gender} portions`);
 
             // Step 3: Apply dietary filters
             const dietaryPlan = applyDietaryFilters ?
@@ -621,14 +660,14 @@ export class MealPlanGenerator {
         // Enhanced analysis
         scaledPlan.genderAnalysis = {
             gender: gender,
-            limitsApplied: gender.toLowerCase() === 'female',
+            realisticLimitsApplied: true, // Both genders get realistic limits
             totalDeficit: totalCalorieDeficit,
             makeupCaloriesAdded: totalCalorieDeficit > makeupThreshold,
-            femaleItemsLimited: gender.toLowerCase() === 'female' ?
-                scaledPlan.allMeals.flatMap(meal => meal.items).filter(item => item.genderLimited).length : 0
+            itemsLimited: scaledPlan.allMeals.flatMap(meal => meal.items).filter(item => item.genderLimited).length,
+            maxOatsAllowed: gender.toLowerCase() === 'female' ? '0.75 cups' : '1.5 cups'
         };
 
-        console.log(`✅ [SCALING COMPLETE] ${gender}: ${scaledPlan.actualCalories} cal, ${scaledPlan.genderAnalysis.femaleItemsLimited} items limited`);
+        console.log(`✅ [SCALING COMPLETE] ${gender}: ${scaledPlan.actualCalories} cal, ${scaledPlan.genderAnalysis.itemsLimited} items limited with realistic portions`);
 
         return scaledPlan;
     }
@@ -736,7 +775,7 @@ export class MealPlanGenerator {
             ...mealPlan,
             generatedAt: new Date().toISOString(),
             planId: `${options.goal}-${options.eaterType}-${options.mealFreq}${options.dietaryFilters.length ? '-' + options.dietaryFilters.join('-') : ''}`,
-            generatedWith: 'fixed-gender-aware-system-v4-CRITICAL-FIX',
+            generatedWith: 'realistic-gender-limits-v5-BOTH-GENDERS',
 
             userPreferences: {
                 goal: options.goal,
@@ -752,10 +791,10 @@ export class MealPlanGenerator {
             systemEnhancements: {
                 proteinSystemActive: true,
                 genderAwareLimitsActive: true,
-                femalePortionControlActive: true,
+                realisticPortionsForBothGenders: true, // 🆕 No more 5-cup oatmeal!
                 proteinLimitsFixed: true, // Males: 12, Females: 4
                 baseTemplateLimitsApplied: true, // 🔧 CRITICAL FIX
-                bugsFixed: ['female-carb-limits', 'protein-distribution-limits', 'scaling-factors', 'base-template-gender-limits']
+                bugsFixed: ['female-carb-limits', 'protein-distribution-limits', 'scaling-factors', 'base-template-gender-limits', 'male-unrealistic-portions']
             }
         };
 
