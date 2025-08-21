@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, X, ShoppingCart } from 'lucide-react';
-import { servingSizeConversions, FoodDatabase } from './mealPlanning/FoodDatabase.js';
+import { servingSizeConversions, FoodDatabase } from './FoodDatabase.js';
 
 const GroceryListModal = ({
   isOpen,

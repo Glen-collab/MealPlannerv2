@@ -3,7 +3,7 @@ import React from 'react';
 import { Plus, Minus, Scale } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { generateMealTimes, generateHourlyTimes } from './Utils.js';
-import { FoodDatabase, getAllCategories, getFoodsInCategory } from './mealPlanning/FoodDatabase.js';
+import { FoodDatabase, getAllCategories, getFoodsInCategory } from './FoodDatabase.js';
 import { MealMessages } from './MealMessages/index.js';
 
 // Define proper category order and display names
