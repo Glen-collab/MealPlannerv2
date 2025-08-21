@@ -1,7 +1,8 @@
-// MealPlanGenerator.js - FIXED: Apply gender-aware limits to base template items
+// MealPlanGenerator.js - FIXED: Complete template system with tier rules
 
 import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
 import { getFoodNutrition, FoodDatabase } from './FoodDatabase.js';
+import { AllMealPlanTemplates, TemplateDebugger } from './ComprehensiveTemplateSystem.js';
 
 // ✅ WORKING IMPORTS - Enhanced systems
 import {
@@ -387,18 +388,6 @@ const addSeparateSnackComponents = (snackMeal, goal, dietaryFilters) => {
     });
 };
 
-// 🔍 DEBUG: Helper function to check food name matches
-const debugFoodNameMatches = () => {
-    console.log('\n🔍 [DEBUG] Available realistic limits:');
-    console.log('🚺 Female limits:', Object.keys(RealisticPortionLimits.female));
-    console.log('🚹 Male limits:', Object.keys(RealisticPortionLimits.male));
-
-    console.log('\n🔍 [DEBUG] Available foods in database:');
-    Object.keys(FoodDatabase).forEach(category => {
-        console.log(`  ${category}:`, Object.keys(FoodDatabase[category]));
-    });
-};
-
 // 🔧 FIXED: Apply realistic limits for BOTH genders (no more 5-cup oatmeal!)
 const RealisticPortionLimits = {
     // 🚺 Female limits (conservative, realistic)
@@ -466,15 +455,6 @@ const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
     const genderLimits = RealisticPortionLimits[genderKey] || RealisticPortionLimits.male;
     const realisticLimit = genderLimits[item.food];
 
-    // 🔎 DEBUG: Log what we're working with
-    console.log(`[DEBUG] Scaling "${item.food}" for ${gender}:`, {
-        originalServing: item.serving,
-        targetScaling: targetScaling,
-        desiredServing: desiredServing,
-        realisticLimit: realisticLimit,
-        hasRealisticLimit: realisticLimit !== undefined
-    });
-
     let finalServing = desiredServing;
 
     // Apply gender-specific realistic limit FIRST
@@ -485,8 +465,6 @@ const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
         if (finalServing < originalServing) {
             console.log(`${gender === 'female' ? '🚺' : '🚹'} [${gender.toUpperCase()} REALISTIC LIMIT] ${item.food}: ${desiredServing.toFixed(2)} → ${finalServing} (max: ${realisticLimit})`);
         }
-    } else {
-        console.log(`⚠️ [MISSING LIMIT] No realistic limit found for "${item.food}" in ${gender} limits`);
     }
 
     // Apply tier limits second (as backup safety)
@@ -535,8 +513,48 @@ const applyGenderAwareTierScaling = (item, targetScaling, goal, gender) => {
     };
 };
 
-// Complete meal plan templates (include your existing templates here)
+// 🆕 COMPREHENSIVE MEAL PLAN TEMPLATES - All combinations
 const CompleteMealPlanTemplates = {
+    // MAINTAIN TEMPLATES
+    'maintain-balanced-3': {
+        targetCalories: 1800,
+        goalType: 'maintain',
+        eaterType: 'balanced',
+        mealFrequency: 3,
+        allMeals: [
+            {
+                mealName: 'Breakfast',
+                time: '8:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.75, '3/4', 'cup'),
+                    createFoodItem('Blueberries', 'fruits', 1, '1', 'cup'),
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 0.5, '1/2', 'cup'),
+                    createFoodItem('Almonds', 'fat', 0.5, '0.5', 'oz')
+                ]
+            },
+            {
+                mealName: 'Lunch',
+                time: '1:00 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 1, '1/2', 'cup'),
+                    createFoodItem('Broccoli', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 1, '1', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner',
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 1.5, '1.5', 'medium'),
+                    createFoodItem('Asparagus', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.5, '1/2', 'medium')
+                ]
+            }
+        ]
+    },
+
     'maintain-balanced-5': {
         targetCalories: 2200,
         goalType: 'maintain',
@@ -547,13 +565,13 @@ const CompleteMealPlanTemplates = {
                 mealName: 'Breakfast',
                 time: '7:00 AM',
                 items: [
-                    createFoodItem('Oats (dry)', 'carbohydrate', 0.75, '3/8', 'cup'),
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.75, '3/4', 'cup'),
                     createFoodItem('Blueberries', 'fruits', 1, '1', 'cup'),
                     createFoodItem('Almonds', 'fat', 0.5, '0.5', 'oz')
                 ]
             },
             {
-                mealName: 'FirstSnack',
+                mealName: 'Morning Snack',
                 time: '10:00 AM',
                 items: [
                     createFoodItem('Greek Yogurt (non-fat)', 'protein', 1, '1', 'cup'),
@@ -571,7 +589,7 @@ const CompleteMealPlanTemplates = {
                 ]
             },
             {
-                mealName: 'MidAfternoon Snack',
+                mealName: 'Afternoon Snack',
                 time: '4:00 PM',
                 items: [
                     createFoodItem('Apple', 'fruits', 1, '1', 'medium'),
@@ -589,12 +607,281 @@ const CompleteMealPlanTemplates = {
                 ]
             }
         ]
+    },
+
+    'maintain-balanced-6': {
+        targetCalories: 2400,
+        goalType: 'maintain',
+        eaterType: 'balanced',
+        mealFrequency: 6,
+        allMeals: [
+            {
+                mealName: 'Breakfast',
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.5, '1/2', 'cup'),
+                    createFoodItem('Banana', 'fruits', 1, '1', 'medium'),
+                    createFoodItem('Walnuts', 'fat', 0.5, '0.5', 'oz')
+                ]
+            },
+            {
+                mealName: 'Mid-Morning Snack',
+                time: '9:30 AM',
+                items: [
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 0.75, '3/4', 'cup'),
+                    createFoodItem('Berries', 'fruits', 0.75, '3/4', 'cup')
+                ]
+            },
+            {
+                mealName: 'Lunch',
+                time: '12:30 PM',
+                items: [
+                    createFoodItem('Turkey Breast', 'protein', 1.5, '5.25', 'oz'),
+                    createFoodItem('Quinoa (cooked)', 'carbohydrate', 1, '1/2', 'cup'),
+                    createFoodItem('Spinach', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 0.5, '1/2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Afternoon Snack',
+                time: '3:30 PM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 1, '1', 'medium'),
+                    createFoodItem('Almonds', 'fat', 0.5, '0.5', 'oz')
+                ]
+            },
+            {
+                mealName: 'Dinner',
+                time: '6:30 PM',
+                items: [
+                    createFoodItem('Lean Beef (90/10)', 'protein', 1.5, '5.25', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 1, '1', 'medium'),
+                    createFoodItem('Green Beans', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.5, '1/2', 'medium')
+                ]
+            },
+            {
+                mealName: 'Evening Snack',
+                time: '9:00 PM',
+                items: [
+                    createFoodItem('Cottage Cheese (low-fat)', 'protein', 0.5, '1/2', 'cup'),
+                    createFoodItem('Strawberries', 'fruits', 0.5, '1/2', 'cup')
+                ]
+            }
+        ]
+    },
+
+    // LOSE WEIGHT TEMPLATES
+    'lose-balanced-3': {
+        targetCalories: 1400,
+        goalType: 'lose',
+        eaterType: 'balanced',
+        mealFrequency: 3,
+        allMeals: [
+            {
+                mealName: 'Breakfast',
+                time: '8:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.5, '1/2', 'cup'),
+                    createFoodItem('Berries', 'fruits', 0.75, '3/4', 'cup'),
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 0.75, '3/4', 'cup')
+                ]
+            },
+            {
+                mealName: 'Lunch',
+                time: '1:00 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 1.5, '5.25', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 0.75, '3/8', 'cup'),
+                    createFoodItem('Broccoli', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 0.5, '1/2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner',
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Cod', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Cauliflower Rice', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Spinach', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.5, '1/2', 'medium')
+                ]
+            }
+        ]
+    },
+
+    'lose-balanced-5': {
+        targetCalories: 1600,
+        goalType: 'lose',
+        eaterType: 'balanced',
+        mealFrequency: 5,
+        allMeals: [
+            {
+                mealName: 'Breakfast',
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Egg Whites', 'protein', 4, '4', 'whites'),
+                    createFoodItem('Spinach', 'vegetables', 1, '1', 'cup'),
+                    createFoodItem('Oats (dry)', 'carbohydrate', 0.5, '1/2', 'cup'),
+                    createFoodItem('Blueberries', 'fruits', 0.5, '1/2', 'cup')
+                ]
+            },
+            {
+                mealName: 'Morning Snack',
+                time: '10:00 AM',
+                items: [
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 0.75, '3/4', 'cup'),
+                    createFoodItem('Strawberries', 'fruits', 0.75, '3/4', 'cup')
+                ]
+            },
+            {
+                mealName: 'Lunch',
+                time: '1:00 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 1.5, '5.25', 'oz'),
+                    createFoodItem('Quinoa (cooked)', 'carbohydrate', 0.75, '3/8', 'cup'),
+                    createFoodItem('Bell Peppers', 'vegetables', 1.5, '1.5', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 0.5, '1/2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Afternoon Snack',
+                time: '4:00 PM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 1, '1', 'medium'),
+                    createFoodItem('Almonds', 'fat', 0.5, '0.5', 'oz')
+                ]
+            },
+            {
+                mealName: 'Dinner',
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Cod', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Zucchini', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Asparagus', 'vegetables', 1.5, '1.5', 'cups'),
+                    createFoodItem('Avocado', 'fat', 0.5, '1/2', 'medium')
+                ]
+            }
+        ]
+    },
+
+    // GAIN MUSCLE TEMPLATES
+    'gain-muscle-balanced-5': {
+        targetCalories: 2700,
+        goalType: 'gain-muscle',
+        eaterType: 'balanced',
+        mealFrequency: 5,
+        allMeals: [
+            {
+                mealName: 'Breakfast',
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 1, '1', 'cup'),
+                    createFoodItem('Banana', 'fruits', 1, '1', 'medium'),
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 1, '1', 'cup'),
+                    createFoodItem('Almonds', 'fat', 0.75, '0.75', 'oz')
+                ]
+            },
+            {
+                mealName: 'Morning Snack',
+                time: '10:00 AM',
+                items: [
+                    createFoodItem('Cottage Cheese (low-fat)', 'protein', 1, '1', 'cup'),
+                    createFoodItem('Berries', 'fruits', 1, '1', 'cup')
+                ]
+            },
+            {
+                mealName: 'Lunch',
+                time: '1:00 PM',
+                items: [
+                    createFoodItem('Chicken Breast', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 1.5, '3/4', 'cup'),
+                    createFoodItem('Broccoli', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 1, '1', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Afternoon Snack',
+                time: '4:00 PM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 1, '1', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 1, '1', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner',
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 2, '7', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 2, '2', 'medium'),
+                    createFoodItem('Asparagus', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Avocado', 'fat', 1, '1', 'medium')
+                ]
+            }
+        ]
+    },
+
+    // DIRTY BULK TEMPLATES
+    'dirty-bulk-balanced-5': {
+        targetCalories: 3200,
+        goalType: 'dirty-bulk',
+        eaterType: 'balanced',
+        mealFrequency: 5,
+        allMeals: [
+            {
+                mealName: 'Breakfast',
+                time: '7:00 AM',
+                items: [
+                    createFoodItem('Oats (dry)', 'carbohydrate', 1.25, '1.25', 'cups'),
+                    createFoodItem('Banana', 'fruits', 1.5, '1.5', 'medium'),
+                    createFoodItem('Greek Yogurt (non-fat)', 'protein', 1.5, '1.5', 'cups'),
+                    createFoodItem('Peanut Butter', 'fat', 1, '1', 'tbsp'),
+                    createFoodItem('Walnuts', 'fat', 0.75, '0.75', 'oz')
+                ]
+            },
+            {
+                mealName: 'Morning Snack',
+                time: '10:00 AM',
+                items: [
+                    createFoodItem('Cottage Cheese (low-fat)', 'protein', 1.5, '1.5', 'cups'),
+                    createFoodItem('Berries', 'fruits', 1.5, '1.5', 'cups'),
+                    createFoodItem('Almonds', 'fat', 0.75, '0.75', 'oz')
+                ]
+            },
+            {
+                mealName: 'Lunch',
+                time: '1:00 PM',
+                items: [
+                    createFoodItem('Lean Beef (90/10)', 'protein', 2.5, '8.75', 'oz'),
+                    createFoodItem('Brown Rice (cooked)', 'carbohydrate', 2, '1', 'cup'),
+                    createFoodItem('Broccoli', 'vegetables', 2, '2', 'cups'),
+                    createFoodItem('Olive Oil', 'fat', 1.5, '1.5', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Afternoon Snack',
+                time: '4:00 PM',
+                items: [
+                    createFoodItem('Apple', 'fruits', 1.5, '1.5', 'medium'),
+                    createFoodItem('Peanut Butter', 'fat', 2, '2', 'tbsp')
+                ]
+            },
+            {
+                mealName: 'Dinner',
+                time: '7:00 PM',
+                items: [
+                    createFoodItem('Salmon', 'protein', 2.5, '8.75', 'oz'),
+                    createFoodItem('Sweet Potato', 'carbohydrate', 2.5, '2.5', 'medium'),
+                    createFoodItem('Asparagus', 'vegetables', 2.5, '2.5', 'cups'),
+                    createFoodItem('Avocado', 'fat', 1.5, '1.5', 'medium')
+                ]
+            }
+        ]
     }
-    // Add your other templates here...
 };
 
 /**
- * 🚀 CRITICAL FIX: ULTIMATE MEAL PLAN GENERATOR CLASS - Apply Gender Limits to Base Template
+ * 🚀 ULTIMATE MEAL PLAN GENERATOR CLASS - Apply Gender Limits to Base Template
  */
 export class MealPlanGenerator {
     constructor() {
@@ -612,23 +899,27 @@ export class MealPlanGenerator {
             calorieData = null
         } = options;
 
-        console.log(`🎯 [FIXED GENERATOR] Starting: ${goal}-${eaterType}-${mealFreq}`);
+        console.log(`🎯 [MEAL GENERATOR] Starting: ${goal}-${eaterType}-${mealFreq}`);
         console.log(`👤 [USER PROFILE]`, userProfile);
-
-        // 🔍 DEBUG: Show available food names and limits
-        debugFoodNameMatches();
 
         try {
             // Step 1: Get base template
             const baseTemplate = this.getMealPlanTemplate(goal, eaterType, mealFreq);
             if (!baseTemplate) {
-                throw new Error(`No template found for ${goal}-${eaterType}-${mealFreq}`);
+                console.warn(`⚠️ No exact template found for ${goal}-${eaterType}-${mealFreq}, using closest match`);
+                const fallbackTemplate = this.getFallbackTemplate(goal, mealFreq);
+                if (!fallbackTemplate) {
+                    throw new Error(`No suitable template found for ${goal}-${eaterType}-${mealFreq}`);
+                }
+                console.log(`✅ Using fallback template: ${Object.keys(this.templates).find(key => this.templates[key] === fallbackTemplate)}`);
             }
 
-            // Step 2: Deep clone to prevent mutations
-            const workingPlan = JSON.parse(JSON.stringify(baseTemplate));
+            const workingTemplate = baseTemplate || this.getFallbackTemplate(goal, mealFreq);
 
-            // 🔧 CRITICAL FIX: Step 2.5 - Apply realistic gender limits to BASE TEMPLATE items
+            // Step 2: Deep clone to prevent mutations
+            const workingPlan = JSON.parse(JSON.stringify(workingTemplate));
+
+            // Step 3: Apply realistic gender limits to BASE TEMPLATE items
             const gender = userProfile?.gender || 'male';
             console.log(`🎯 [REALISTIC LIMITS] Applying ${gender} realistic portions to base template items...`);
 
@@ -644,28 +935,28 @@ export class MealPlanGenerator {
 
             console.log(`✅ [REALISTIC LIMITS] Base template processed with realistic ${gender} portions`);
 
-            // Step 3: Apply dietary filters
-            const dietaryPlan = applyDietaryFilters ?
+            // Step 4: Apply dietary filters
+            const dietaryPlan = dietaryFilters.length > 0 ?
                 applyDietaryFilters(workingPlan, dietaryFilters) :
                 workingPlan;
 
-            // Step 4: Add favorite snacks FIRST (only once)
+            // Step 5: Add favorite snacks FIRST (only once)
             addFavoriteSnacks(dietaryPlan, goal, dietaryFilters);
 
-            // Step 5: Distribute protein (only once)
+            // Step 6: Distribute protein (only once)
             console.log(`👤 [GENDER] Using gender: ${gender}`);
             distributeProteinThroughoutDay(dietaryPlan, gender, goal, dietaryFilters);
 
-            // Step 6: Calculate target calories and scale with tier system
+            // Step 7: Calculate target calories and scale with tier system
             const targetCalories = this.calculateTargetCalories(goal, calorieData, gender);
             console.log(`📊 [CALORIES] Target calories: ${targetCalories}`);
 
-            // 🚺 PASS GENDER INFO to scaling system
+            // Pass gender info to scaling system
             dietaryPlan.userPreferences = { gender, goal, eaterType, mealFreq, dietaryFilters };
 
             const scaledPlan = this.scaleMealPlanWithTiers(dietaryPlan, targetCalories, goal);
 
-            // Step 7: Enhance plan with metadata
+            // Step 8: Enhance plan with metadata
             const finalPlan = this.enhanceMealPlan(scaledPlan, {
                 goal,
                 eaterType,
@@ -675,28 +966,49 @@ export class MealPlanGenerator {
                 targetCalories
             });
 
-            console.log('✅ [FIXED SUCCESS] Meal plan generation complete');
+            console.log('✅ [GENERATOR SUCCESS] Meal plan generation complete');
             console.log(`🎯 [SUMMARY] Final plan: ${finalPlan.allMeals.length} meals, ${this.countProteinItems(finalPlan)} protein items`);
 
-            // 🔒 FINAL VERIFICATION: Check that no items exceed gender limits
+            // Final verification: Check that no items exceed gender limits
             this.verifyGenderLimits(finalPlan, gender);
 
             return finalPlan;
 
         } catch (error) {
-            console.error('❌ [FIXED ERROR] Error generating meal plan:', error);
+            console.error('❌ [GENERATOR ERROR] Error generating meal plan:', error);
             return this.getFallbackPlan();
         }
     }
 
-    // 🔧 FIXED: Enhanced scaling method that ensures female limits are applied
+    // 🆕 NEW: Get fallback template when exact match not found
+    getFallbackTemplate(goal, mealFreq) {
+        // Try to find a template with matching goal and closest meal frequency
+        const goalTemplates = Object.entries(this.templates)
+            .filter(([key]) => key.startsWith(goal))
+            .sort(([keyA], [keyB]) => {
+                const freqA = parseInt(keyA.split('-')[2]);
+                const freqB = parseInt(keyB.split('-')[2]);
+                return Math.abs(freqA - mealFreq) - Math.abs(freqB - mealFreq);
+            });
+
+        if (goalTemplates.length > 0) {
+            console.log(`📋 Found fallback template: ${goalTemplates[0][0]}`);
+            return goalTemplates[0][1];
+        }
+
+        // If no goal match, use default maintain template
+        console.log(`📋 Using default maintain template as last resort`);
+        return this.templates['maintain-balanced-5'];
+    }
+
+    // Enhanced scaling method that ensures female limits are applied
     scaleMealPlanWithTiers(basePlan, targetCalories, goal) {
         const currentCalories = this.calculatePlanCalories(basePlan);
         let scalingFactor = targetCalories / currentCalories;
 
         const gender = basePlan.userPreferences?.gender || 'male';
 
-        // 🚺 CONSERVATIVE SCALING LIMITS for females
+        // Conservative scaling limits for females
         const scalingLimits = {
             'lose': {
                 min: 0.4,
@@ -719,7 +1031,7 @@ export class MealPlanGenerator {
         const limits = scalingLimits[goal] || { min: 0.5, max: gender.toLowerCase() === 'female' ? 1.0 : 2.0 };
         scalingFactor = Math.max(limits.min, Math.min(limits.max, scalingFactor));
 
-        // 🔒 ADDITIONAL SAFEGUARD: Never scale female portions above 1.0x
+        // Additional safeguard: Never scale female portions above 1.0x
         if (gender.toLowerCase() === 'female' && scalingFactor > 1.0) {
             console.log(`🚺 [FEMALE PROTECTION] Limiting scaling factor from ${scalingFactor.toFixed(2)} to 1.0 for female`);
             scalingFactor = 1.0;
@@ -734,7 +1046,7 @@ export class MealPlanGenerator {
         scaledPlan.allMeals = scaledPlan.allMeals.map(meal => ({
             ...meal,
             items: meal.items.map(item => {
-                // 🚺 ENFORCE FEMALE LIMITS using fixed function
+                // Enforce female limits using fixed function
                 const tierScaledItem = applyGenderAwareTierScaling(item, scalingFactor, goal, gender);
 
                 // Track calorie deficits for makeup foods
@@ -761,7 +1073,7 @@ export class MealPlanGenerator {
         // Enhanced analysis
         scaledPlan.genderAnalysis = {
             gender: gender,
-            realisticLimitsApplied: true, // Both genders get realistic limits
+            realisticLimitsApplied: true,
             totalDeficit: totalCalorieDeficit,
             makeupCaloriesAdded: totalCalorieDeficit > makeupThreshold,
             itemsLimited: scaledPlan.allMeals.flatMap(meal => meal.items).filter(item => item.genderLimited).length,
@@ -773,7 +1085,7 @@ export class MealPlanGenerator {
         return scaledPlan;
     }
 
-    // 🔒 VERIFICATION: Ensure no items exceed gender limits
+    // Verification: Ensure no items exceed gender limits
     verifyGenderLimits(mealPlan, gender) {
         console.log(`\n🔍 [FINAL VERIFICATION] Checking ${gender} limits compliance...`);
 
@@ -817,12 +1129,12 @@ export class MealPlanGenerator {
 
     getMealPlanTemplate(goal, eaterType, mealFreq) {
         const key = `${goal}-${eaterType}-${mealFreq}`;
-        return this.templates[key] || this.templates['maintain-balanced-5'];
+        return this.templates[key];
     }
 
     calculateTargetCalories(goal, calorieData, gender = 'male') {
         if (!calorieData) {
-            // 🔧 FIXED: More realistic female portions
+            // Realistic female portions
             const femaleDefaults = {
                 'lose': 1200,
                 'maintain': 1400,
@@ -907,7 +1219,7 @@ export class MealPlanGenerator {
             ...mealPlan,
             generatedAt: new Date().toISOString(),
             planId: `${options.goal}-${options.eaterType}-${options.mealFreq}${options.dietaryFilters.length ? '-' + options.dietaryFilters.join('-') : ''}`,
-            generatedWith: 'realistic-gender-limits-v5-BOTH-GENDERS',
+            generatedWith: 'comprehensive-template-system-v1',
 
             userPreferences: {
                 goal: options.goal,
@@ -923,10 +1235,18 @@ export class MealPlanGenerator {
             systemEnhancements: {
                 proteinSystemActive: true,
                 genderAwareLimitsActive: true,
-                realisticPortionsForBothGenders: true, // 🆕 No more 5-cup oatmeal!
-                proteinLimitsFixed: true, // Males: 12, Females: 4
-                baseTemplateLimitsApplied: true, // 🔧 CRITICAL FIX
-                bugsFixed: ['female-carb-limits', 'protein-distribution-limits', 'scaling-factors', 'base-template-gender-limits', 'male-unrealistic-portions']
+                realisticPortionsForBothGenders: true,
+                proteinLimitsFixed: true,
+                baseTemplateLimitsApplied: true,
+                comprehensiveTemplateSystem: true, // 🆕 NEW
+                bugsFixed: [
+                    'female-carb-limits',
+                    'protein-distribution-limits',
+                    'scaling-factors',
+                    'base-template-gender-limits',
+                    'male-unrealistic-portions',
+                    'missing-templates-for-all-combinations' // 🆕 NEW
+                ]
             }
         };
 
