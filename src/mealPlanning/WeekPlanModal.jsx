@@ -14,108 +14,113 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
     const [testResult, setTestResult] = useState(null);
     const [selectedGender, setSelectedGender] = useState(userProfile?.gender || 'male');
 
-    // 🧪 FIXED TEST FUNCTION - checks for female carb limits
+    // 🧪 ENHANCED TEST FUNCTION - checks comprehensive meal plan generation
     const runVisibleTest = () => {
-        console.log('🧪 Test button clicked!');
-        setTestResult('🔄 Testing gender-specific carb limits... please wait...');
+        console.log('🧪 Running comprehensive meal plan test...');
+        setTestResult('🔄 Testing enhanced meal plan generation... please wait...');
 
         setTimeout(() => {
             try {
-                console.log('🔄 About to generate meal plans for gender comparison...');
+                console.log('🔄 Generating test meal plans...');
 
-                // Test maintain goal for clear comparison
-                const maleTestPlan = generateMealPlan({
-                    goal: 'maintain',
-                    eaterType: 'balanced',
-                    mealFreq: 5,
-                    dietaryFilters: [],
-                    userProfile: { gender: 'male' },
-                    calorieData: null
-                });
+                // Test different combinations
+                const testConfigs = [
+                    { goal: 'maintain', gender: 'female', expected: 'Female portions + realistic limits' },
+                    { goal: 'maintain', gender: 'male', expected: 'Male portions + larger limits' },
+                    { goal: 'lose', gender: 'female', expected: 'Female cutting portions' },
+                    { goal: 'gain-muscle', gender: 'male', expected: 'Male muscle building' }
+                ];
 
-                const femaleTestPlan = generateMealPlan({
-                    goal: 'maintain',
-                    eaterType: 'balanced',
-                    mealFreq: 5,
-                    dietaryFilters: [],
-                    userProfile: { gender: 'female' },
-                    calorieData: null
-                });
+                const results = [];
 
-                console.log('✅ Male plan generated:', maleTestPlan);
-                console.log('✅ Female plan generated:', femaleTestPlan);
+                testConfigs.forEach((config, index) => {
+                    console.log(`Testing config ${index + 1}:`, config);
 
-                // Find carb items to compare
-                const findCarbItems = (plan, gender) => {
-                    const carbItems = [];
-                    plan.allMeals?.forEach(meal => {
-                        meal.items?.forEach(item => {
-                            if (['Oats (dry)', 'Brown Rice (cooked)', 'Sweet Potato', 'Avocado'].includes(item.food)) {
-                                carbItems.push({
-                                    food: item.food,
-                                    amount: `${item.displayServing} ${item.displayUnit}`,
-                                    limited: item.genderLimited || false,
-                                    meal: meal.mealName
-                                });
-                            }
-                        });
+                    const testPlan = generateMealPlan({
+                        goal: config.goal,
+                        eaterType: 'balanced',
+                        mealFreq: 5,
+                        dietaryFilters: [],
+                        userProfile: {
+                            gender: config.gender,
+                            goal: config.goal,
+                            weight: config.gender === 'female' ? '130' : '180'
+                        },
+                        calorieData: null
                     });
-                    return carbItems;
-                };
 
-                const maleCarbItems = findCarbItems(maleTestPlan, 'male');
-                const femaleCarbItems = findCarbItems(femaleTestPlan, 'female');
+                    console.log(`✅ Generated plan for ${config.goal}-${config.gender}:`, testPlan);
 
-                // Check if female limits are working
-                const femaleOats = femaleCarbItems.find(item => item.food === 'Oats (dry)');
-                const maleOats = maleCarbItems.find(item => item.food === 'Oats (dry)');
+                    // Analyze the generated plan
+                    const totalCalories = testPlan.nutrition?.calories || 0;
+                    const totalProtein = testPlan.nutrition?.protein || 0;
+                    const proteinItems = testPlan.proteinItemsAdded || 0;
+                    const mealCount = testPlan.allMeals?.length || 0;
 
-                const oatsTest = femaleOats ? parseFloat(femaleOats.amount) <= 0.75 : true;
+                    // Check for carb limits (females)
+                    const carbItems = [];
+                    if (testPlan.allMeals) {
+                        testPlan.allMeals.forEach(meal => {
+                            meal.items?.forEach(item => {
+                                if (['Oats (dry)', 'Brown Rice (cooked)', 'Sweet Potato'].includes(item.food)) {
+                                    carbItems.push({
+                                        food: item.food,
+                                        amount: parseFloat(item.displayServing),
+                                        unit: item.displayUnit,
+                                        limited: item.genderLimited || false
+                                    });
+                                }
+                            });
+                        });
+                    }
 
-                const result = `
-✅ FEMALE CARB LIMITS TEST
+                    const oatsItem = carbItems.find(item => item.food === 'Oats (dry)');
+                    const femaleOatsOK = config.gender === 'female' ? (!oatsItem || oatsItem.amount <= 0.75) : true;
 
-🚹 MALE RESULTS (Target: ~2200 cal):
-📊 Actual Calories: ${Math.round(maleTestPlan.actualCalories || maleTestPlan.targetCalories || 0)}
-🍽️ Meals: ${maleTestPlan.allMeals?.length || 0}
-🥤 Protein items: ${maleTestPlan.proteinItemsAdded || 0}
+                    results.push({
+                        config: `${config.goal}-${config.gender}`,
+                        calories: totalCalories,
+                        protein: totalProtein,
+                        proteinItems: proteinItems,
+                        meals: mealCount,
+                        oatsAmount: oatsItem ? `${oatsItem.amount} ${oatsItem.unit}` : 'None',
+                        femaleOatsOK: femaleOatsOK,
+                        carbItemsFound: carbItems.length,
+                        success: testPlan && mealCount > 0
+                    });
+                });
 
-🚺 FEMALE RESULTS (Target: ~1400 cal):
-📊 Actual Calories: ${Math.round(femaleTestPlan.actualCalories || femaleTestPlan.targetCalories || 0)}
-🍽️ Meals: ${femaleTestPlan.allMeals?.length || 0}
-🥤 Protein items: ${femaleTestPlan.proteinItemsAdded || 0}
+                // Format results
+                const resultText = `
+🧪 COMPREHENSIVE MEAL PLAN TEST RESULTS
 
-────────────────────────────────────
+${results.map((r, i) => `
+────────── CONFIG ${i + 1}: ${r.config.toUpperCase()} ──────────
+✅ Plan Generated: ${r.success ? 'YES' : 'NO'}
+📊 Calories: ${Math.round(r.calories)}
+💪 Protein: ${Math.round(r.protein)}g
+🥤 Protein Items: ${r.proteinItems}
+🍽️ Meals: ${r.meals}
+🥣 Oats Found: ${r.oatsAmount}
+🚺 Female Oats OK: ${r.femaleOatsOK ? 'YES' : 'NO'}
+🌾 Carb Items: ${r.carbItemsFound}
+`).join('')}
 
-🔍 CARB PORTION COMPARISON:
+📊 SUMMARY:
+• Plans Generated: ${results.filter(r => r.success).length}/${results.length}
+• Female Oats Compliant: ${results.filter(r => r.femaleOatsOK).length}/${results.filter(r => r.config.includes('female')).length}
+• Average Calories: ${Math.round(results.reduce((sum, r) => sum + r.calories, 0) / results.length)}
+• Total Protein Items: ${results.reduce((sum, r) => sum + r.proteinItems, 0)}
 
-🚹 MALE CARB PORTIONS:
-${maleCarbItems.length > 0 ? maleCarbItems.map(item => `• ${item.food}: ${item.amount} (${item.meal})`).join('\n') : '• No carb items found'}
+🎯 STATUS: ${results.every(r => r.success && r.femaleOatsOK) ? '✅ ALL TESTS PASSED!' : '❌ SOME TESTS FAILED'}
 
-🚺 FEMALE CARB PORTIONS (SHOULD BE LIMITED):
-${femaleCarbItems.length > 0 ? femaleCarbItems.map(item => `• ${item.food}: ${item.amount} (${item.meal})${item.limited ? ' ✅ LIMITED' : ''}`).join('\n') : '• No carb items found'}
+💡 Expected Results:
+• Female maintain: ~1400 cal, ≤0.75 cups oats, ≤4 protein items
+• Male maintain: ~2200 cal, ≤1.5 cups oats, ≤8 protein items  
+• Plans should have 5 meals with realistic portions
+                `;
 
-────────────────────────────────────
-
-🎯 OATS TEST RESULTS:
-${maleOats ? `🚹 Male Oats: ${maleOats.amount}` : '🚹 Male: No oats found'}
-${femaleOats ? `🚺 Female Oats: ${femaleOats.amount}` : '🚺 Female: No oats found'}
-
-${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats > 0.75 cups'}
-
-📊 CALORIE DIFFERENCE:
-• Male: ${Math.round(maleTestPlan.actualCalories || maleTestPlan.targetCalories || 0)} cal
-• Female: ${Math.round(femaleTestPlan.actualCalories || femaleTestPlan.targetCalories || 0)} cal
-• Difference: ${Math.abs((maleTestPlan.actualCalories || maleTestPlan.targetCalories || 0) - (femaleTestPlan.actualCalories || femaleTestPlan.targetCalories || 0))} cal
-
-🎯 STATUS: ${oatsTest && femaleCarbItems.length > 0 ? '✅ FEMALE LIMITS WORKING!' : '❌ FEMALE LIMITS NOT APPLIED'}
-
-💪 PROTEIN EXPECTATIONS:
-• Males: Up to 8 scoops/day (2 scoops per meal × 4 meals)
-• Females: Up to 4 scoops/day (1 scoop per meal × 4 meals)
-            `;
-
-                setTestResult(result);
+                setTestResult(resultText);
 
             } catch (error) {
                 console.error('❌ Test failed:', error);
@@ -130,35 +135,66 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
 
         try {
             console.log('🎯 Generating meal plan with enhanced system...');
+            console.log('📋 Options:', {
+                goal: selectedGoal,
+                eaterType: selectedEaterType,
+                mealFreq: selectedMealFreq,
+                dietaryFilters: selectedDietaryFilters,
+                gender: selectedGender
+            });
 
             const options = {
                 goal: selectedGoal,
                 eaterType: selectedEaterType,
                 mealFreq: selectedMealFreq,
                 dietaryFilters: selectedDietaryFilters,
-                userProfile: { ...userProfile, gender: selectedGender },
+                userProfile: {
+                    ...userProfile,
+                    gender: selectedGender,
+                    goal: selectedGoal // Ensure goal is in userProfile
+                },
                 calorieData: calorieData
             };
 
+            console.log('🔄 Calling generateMealPlan with options:', options);
+
             const plan = generateMealPlan(options);
 
+            console.log('📋 Generated plan result:', plan);
+
             if (!plan) {
-                throw new Error('Failed to generate meal plan');
+                throw new Error('generateMealPlan returned null or undefined');
             }
 
-            // Validate dietary compliance
-            const validation = validateDietaryCompliance(plan, selectedDietaryFilters);
-            plan.validationResults = validation;
-            plan.generatedWith = 'enhanced-weekplan';
+            if (!plan.allMeals || plan.allMeals.length === 0) {
+                throw new Error('Generated plan has no meals');
+            }
+
+            // Validate dietary compliance if filters are selected
+            if (selectedDietaryFilters.length > 0) {
+                const validation = validateDietaryCompliance(plan, selectedDietaryFilters);
+                plan.validationResults = validation;
+                console.log('🔍 Dietary validation:', validation);
+            }
+
+            // Add metadata
+            plan.generatedWith = 'enhanced-weekplan-v2';
+            plan.generationTimestamp = new Date().toISOString();
+            plan.requestedOptions = options;
 
             setGeneratedPlan(plan);
             setShowPreview(true);
 
-            console.log('✅ Enhanced meal plan generated successfully', plan);
+            console.log('✅ Enhanced meal plan generated successfully');
+            console.log('📊 Plan stats:', {
+                meals: plan.allMeals.length,
+                calories: plan.nutrition?.calories || 'Not calculated',
+                proteinItems: plan.proteinItemsAdded || 0
+            });
 
         } catch (err) {
             console.error('❌ Error generating meal plan:', err);
-            setError(err.message || 'Failed to generate meal plan');
+            setError(`Failed to generate meal plan: ${err.message}`);
         } finally {
             setIsGenerating(false);
         }
@@ -166,6 +202,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
 
     const handleAddPlan = () => {
         if (generatedPlan) {
+            console.log('📥 Adding generated plan to meals:', generatedPlan);
             onAddWeekPlan(generatedPlan);
             onClose();
         }
@@ -224,7 +261,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                 <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-800">📅 Enhanced Meal Planning</h2>
-                        <p className="text-gray-600 text-sm mt-1">Create personalized meal plans with dietary preferences</p>
+                        <p className="text-gray-600 text-sm mt-1">Generate personalized meal plans with tier-based scaling</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -238,30 +275,33 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                     /* Configuration Phase */
                     <div className="p-6 space-y-8">
 
-                        {/* DEBUG TEST BUTTON - PROPERLY PLACED */}
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-                            <h4 className="font-semibold text-red-800 mb-2">🧪 Female Limits Test (Carbs + Protein)</h4>
+                        {/* 🧪 ENHANCED TEST SECTION */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                            <h4 className="font-semibold text-blue-800 mb-2">🧪 Enhanced System Test</h4>
+                            <p className="text-sm text-blue-700 mb-3">
+                                Test the complete meal plan generation with tier rules, gender limits, and protein distribution
+                            </p>
                             <button
                                 onClick={runVisibleTest}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
                             >
-                                🧪 Test Female Limits: 0.75 cups carbs + 4 protein max
+                                🧪 Test Complete System (All Goals + Genders)
                             </button>
 
                             {testResult && (
-                                <div className="mt-3 p-3 bg-white rounded border">
-                                    <pre className="text-sm whitespace-pre-wrap">{testResult}</pre>
+                                <div className="mt-3 p-3 bg-white rounded border max-h-64 overflow-y-auto">
+                                    <pre className="text-xs whitespace-pre-wrap font-mono">{testResult}</pre>
                                 </div>
                             )}
 
-                            <div className="text-xs text-red-600 mt-2">
-                                💡 This tests if females get max 0.75 cups oats + max 4 protein scoops!
+                            <div className="text-xs text-blue-600 mt-2">
+                                💡 Tests: Female limits (0.75 cups carbs, 4 protein max), Male limits (1.5 cups carbs, 8 protein max)
                             </div>
                         </div>
 
                         {/* Gender Selection */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (for portion control)</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (Critical for Portion Control)</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setSelectedGender('male')}
@@ -271,7 +311,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                         }`}
                                 >
                                     <div className="font-semibold text-gray-800">🚹 Male</div>
-                                    <div className="text-xs text-gray-600 mt-1">Larger portions, up to 8 protein scoops/day</div>
+                                    <div className="text-xs text-gray-600 mt-1">Larger portions: 1.5 cups carbs, up to 8 protein scoops/day</div>
                                 </button>
                                 <button
                                     onClick={() => setSelectedGender('female')}
@@ -281,7 +321,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                         }`}
                                 >
                                     <div className="font-semibold text-gray-800">🚺 Female</div>
-                                    <div className="text-xs text-gray-600 mt-1">Realistic portions, max 4 protein scoops/day</div>
+                                    <div className="text-xs text-gray-600 mt-1">Realistic portions: 0.75 cups carbs, max 4 protein scoops/day</div>
                                 </button>
                             </div>
                         </div>
@@ -398,10 +438,10 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                 {isGenerating ? (
                                     <div className="flex items-center gap-2">
                                         <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
-                                        Generating Plan...
+                                        Generating Enhanced Plan...
                                     </div>
                                 ) : (
-                                    '🚀 Generate Meal Plan'
+                                    '🚀 Generate Enhanced Meal Plan'
                                 )}
                             </button>
                         </div>
@@ -410,6 +450,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                             <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                                 <div className="text-red-600 font-medium">❌ Error</div>
                                 <div className="text-red-700 text-sm mt-1">{error}</div>
+                                <div className="text-red-600 text-xs mt-2">Check browser console for details</div>
                             </div>
                         )}
                     </div>
@@ -428,7 +469,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
 
                         {generatedPlan && (
                             <>
-                                {/* Plan Summary */}
+                                {/* Enhanced Plan Summary */}
                                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6">
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                                         <div>
@@ -456,6 +497,18 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                             <div className="text-sm text-gray-600">Fat</div>
                                         </div>
                                     </div>
+
+                                    {/* Enhancement Status */}
+                                    <div className="mt-4 text-center">
+                                        <div className="text-sm text-gray-600">
+                                            ✅ Enhanced with: Gender-aware portions • Tier-based scaling • Protein distribution
+                                        </div>
+                                        {generatedPlan.proteinItemsAdded > 0 && (
+                                            <div className="text-xs text-blue-600 mt-1">
+                                                🥤 {generatedPlan.proteinItemsAdded} protein items added
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Dietary Compliance Status */}
@@ -467,6 +520,21 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                         <div className="text-sm font-medium">
                                             {generatedPlan.validationResults.isCompliant ? '✅' : '⚠️'}
                                             {' '}{generatedPlan.validationResults.summary}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Gender Analysis */}
+                                {generatedPlan.genderAnalysis && (
+                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                                        <div className="text-sm">
+                                            <div className="font-medium text-purple-800">
+                                                {selectedGender === 'female' ? '🚺' : '🚹'} Gender-Aware Portions Applied
+                                            </div>
+                                            <div className="text-purple-700 mt-1">
+                                                Items limited: {generatedPlan.genderAnalysis.itemsLimited} •
+                                                Max oats allowed: {generatedPlan.genderAnalysis.maxOatsAllowed}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -485,13 +553,19 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                                         <span>
                                                             {item.food}
                                                             {item.genderLimited && (
-                                                                <span className="text-pink-600 ml-1">(🚺 portion controlled)</span>
+                                                                <span className="text-pink-600 ml-1">(🚺 limited)</span>
+                                                            )}
+                                                            {item.isProteinFocus && (
+                                                                <span className="text-blue-600 ml-1">(💪 protein)</span>
                                                             )}
                                                             {item.originalFood && (
                                                                 <span className="text-orange-600 ml-1">(was {item.originalFood})</span>
                                                             )}
+                                                            {item.tier !== undefined && (
+                                                                <span className="text-gray-500 ml-1">(T{item.tier})</span>
+                                                            )}
                                                         </span>
-                                                        <span>{item.displayServing} {item.displayUnit}</span>
+                                                        <span className="font-medium">{item.displayServing} {item.displayUnit}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -505,7 +579,7 @@ ${oatsTest ? '✅ PASSED: Female oats ≤ 0.75 cups' : '❌ FAILED: Female oats 
                                         onClick={handleAddPlan}
                                         className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                                     >
-                                        ✅ Add This Plan to My Meals
+                                        ✅ Add Enhanced Plan to My Meals
                                     </button>
                                     <button
                                         onClick={() => setShowPreview(false)}
