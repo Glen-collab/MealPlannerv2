@@ -208,11 +208,18 @@ ${results.map((r, i) => `
         }
     };
 
-    const handleDietaryFilterToggle = (filter) => {
-        if (selectedDietaryFilters.includes(filter)) {
-            setSelectedDietaryFilters(selectedDietaryFilters.filter(f => f !== filter));
+    // 🆕 ENHANCED: Handle "No Restrictions" and multiple dietary filters
+    const handleDietaryFilterToggle = (filterValue) => {
+        if (filterValue === 'none') {
+            // "No Restrictions" selected - clear all filters
+            setSelectedDietaryFilters([]);
         } else {
-            setSelectedDietaryFilters([...selectedDietaryFilters, filter]);
+            // Regular dietary filter toggle
+            if (selectedDietaryFilters.includes(filterValue)) {
+                setSelectedDietaryFilters(selectedDietaryFilters.filter(f => f !== filterValue));
+            } else {
+                setSelectedDietaryFilters([...selectedDietaryFilters, filterValue]);
+            }
         }
     };
 
@@ -246,12 +253,17 @@ ${results.map((r, i) => `
         { value: 6, label: '6 Meals', desc: 'Maximum frequency' }
     ];
 
+    // 🆕 ENHANCED: Added "No Restrictions" option at the top
     const dietaryOptions = [
+        { value: 'none', label: '🚫 No Restrictions', desc: 'All foods allowed' },
         { value: 'vegetarian', label: '🥬 Vegetarian', desc: 'Plant-based proteins' },
         { value: 'glutenFree', label: '🌾 Gluten-Free', desc: 'No gluten-containing foods' },
         { value: 'keto', label: '🥑 Keto', desc: 'Low-carb, high-fat' },
         { value: 'dairyFree', label: '🥛 Dairy-Free', desc: 'No dairy products' }
     ];
+
+    // Check if "No Restrictions" is effectively selected (empty filters array)
+    const isNoRestrictionsSelected = selectedDietaryFilters.length === 0;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -386,30 +398,55 @@ ${results.map((r, i) => `
                             </div>
                         </div>
 
-                        {/* Dietary Restrictions */}
+                        {/* 🆕 ENHANCED: Dietary Preferences with "No Restrictions" */}
                         <div>
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">🥗 Dietary Preferences</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {dietaryOptions.map(option => (
-                                    <button
-                                        key={option.value}
-                                        onClick={() => handleDietaryFilterToggle(option.value)}
-                                        className={`p-4 rounded-xl border-2 text-left transition-all ${selectedDietaryFilters.includes(option.value)
-                                            ? 'border-orange-500 bg-orange-50 shadow-lg'
-                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <div className="font-semibold text-gray-800">{option.label}</div>
-                                                <div className="text-sm text-gray-600 mt-1">{option.desc}</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {dietaryOptions.map(option => {
+                                    const isSelected = option.value === 'none'
+                                        ? isNoRestrictionsSelected
+                                        : selectedDietaryFilters.includes(option.value);
+
+                                    // Different styling for "No Restrictions"
+                                    const baseClasses = "p-4 rounded-xl border-2 text-left transition-all";
+                                    const selectedClasses = option.value === 'none'
+                                        ? 'border-gray-500 bg-gray-50 shadow-lg'
+                                        : 'border-orange-500 bg-orange-50 shadow-lg';
+                                    const unselectedClasses = 'border-gray-200 hover:border-gray-300 hover:bg-gray-50';
+
+                                    return (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => handleDietaryFilterToggle(option.value)}
+                                            className={`${baseClasses} ${isSelected ? selectedClasses : unselectedClasses}`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-semibold text-gray-800">{option.label}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">{option.desc}</div>
+                                                </div>
+                                                {isSelected && (
+                                                    <div className={`text-lg ${option.value === 'none' ? 'text-gray-500' : 'text-orange-500'}`}>
+                                                        ✓
+                                                    </div>
+                                                )}
                                             </div>
-                                            {selectedDietaryFilters.includes(option.value) && (
-                                                <div className="text-orange-500 text-lg">✓</div>
-                                            )}
-                                        </div>
-                                    </button>
-                                ))}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* 🆕 ENHANCED: Show current dietary selection status */}
+                            <div className="mt-3 text-center">
+                                {isNoRestrictionsSelected ? (
+                                    <div className="text-sm text-gray-600 bg-gray-100 rounded-lg px-3 py-2 inline-block">
+                                        🚫 No dietary restrictions - all foods allowed
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-orange-600 bg-orange-100 rounded-lg px-3 py-2 inline-block">
+                                        🔒 Dietary filters: {selectedDietaryFilters.join(', ')}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -420,7 +457,7 @@ ${results.map((r, i) => `
                                 <div><strong>Goal:</strong> {goalOptions.find(g => g.value === selectedGoal)?.label}</div>
                                 <div><strong>Style:</strong> {eaterTypeOptions.find(e => e.value === selectedEaterType)?.label}</div>
                                 <div><strong>Meals:</strong> {selectedMealFreq} meals per day</div>
-                                <div><strong>Dietary:</strong> {selectedDietaryFilters.length > 0 ? selectedDietaryFilters.join(', ') : 'None'}</div>
+                                <div><strong>Dietary:</strong> {isNoRestrictionsSelected ? 'No restrictions' : selectedDietaryFilters.join(', ')}</div>
                                 <div><strong>Gender:</strong> {selectedGender} {selectedGender === 'female' ? '(max 4 protein, 0.75 cups carbs)' : '(up to 8 protein, larger portions)'}</div>
                                 {calorieData && (
                                     <div><strong>Target Calories:</strong> ~{calorieData.targetCalories} cal/day</div>
@@ -512,7 +549,7 @@ ${results.map((r, i) => `
                                 </div>
 
                                 {/* Dietary Compliance Status */}
-                                {generatedPlan.validationResults && (
+                                {generatedPlan.validationResults ? (
                                     <div className={`p-3 rounded-lg mb-4 ${generatedPlan.validationResults.isCompliant
                                         ? 'bg-green-50 border border-green-200'
                                         : 'bg-yellow-50 border border-yellow-200'
@@ -520,6 +557,12 @@ ${results.map((r, i) => `
                                         <div className="text-sm font-medium">
                                             {generatedPlan.validationResults.isCompliant ? '✅' : '⚠️'}
                                             {' '}{generatedPlan.validationResults.summary}
+                                        </div>
+                                    </div>
+                                ) : isNoRestrictionsSelected && (
+                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg mb-4">
+                                        <div className="text-sm font-medium text-gray-700">
+                                            🚫 No dietary restrictions applied - all foods included
                                         </div>
                                     </div>
                                 )}
