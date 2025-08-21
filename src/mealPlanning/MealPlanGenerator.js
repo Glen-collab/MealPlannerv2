@@ -32,26 +32,73 @@ const createFoodItem = (food, category, serving, displayServing, displayUnit) =>
     displayUnit
 });
 
-// ✅ FIXED: User-friendly rounding functions
 const roundToUserFriendly = (serving, unit) => {
     if (serving <= 0) return 0.25; // Minimum serving
 
     const normalizedUnit = unit?.toLowerCase() || '';
 
-    if (normalizedUnit === 'oz') {
-        return Math.round(serving * 2) / 2;
-    } else if (normalizedUnit.includes('cup')) {
-        return Math.round(serving * 4) / 4;
-    } else if (normalizedUnit === 'tbsp') {
-        return Math.round(serving * 2) / 2;
-    } else if (normalizedUnit === 'tsp') {
-        return Math.round(serving);
-    } else if (normalizedUnit === 'medium' || normalizedUnit === 'large' || normalizedUnit === 'small' || normalizedUnit === 'pieces') {
-        return Math.round(serving * 2) / 2;
-    } else if (normalizedUnit === 'scoops' || normalizedUnit === 'scoop' || normalizedUnit === 'bars' || normalizedUnit === 'slices') {
-        return Math.round(serving * 2) / 2;
-    } else {
-        return Math.round(serving * 2) / 2;
+    // 🥤 CUPS: Round to nice fractions (1/4, 1/2, 3/4, 1, 1 1/2, etc.)
+    if (normalizedUnit.includes('cup')) {
+        if (serving <= 0.375) return 0.25;      // → 1/4 cup
+        if (serving <= 0.625) return 0.5;       // → 1/2 cup  
+        if (serving <= 0.875) return 0.75;      // → 3/4 cup
+        if (serving <= 1.25) return 1;          // → 1 cup
+        if (serving <= 1.625) return 1.5;       // → 1 1/2 cups
+        if (serving <= 1.875) return 1.75;      // → 1 3/4 cups
+        return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
+    }
+
+    // 🥄 SCOOPS/SERVINGS: Round to whole numbers or halves
+    else if (normalizedUnit === 'scoops' || normalizedUnit === 'scoop' || normalizedUnit === 'serving' || normalizedUnit === 'servings') {
+        if (serving <= 0.75) return 0.5;        // → 1/2 scoop
+        if (serving <= 1.25) return 1;          // → 1 scoop
+        if (serving <= 1.75) return 1.5;        // → 1.5 scoops
+        return Math.round(serving);              // → 2, 3, 4, etc.
+    }
+
+    // 🥩 OUNCES: Round to whole numbers or halves  
+    else if (normalizedUnit === 'oz' || normalizedUnit === 'ounces') {
+        if (serving <= 0.75) return 0.5;        // → 0.5 oz
+        if (serving <= 1.25) return 1;          // → 1 oz
+        if (serving <= 1.75) return 1.5;        // → 1.5 oz
+        if (serving <= 2.25) return 2;          // → 2 oz
+        return Math.round(serving * 2) / 2;     // → 2.5, 3, 3.5, etc.
+    }
+
+    // 🥄 TABLESPOONS: Round to whole numbers or halves
+    else if (normalizedUnit === 'tbsp' || normalizedUnit === 'tablespoon' || normalizedUnit === 'tablespoons') {
+        if (serving <= 0.75) return 0.5;        // → 1/2 tbsp
+        if (serving <= 1.25) return 1;          // → 1 tbsp
+        if (serving <= 1.75) return 1.5;        // → 1.5 tbsp
+        if (serving <= 2.25) return 2;          // → 2 tbsp
+        return Math.round(serving * 2) / 2;     // → 2.5, 3, 3.5, etc.
+    }
+
+    // 🥄 TEASPOONS: Round to whole numbers
+    else if (normalizedUnit === 'tsp' || normalizedUnit === 'teaspoon' || normalizedUnit === 'teaspoons') {
+        return Math.round(serving);              // → 1, 2, 3, etc.
+    }
+
+    // 🍎 PIECES/WHOLE ITEMS: Round to whole numbers or halves
+    else if (normalizedUnit === 'medium' || normalizedUnit === 'large' || normalizedUnit === 'small' ||
+        normalizedUnit === 'pieces' || normalizedUnit === 'piece' || normalizedUnit === 'whole') {
+        if (serving <= 0.75) return 0.5;        // → 1/2 medium
+        if (serving <= 1.25) return 1;          // → 1 medium
+        if (serving <= 1.75) return 1.5;        // → 1.5 medium
+        return Math.round(serving);              // → 2, 3, 4, etc.
+    }
+
+    // 🍞 SLICES/BARS: Round to whole numbers
+    else if (normalizedUnit === 'slices' || normalizedUnit === 'slice' || normalizedUnit === 'bars' || normalizedUnit === 'bar') {
+        return Math.round(serving);              // → 1, 2, 3, etc.
+    }
+
+    // 🔢 DEFAULT: Round to halves (cleaner than quarters)
+    else {
+        if (serving <= 0.75) return 0.5;        // → 0.5
+        if (serving <= 1.25) return 1;          // → 1
+        if (serving <= 1.75) return 1.5;        // → 1.5
+        return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
     }
 };
 
