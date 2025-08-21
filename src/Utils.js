@@ -1,5 +1,5 @@
 // Utils.js - All calculation and utility functions
-import { FoodDatabase } from './FoodDatabase.js';
+import { FoodDatabase } from './mealPlanning/FoodDatabase.js';
 
 // ========================
 // TIME GENERATION FUNCTIONS
