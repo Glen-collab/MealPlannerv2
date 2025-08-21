@@ -1,6 +1,16 @@
-// ComprehensiveTemplateSystem.js - ALL 96+ meal plan combinations
+// ComprehensiveTemplateSystem.js - ALL 96+ meal plan combinations - SELF-CONTAINED
 
-import { createFoodItem, generateId } from './MealPlanGenerator.js';
+// 🛠️ HELPER FUNCTIONS (self-contained to avoid circular imports)
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
+const createFoodItem = (food, category, serving, displayServing, displayUnit) => ({
+    id: generateId(),
+    category,
+    food,
+    serving,
+    displayServing,
+    displayUnit
+});
 
 // 🚀 COMPLETE MEAL PLAN TEMPLATES - All goal/eater/frequency combinations
 export const AllMealPlanTemplates = {
