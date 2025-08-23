@@ -2005,7 +2005,7 @@ const MealSwipeApp = () => {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-4 gap-3 text-center mb-4">
+              
               {/* Macro Grid */}
               <div className="grid grid-cols-4 gap-3 text-center mb-4">
                 <div className="bg-blue-100 rounded-lg p-3">
@@ -2031,8 +2031,7 @@ const MealSwipeApp = () => {
                   </div>
                 </div>
               </div>
-            </div>
-
+            
               {/* Action Buttons - Same 4-column grid for uniformity */}
               <div className="grid grid-cols-4 gap-3 mb-4">
                 <button
