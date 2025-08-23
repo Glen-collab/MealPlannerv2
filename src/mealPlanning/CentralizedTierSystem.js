@@ -1,23 +1,23 @@
-// CentralizedTierSystem.js - THE definitive tier system with realistic limits
+// CentralizedTierSystem.js - FIXED: User-friendly rounding + better data transfer
 
 /**
- * 🎯 CENTRALIZED TIER SYSTEM
+ * 🎯 CENTRALIZED TIER SYSTEM - FIXED VERSION
  * This is THE single source of truth for all food limits and tiers
  * Used by: MealPlanGenerator, WeekPlanModal, AddFoodsModal, MealTracker
  */
 
 export const FoodTierSystem = {
+    // [All the tier data remains the same - keeping original structure]
 
-    // ===== TIER 1: LEAN PROTEINS =====
     tier1_lean_proteins: {
         priority: 1,
         description: 'Lean protein sources',
         foods: {
             'Chicken Breast': {
-                limits: { female: 1.5, male: 2.5 },    // 5.25oz female, 8.75oz male
+                limits: { female: 1.5, male: 2.5 },
                 unit: 'servings',
                 displayUnit: 'oz',
-                displayMultiplier: 3.5,  // 1 serving = 3.5oz
+                displayMultiplier: 3.5,
                 maxCalories: { female: 248, male: 413 }
             },
             'Turkey Breast': {
@@ -44,27 +44,26 @@ export const FoodTierSystem = {
         }
     },
 
-    // ===== TIER 2: FAT PROTEINS =====
     tier2_fat_proteins: {
         priority: 2,
         description: 'Higher fat protein sources',
         foods: {
             'Salmon': {
-                limits: { female: 1.2, male: 2.0 },    // 4.2oz female, 7oz male
+                limits: { female: 1.2, male: 2.0 },
                 unit: 'servings',
                 displayUnit: 'oz',
                 displayMultiplier: 3.5,
                 maxCalories: { female: 250, male: 416 }
             },
             'Lean Beef (90/10)': {
-                limits: { female: 1.0, male: 1.8 },    // 3.5oz female, 6.3oz male
+                limits: { female: 1.0, male: 1.8 },
                 unit: 'servings',
                 displayUnit: 'oz',
                 displayMultiplier: 3.5,
                 maxCalories: { female: 176, male: 317 }
             },
             'Greek Yogurt (non-fat)': {
-                limits: { female: 1.0, male: 1.5 },    // 1 cup female, 1.5 cups male
+                limits: { female: 1.0, male: 1.5 },
                 unit: 'servings',
                 displayUnit: 'cups',
                 displayMultiplier: 1,
@@ -80,20 +79,19 @@ export const FoodTierSystem = {
         }
     },
 
-    // ===== TIER 3: STARCHY CARBS (MOST RESTRICTED) =====
     tier3_starches: {
         priority: 3,
         description: 'Starchy carbohydrates - STRICTLY LIMITED',
         foods: {
             'Oats (dry)': {
-                limits: { female: 0.5, male: 0.75 },   // 🚨 MAX 0.5 cups female, 0.75 cups male
+                limits: { female: 0.5, male: 0.75 },
                 unit: 'servings',
                 displayUnit: 'cups',
-                displayMultiplier: 0.5,  // 1 serving = 0.5 cups
+                displayMultiplier: 0.5,
                 maxCalories: { female: 150, male: 225 }
             },
             'Brown Rice (cooked)': {
-                limits: { female: 0.6, male: 1.0 },    // 🚨 MAX 0.6 cups female, 1.0 cups male  
+                limits: { female: 0.6, male: 1.0 },
                 unit: 'servings',
                 displayUnit: 'cups',
                 displayMultiplier: 0.5,
@@ -114,7 +112,7 @@ export const FoodTierSystem = {
                 maxCalories: { female: 144, male: 240 }
             },
             'Sweet Potato': {
-                limits: { female: 1.0, male: 1.5 },    // 1 medium female, 1.5 medium male
+                limits: { female: 1.0, male: 1.5 },
                 unit: 'servings',
                 displayUnit: 'medium',
                 displayMultiplier: 1,
@@ -123,13 +121,12 @@ export const FoodTierSystem = {
         }
     },
 
-    // ===== TIER 4: FRUITS =====
     tier4_fruits: {
         priority: 4,
         description: 'Fruits - moderate limits',
         foods: {
             'Apple': {
-                limits: { female: 1.0, male: 1.2 },    // 1 medium female, 1.2 medium male
+                limits: { female: 1.0, male: 1.2 },
                 unit: 'servings',
                 displayUnit: 'medium',
                 displayMultiplier: 1,
@@ -166,7 +163,6 @@ export const FoodTierSystem = {
         }
     },
 
-    // ===== TIER 5: VEGETABLES =====
     tier5_vegetables: {
         priority: 5,
         description: 'Vegetables - flexible limits',
@@ -202,34 +198,33 @@ export const FoodTierSystem = {
         }
     },
 
-    // ===== TIER 6: HEALTHY FATS =====
     tier6_fats: {
         priority: 6,
         description: 'Healthy fats - calorie dense',
         foods: {
             'Avocado': {
-                limits: { female: 0.5, male: 1.0 },    // 🚨 0.5 medium female, 1.0 medium male
+                limits: { female: 0.5, male: 1.0 },
                 unit: 'servings',
                 displayUnit: 'medium',
                 displayMultiplier: 1,
                 maxCalories: { female: 80, male: 160 }
             },
             'Almonds': {
-                limits: { female: 0.5, male: 1.0 },    // 0.5oz female, 1oz male
+                limits: { female: 0.5, male: 1.0 },
                 unit: 'servings',
                 displayUnit: 'oz',
                 displayMultiplier: 1,
                 maxCalories: { female: 82, male: 164 }
             },
             'Peanut Butter': {
-                limits: { female: 1.0, male: 2.0 },    // 1 tbsp female, 2 tbsp male
+                limits: { female: 1.0, male: 2.0 },
                 unit: 'servings',
                 displayUnit: 'tbsp',
                 displayMultiplier: 1,
                 maxCalories: { female: 188, male: 376 }
             },
             'Olive Oil': {
-                limits: { female: 1.0, male: 1.5 },    // 1 tbsp female, 1.5 tbsp male
+                limits: { female: 1.0, male: 1.5 },
                 unit: 'servings',
                 displayUnit: 'tbsp',
                 displayMultiplier: 1,
@@ -245,18 +240,17 @@ export const FoodTierSystem = {
         }
     },
 
-    // ===== TIER 7: SUPPLEMENTS =====
     tier7_supplements: {
         priority: 7,
         description: 'Protein supplements - gender specific limits',
         foods: {
             'Whey Protein (generic)': {
-                limits: { female: 1.0, male: 1.5 },    // 1 scoop female, 1.5 scoops male PER MEAL
+                limits: { female: 1.0, male: 1.5 },
                 unit: 'servings',
                 displayUnit: 'scoops',
                 displayMultiplier: 1,
                 maxCalories: { female: 120, male: 180 },
-                dailyLimits: { female: 2, male: 6 }     // Total daily limits
+                dailyLimits: { female: 2, male: 6 }
             },
             'Plant Protein (pea/rice)': {
                 limits: { female: 1.0, male: 1.5 },
@@ -267,7 +261,7 @@ export const FoodTierSystem = {
                 dailyLimits: { female: 2, male: 6 }
             },
             'Quest Bar': {
-                limits: { female: 1.0, male: 1.0 },    // 1 bar max for both
+                limits: { female: 1.0, male: 1.0 },
                 unit: 'servings',
                 displayUnit: 'bars',
                 displayMultiplier: 1,
@@ -277,14 +271,96 @@ export const FoodTierSystem = {
     }
 };
 
+// 🔧 FIXED: User-friendly rounding function integrated into tier system
+const roundToUserFriendly = (serving, unit) => {
+    if (serving <= 0) return 0.25; // Minimum serving
+
+    const normalizedUnit = unit?.toLowerCase() || '';
+
+    // 🥤 CUPS: Round to nice fractions
+    if (normalizedUnit.includes('cup')) {
+        if (serving <= 0.375) return 0.25;      // → 1/4 cup
+        if (serving <= 0.625) return 0.5;       // → 1/2 cup  
+        if (serving <= 0.875) return 0.75;      // → 3/4 cup
+        if (serving <= 1.25) return 1;          // → 1 cup
+        if (serving <= 1.625) return 1.5;       // → 1 1/2 cups
+        if (serving <= 1.875) return 1.75;      // → 1 3/4 cups
+        return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
+    }
+
+    // 🥄 SCOOPS/SERVINGS: Round to whole numbers or halves
+    else if (normalizedUnit === 'scoops' || normalizedUnit === 'scoop' ||
+        normalizedUnit === 'serving' || normalizedUnit === 'servings') {
+        if (serving <= 0.75) return 0.5;        // → 1/2 scoop/serving
+        if (serving <= 1.25) return 1;          // → 1 scoop/serving
+        if (serving <= 1.75) return 1.5;        // → 1.5 scoops/servings
+        return Math.round(serving);              // → 2, 3, 4, etc.
+    }
+
+    // 🥩 OUNCES: Round to whole numbers or halves  
+    else if (normalizedUnit === 'oz' || normalizedUnit === 'ounces') {
+        if (serving <= 0.75) return 0.5;        // → 0.5 oz
+        if (serving <= 1.25) return 1;          // → 1 oz
+        if (serving <= 1.75) return 1.5;        // → 1.5 oz
+        if (serving <= 2.25) return 2;          // → 2 oz
+        return Math.round(serving * 2) / 2;     // → 2.5, 3, 3.5, etc.
+    }
+
+    // 🥄 TABLESPOONS: Round to whole numbers or halves
+    else if (normalizedUnit === 'tbsp' || normalizedUnit === 'tablespoon' ||
+        normalizedUnit === 'tablespoons') {
+        if (serving <= 0.75) return 0.5;        // → 1/2 tbsp
+        if (serving <= 1.25) return 1;          // → 1 tbsp
+        if (serving <= 1.75) return 1.5;        // → 1.5 tbsp
+        if (serving <= 2.25) return 2;          // → 2 tbsp
+        return Math.round(serving * 2) / 2;     // → 2.5, 3, 3.5, etc.
+    }
+
+    // 🍎 PIECES/WHOLE ITEMS: Round to whole numbers or halves
+    else if (normalizedUnit === 'medium' || normalizedUnit === 'large' ||
+        normalizedUnit === 'small' || normalizedUnit === 'pieces' ||
+        normalizedUnit === 'piece' || normalizedUnit === 'whole') {
+        if (serving <= 0.75) return 0.5;        // → 1/2 medium
+        if (serving <= 1.25) return 1;          // → 1 medium
+        if (serving <= 1.75) return 1.5;        // → 1.5 medium
+        return Math.round(serving);              // → 2, 3, 4, etc.
+    }
+
+    // 🔢 DEFAULT: Round to halves (cleaner than quarters)
+    else {
+        if (serving <= 0.75) return 0.5;        // → 0.5
+        if (serving <= 1.25) return 1;          // → 1
+        if (serving <= 1.75) return 1.5;        // → 1.5
+        return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
+    }
+};
+
+// 🔧 FIXED: Standardize display unit
+const standardizeDisplayUnit = (serving, unit) => {
+    const normalizedUnit = unit?.toLowerCase() || '';
+
+    if (normalizedUnit.includes('cup')) {
+        return serving === 1 ? 'cup' : 'cups';
+    } else if (normalizedUnit === 'medium' || normalizedUnit === 'large' || normalizedUnit === 'small') {
+        return unit;
+    } else if (normalizedUnit === 'scoop' && serving !== 1) {
+        return 'scoops';
+    } else if (normalizedUnit === 'scoops' && serving === 1) {
+        return 'scoop';
+    } else if (normalizedUnit === 'serving' && serving !== 1) {
+        return 'servings';
+    } else if (normalizedUnit === 'servings' && serving === 1) {
+        return 'serving';
+    }
+
+    return unit;
+};
+
 /**
- * 🔧 TIER SYSTEM UTILITIES
+ * 🔧 TIER SYSTEM UTILITIES - FIXED VERSION
  */
 export class TierSystemManager {
 
-    /**
-     * Get food tier number
-     */
     static getFoodTier(foodName) {
         for (const [tierKey, tierData] of Object.entries(FoodTierSystem)) {
             if (tierData.foods && tierData.foods[foodName]) {
@@ -294,9 +370,6 @@ export class TierSystemManager {
         return 99; // Unknown food
     }
 
-    /**
-     * Get food limits for gender
-     */
     static getFoodLimits(foodName, gender = 'male') {
         const genderKey = gender.toLowerCase();
 
@@ -313,7 +386,6 @@ export class TierSystemManager {
             }
         }
 
-        // Default limits for unknown foods
         return {
             maxServing: gender === 'female' ? 1.0 : 1.5,
             displayUnit: 'servings',
@@ -324,7 +396,7 @@ export class TierSystemManager {
     }
 
     /**
-     * 🚨 ENFORCE REALISTIC LIMITS - THE MAIN FUNCTION
+     * 🚨 ENFORCE REALISTIC LIMITS - FIXED WITH USER-FRIENDLY ROUNDING
      */
     static enforceRealisticLimits(item, gender = 'male') {
         const limits = this.getFoodLimits(item.food, gender);
@@ -337,33 +409,49 @@ export class TierSystemManager {
         if (item.serving > limits.maxServing) {
             finalServing = limits.maxServing;
             wasLimited = true;
-
             console.log(`🚨 [TIER SYSTEM] ${gender} ${item.food}: ${item.serving} → ${finalServing} (T${tier} limit enforced)`);
         }
 
-        // Calculate display values
-        const displayValue = finalServing * limits.displayMultiplier;
-        const displayServing = displayValue < 0.1 ? '0.1' : displayValue.toFixed(displayValue % 1 === 0 ? 0 : 1);
+        // 🔧 FIXED: Apply user-friendly rounding to display values
+        const rawDisplayValue = finalServing * limits.displayMultiplier;
+        const friendlyDisplayValue = roundToUserFriendly(rawDisplayValue, limits.displayUnit);
+        const standardizedUnit = standardizeDisplayUnit(friendlyDisplayValue, limits.displayUnit);
+
+        // Convert back to internal serving if needed
+        const adjustedServing = friendlyDisplayValue / limits.displayMultiplier;
 
         return {
             ...item,
-            serving: finalServing,
-            displayServing,
-            displayUnit: limits.displayUnit,
+            serving: adjustedServing, // Adjusted for user-friendly display
+            displayServing: friendlyDisplayValue < 0.1 ? '0.1' :
+                (friendlyDisplayValue % 1 === 0 ? friendlyDisplayValue.toString() : friendlyDisplayValue.toFixed(friendlyDisplayValue < 1 ? 2 : 1)),
+            displayUnit: standardizedUnit,
             tier,
             wasLimited,
             originalServing: item.serving,
             genderApplied: gender,
             maxAllowed: limits.maxServing,
-            tierLimits: limits
+            tierLimits: limits,
+
+            // 🔧 FIXED: Enhanced metadata for better data transfer
+            enhancedData: {
+                tier: tier,
+                wasLimited: wasLimited,
+                originalServing: item.serving,
+                maxAllowed: limits.maxServing,
+                genderApplied: gender,
+                friendlyRoundingApplied: true,
+                rawDisplayValue: rawDisplayValue,
+                friendlyDisplayValue: friendlyDisplayValue
+            }
         };
     }
 
     /**
-     * Apply limits to entire meal plan
+     * Apply limits to entire meal plan - FIXED VERSION
      */
     static applyLimitsToMealPlan(mealPlan, gender = 'male') {
-        console.log(`🔒 [TIER SYSTEM] Applying ${gender} realistic limits to all meal items...`);
+        console.log(`🔒 [TIER SYSTEM] Applying ${gender} realistic limits with user-friendly rounding...`);
 
         let totalLimited = 0;
 
@@ -375,13 +463,15 @@ export class TierSystemManager {
             });
         });
 
-        console.log(`✅ [TIER SYSTEM] Applied limits to ${totalLimited} items for ${gender}`);
+        console.log(`✅ [TIER SYSTEM] Applied limits to ${totalLimited} items for ${gender} with user-friendly rounding`);
 
-        // Add metadata
+        // 🔧 FIXED: Enhanced metadata for better data transfer
         mealPlan.tierSystemApplied = {
             gender,
             limitsApplied: totalLimited,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            userFriendlyRoundingApplied: true,
+            version: 'v2.1-fixed-rounding'
         };
 
         return mealPlan;
@@ -406,9 +496,6 @@ export class TierSystemManager {
         };
     }
 
-    /**
-     * Get all foods in a tier
-     */
     static getFoodsInTier(tierNumber) {
         for (const tierData of Object.values(FoodTierSystem)) {
             if (tierData.priority === tierNumber && tierData.foods) {
@@ -418,22 +505,20 @@ export class TierSystemManager {
         return [];
     }
 
-    /**
-     * Get realistic limits summary for display
-     */
     static getRealisticLimitsSummary(gender = 'male') {
         const genderKey = gender.toLowerCase();
         const summary = [];
 
-        // Key problematic foods
         const keyFoods = ['Oats (dry)', 'Brown Rice (cooked)', 'Avocado', 'Whey Protein (generic)'];
 
         keyFoods.forEach(food => {
             const limits = this.getFoodLimits(food, gender);
             const displayValue = limits.maxServing * limits.displayMultiplier;
+            const friendlyValue = roundToUserFriendly(displayValue, limits.displayUnit);
+
             summary.push({
                 food,
-                limit: `${displayValue} ${limits.displayUnit}`,
+                limit: `${friendlyValue} ${limits.displayUnit}`,
                 tier: this.getFoodTier(food)
             });
         });
@@ -442,9 +527,7 @@ export class TierSystemManager {
     }
 }
 
-/**
- * 🔧 CONVENIENT HELPER FUNCTIONS
- */
+// Export functions (keeping same interface)
 export const enforceRealisticLimits = (item, gender) => TierSystemManager.enforceRealisticLimits(item, gender);
 export const getFoodTier = (foodName) => TierSystemManager.getFoodTier(foodName);
 export const getFoodLimits = (foodName, gender) => TierSystemManager.getFoodLimits(foodName, gender);
