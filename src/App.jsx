@@ -14,6 +14,7 @@ import WeekPlanModal from './mealPlanning/WeekPlanModal.jsx';
 import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
 import UltimateFitnessCardTrick from './UltimateFitnessCardTrick.jsx';
 import { GlenSaysMotivation, GlenSaysMini } from './MealMessages/DailyMotivation.js';
+import { TierSystemManager } from './mealPlanning/CentralizedTierSystem.js';
 // Import chart components from WelcomeScreen module
 import {
   ClickableBurnAndLearnView,
@@ -78,7 +79,7 @@ const roundToUserFriendly = (serving, unit) => {
     return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
   }
 };
-// Serving Picker Modal Component
+// FIXED: ServingPickerModal - NO tier limits for manual additions
 function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, category, foodName, onSelectServing, onClose }) {
   const [selectedAmount, setSelectedAmount] = useState(1);
   const [selectedFraction, setSelectedFraction] = useState(0);
@@ -116,11 +117,12 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
       finalServings = totalAmount / servingInfo.grams;
     }
 
+    // 🔧 NO TIER LIMITS - User has full control for manual additions
     onSelectServing(finalServings, selectedUnit);
     onClose();
   };
 
-  // Calculate preview nutrition based on selection
+  // Calculate preview nutrition based on selection (no limits)
   const getPreviewNutrition = () => {
     const totalAmount = selectedAmount + selectedFraction;
     let servingMultiplier = totalAmount;
@@ -141,6 +143,7 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
 
   if (!isOpen) return null;
 
+  // Full 12 serving options available for manual additions
   const amounts = Array.from({ length: 12 }, (_, i) => i + 1);
   const fractions = [
     { display: '0', value: 0 },
@@ -160,13 +163,17 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
           <div>
             <h3 className="text-xl font-bold text-gray-800">Select Amount</h3>
             <p className="text-sm text-gray-600">{foodName}</p>
+            {/* 🔧 NEW: Show user freedom message */}
+            <p className="text-xs text-blue-600">
+              Add any amount you want • No limits on manual additions
+            </p>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
         </div>
 
         <div className="p-6">
           <div className="grid grid-cols-3 gap-6 mb-6">
-            {/* Whole Numbers Column */}
+            {/* Whole Numbers Column - Full 12 available */}
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Amount</h4>
               <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
@@ -524,6 +531,7 @@ function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onO
   );
 }
 
+// FIXED: FoodSelectionModal - Clean interface for manual additions
 function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
   const [selectedFood, setSelectedFood] = useState('');
   const [servings, setServings] = useState(1);
@@ -564,7 +572,11 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
       <div className="bg-white rounded-2xl w-full max-w-lg h-5/6 flex flex-col">
         {/* Header - Fixed */}
         <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
-          <h3 className="text-xl font-bold text-gray-800">{category}</h3>
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">{category}</h3>
+            {/* 🔧 NEW: Show user freedom message */}
+            <p className="text-xs text-green-600">Manual addition • Add any amount you want</p>
+          </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
         </div>
 
@@ -574,6 +586,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
             {foods.map((food) => {
               const servingInfo = getServingInfo(dbCategory, food);
               const foodData = FoodDatabase[dbCategory][food];
+
               return (
                 <button
                   key={food}
@@ -643,7 +656,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
         )}
       </div>
 
-      {/* Serving Picker Modal */}
+      {/* Serving Picker Modal - No tier limits */}
       <ServingPickerModal
         isOpen={showServingPicker}
         currentServing={servings}
@@ -658,7 +671,7 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
   );
 }
 
-// 🆕 ENHANCED MealFoodList Component with dietary information
+// UPDATED: MealFoodList to show different badges for generated vs manual
 function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   if (!meal.items || meal.items.length === 0) return null;
 
@@ -671,17 +684,31 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
       <h4 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
         Added Foods:
         {isUSDAOwned && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">USDA</span>}
-        {isEnhancedPlan && <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">Enhanced</span>}
+        {isEnhancedPlan && <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">Generated</span>}
       </h4>
       {meal.items.map((item, index) => {
         const servingInfo = item.category ? getServingInfo(item.category, item.food) : null;
+        const isGenerated = item.source && (item.source.includes('weekplan') || item.source.includes('enhanced') || item.tierData);
+        const isManual = item.source === 'manual-addition' || item.source === 'quickview';
 
         return (
           <div key={index} className="bg-gray-50 rounded-lg p-2 flex justify-between items-center">
             <div className="flex-1">
               <div className="font-medium text-sm text-gray-800 flex items-center gap-2">
                 {item.food}
-                {/* 🆕 Show if this was substituted */}
+                {/* Show different badges for generated vs manual */}
+                {isGenerated && item.tierData && (
+                  <span className="text-xs bg-green-100 text-green-600 px-1 py-0.5 rounded">
+                    Generated T{item.tierData.tier}
+                    {item.tierData.wasLimited && ' ✓'}
+                  </span>
+                )}
+                {isManual && (
+                  <span className="text-xs bg-blue-100 text-blue-600 px-1 py-0.5 rounded">
+                    Manual
+                  </span>
+                )}
+                {/* Show if this was substituted */}
                 {item.originalFood && (
                   <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
                     Was: {item.originalFood}
@@ -691,13 +718,21 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
               {item.brand && <div className="text-xs text-blue-600">{item.brand}</div>}
               <div className="text-xs text-gray-600">
                 {Math.round(item.servings * 10) / 10}x serving • {Math.round(item.calories)} cal
+
+                {/* Show tier limit info for generated items */}
+                {isGenerated && item.tierData?.wasLimited && (
+                  <div className="text-xs text-green-600 mt-1">
+                    Generated: Limited from {item.tierData.originalServing} to {item.servings} servings
+                  </div>
+                )}
+
                 {item.source === 'usda' && item.servingInfo && (
                   <div className="text-xs text-gray-500 mt-1">{item.servingInfo.description}</div>
                 )}
                 {item.source !== 'usda' && servingInfo && (
                   <div className="text-xs text-blue-500 mt-1">{servingInfo.palm}</div>
                 )}
-                {/* 🆕 Show dietary compliance */}
+                {/* Show dietary compliance */}
                 {item.dietaryTags && Object.keys(item.dietaryTags).length > 0 && (
                   <div className="text-xs text-green-600 mt-1">
                     Dietary: {Object.keys(item.dietaryTags).filter(tag => item.dietaryTags[tag]).join(', ')}
@@ -709,7 +744,7 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
                   </div>
                 )}
                 {item.source === 'usda' && <span className="ml-2 text-blue-500">USDA</span>}
-                {isEnhancedPlan && <span className="ml-2 text-green-500">Enhanced</span>}
+                {isEnhancedPlan && <span className="ml-2 text-green-500">Generated</span>}
               </div>
             </div>
             {!readOnly && !isUSDAOwned && (
@@ -1542,11 +1577,11 @@ const MealSwipeApp = () => {
     return actions.slice(0, 3);
   };
 
-  // 🆕 ENHANCED: Add food with dietary support
+  // FIXED: addFoodToMeal function - NO tier limits for manual additions
   const addFoodToMeal = (mealId, category, foodName, servings = 1) => {
     const foodData = FoodDatabase[category]?.[foodName];
     if (!foodData) {
-      console.error('Food not found in enhanced database:', foodName, category);
+      console.error('Food not found in database:', foodName, category);
       return;
     }
 
@@ -1565,24 +1600,27 @@ const MealSwipeApp = () => {
       claimMeal(meal.name, 'quickview');
     }
 
+    console.log(`✅ Manual addition: ${foodName} - ${servings} servings (no tier limits applied)`);
+
     setMeals(prev => prev.map(meal => {
       if (meal.id === mealId) {
-        // 🔧 FIXED: Round servings to user-friendly amounts
+        // 🔧 FIXED: Use rounded servings for user-friendly display, but NO tier limits
         const roundedServings = roundToUserFriendly(servings, 'servings');
 
         const newItem = {
+          id: generateId(),
           food: foodName,
           category: category,
-          servings: roundedServings,  // ← USE ROUNDED SERVINGS
-          protein: Math.round(foodData.protein * roundedServings),  // ← USE ROUNDED FOR CALCULATIONS
+          servings: roundedServings,  // User-friendly rounding only
+          protein: Math.round(foodData.protein * roundedServings),
           carbs: Math.round(foodData.carbs * roundedServings),
           fat: Math.round(foodData.fat * roundedServings),
           sugar: Math.round((foodData.sugar || 0) * roundedServings),
           calories: Math.round(foodData.calories * roundedServings),
-          source: 'quickview',
-          // 🆕 NEW: Add dietary tag information
+          source: 'manual-addition', // Mark as manual
+          // No tier data for manual additions - user choice
           dietaryTags: foodData.dietaryTags || {},
-          dietaryCompliant: true // User manually added, so assumed compliant
+          dietaryCompliant: true
         };
 
         return {
@@ -1957,7 +1995,17 @@ const MealSwipeApp = () => {
             {/* NEW UNIFIED Daily Nutrition Summary with Action Buttons and Analytics */}
             <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
               <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Nutrition Summary</h2>
-
+              
+              {/* Show mixed approach status */}
+              {profile.firstName && totalMacros.calories > 100 && (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-2 mb-4 text-center">
+                  <div className="text-xs text-gray-700">
+                    🎯 <span className="text-green-600 font-medium">Generated plans:</span> Tier-limited •
+                    <span className="text-blue-600 font-medium"> Manual additions:</span> User choice (up to 12 servings)
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-4 gap-3 text-center mb-4">
               {/* Macro Grid */}
               <div className="grid grid-cols-4 gap-3 text-center mb-4">
                 <div className="bg-blue-100 rounded-lg p-2">
@@ -1983,6 +2031,7 @@ const MealSwipeApp = () => {
                   </div>
                 </div>
               </div>
+            </div>
 
               {/* Action Buttons - Same 4-column grid for uniformity */}
               <div className="grid grid-cols-4 gap-3 mb-4">
