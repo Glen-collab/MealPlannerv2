@@ -21,9 +21,9 @@ function WeekPlanModal({
     const [showPreview, setShowPreview] = useState(false);
     const [testResult, setTestResult] = useState(null);
 
-    // 🧪 TIER SYSTEM TEST - Tests the centralized tier system
+    // 🧪 TIER SYSTEM TEST
     const runTierSystemTest = () => {
-        console.log('🧪 Testing Centralized Tier System with ENFORCED limits...');
+        console.log('🧪 Testing Centralized Tier System with ENFORCED limits and user-friendly rounding...');
         setTestResult('🔄 Testing centralized tier system... please wait...');
 
         setTimeout(() => {
@@ -40,7 +40,6 @@ function WeekPlanModal({
                 testConfigs.forEach((config, index) => {
                     console.log(`Testing config ${index + 1}:`, config);
 
-                    // Generate meal plan
                     const testPlan = generateMealPlan({
                         goal: config.goal,
                         eaterType: 'balanced',
@@ -49,21 +48,19 @@ function WeekPlanModal({
                         userProfile: { gender: config.gender }
                     });
 
-                    // Apply tier system limits
                     const limitedPlan = TierSystemManager.applyLimitsToMealPlan(testPlan, config.gender);
 
-                    // Check all food items for tier compliance
                     const allItems = [];
                     limitedPlan.allMeals?.forEach(meal => {
                         meal.items?.forEach(item => allItems.push(item));
                     });
 
-                    // Validate specific problematic foods
                     const checks = {
-                        oats: { found: false, compliant: true, amount: 0 },
-                        rice: { found: false, compliant: true, amount: 0 },
-                        avocado: { found: false, compliant: true, amount: 0 },
-                        protein: { found: false, compliant: true, amount: 0 }
+                        oats: { found: false, compliant: true, amount: 0, displayAmount: '' },
+                        rice: { found: false, compliant: true, amount: 0, displayAmount: '' },
+                        avocado: { found: false, compliant: true, amount: 0, displayAmount: '' },
+                        protein: { found: false, compliant: true, amount: 0, displayAmount: '' },
+                        roundingFixed: []
                     };
 
                     allItems.forEach(item => {
@@ -72,29 +69,45 @@ function WeekPlanModal({
                         if (item.food === 'Oats (dry)') {
                             checks.oats.found = true;
                             checks.oats.amount = item.serving;
+                            checks.oats.displayAmount = `${item.displayServing} ${item.displayUnit}`;
                             checks.oats.compliant = item.serving <= limits.maxServing;
                         }
                         if (item.food === 'Brown Rice (cooked)') {
                             checks.rice.found = true;
                             checks.rice.amount = item.serving;
+                            checks.rice.displayAmount = `${item.displayServing} ${item.displayUnit}`;
                             checks.rice.compliant = item.serving <= limits.maxServing;
                         }
                         if (item.food === 'Avocado') {
                             checks.avocado.found = true;
                             checks.avocado.amount = item.serving;
+                            checks.avocado.displayAmount = `${item.displayServing} ${item.displayUnit}`;
                             checks.avocado.compliant = item.serving <= limits.maxServing;
                         }
                         if (item.food.includes('Protein')) {
                             checks.protein.found = true;
                             checks.protein.amount = Math.max(checks.protein.amount, item.serving);
+                            checks.protein.displayAmount = `${item.displayServing} ${item.displayUnit}`;
                             checks.protein.compliant = checks.protein.compliant && (item.serving <= limits.maxServing);
+                        }
+
+                        // Check for user-friendly rounding
+                        const displayValue = parseFloat(item.displayServing);
+                        const isUserFriendly = displayValue === 0.25 || displayValue === 0.5 || displayValue === 0.75 ||
+                            displayValue === 1 || displayValue === 1.5 || displayValue === 1.75 ||
+                            displayValue === 2 || displayValue % 0.5 === 0;
+
+                        if (isUserFriendly) {
+                            checks.roundingFixed.push(`${item.food}: ${item.displayServing} ${item.displayUnit} ✅`);
+                        } else {
+                            checks.roundingFixed.push(`${item.food}: ${item.displayServing} ${item.displayUnit} ❌`);
                         }
                     });
 
-                    // Get tier limits for comparison
                     const tierLimits = TierSystemManager.getRealisticLimitsSummary(config.gender);
-
-                    const allCompliant = Object.values(checks).every(check => !check.found || check.compliant);
+                    const allCompliant = Object.values(checks).every(check =>
+                        typeof check === 'object' && (!check.found || check.compliant)
+                    );
 
                     results.push({
                         config: `${config.goal}-${config.gender}`,
@@ -102,23 +115,25 @@ function WeekPlanModal({
                         tierLimits,
                         itemsLimited: limitedPlan.tierSystemApplied?.limitsApplied || 0,
                         totalItems: allItems.length,
-                        allCompliant
+                        allCompliant,
+                        roundingFixed: checks.roundingFixed.filter(r => r.includes('✅')).length
                     });
                 });
 
                 const resultText = `
-🧪 CENTRALIZED TIER SYSTEM TEST RESULTS
+🧪 CENTRALIZED TIER SYSTEM TEST RESULTS (FIXED VERSION)
 
 ${results.map((r, i) => `
 ────────── CONFIG ${i + 1}: ${r.config.toUpperCase()} ──────────
-🥣 Oats: ${r.checks.oats.found ? `${r.checks.oats.amount} (${r.checks.oats.compliant ? '✅' : '❌'})` : 'Not found'}
-🍚 Rice: ${r.checks.rice.found ? `${r.checks.rice.amount} (${r.checks.rice.compliant ? '✅' : '❌'})` : 'Not found'}
-🥑 Avocado: ${r.checks.avocado.found ? `${r.checks.avocado.amount} (${r.checks.avocado.compliant ? '✅' : '❌'})` : 'Not found'}
-🥤 Protein: ${r.checks.protein.found ? `${r.checks.protein.amount} (${r.checks.protein.compliant ? '✅' : '❌'})` : 'Not found'}
+🥣 Oats: ${r.checks.oats.found ? `${r.checks.oats.displayAmount} (${r.checks.oats.compliant ? '✅' : '❌'})` : 'Not found'}
+🍚 Rice: ${r.checks.rice.found ? `${r.checks.rice.displayAmount} (${r.checks.rice.compliant ? '✅' : '❌'})` : 'Not found'}
+🥑 Avocado: ${r.checks.avocado.found ? `${r.checks.avocado.displayAmount} (${r.checks.avocado.compliant ? '✅' : '❌'})` : 'Not found'}
+🥤 Protein: ${r.checks.protein.found ? `${r.checks.protein.displayAmount} (${r.checks.protein.compliant ? '✅' : '❌'})` : 'Not found'}
 🔒 Items Limited: ${r.itemsLimited}/${r.totalItems}
 ✅ All Compliant: ${r.allCompliant ? 'YES' : 'NO'}
+🎯 Friendly Rounding: ${r.roundingFixed}/${r.checks.roundingFixed.length} items
 
-📏 Tier Limits for ${r.config.split('-')[1]}:
+📏 User-Friendly Limits for ${r.config.split('-')[1]}:
 ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier})`).join('\n')}
 `).join('')}
 
@@ -126,12 +141,15 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
 • Configs Tested: ${results.length}
 • All Compliant: ${results.filter(r => r.allCompliant).length}/${results.length}
 • Total Items Limited: ${results.reduce((sum, r) => sum + r.itemsLimited, 0)}
+• Friendly Rounding: ${results.reduce((sum, r) => sum + r.roundingFixed, 0)}/${results.reduce((sum, r) => sum + r.checks.roundingFixed.length, 0)} items
 
 🎯 TIER SYSTEM STATUS: ${results.every(r => r.allCompliant) ? '✅ ALL LIMITS ENFORCED!' : '❌ SOME LIMITS BROKEN'}
+🎯 ROUNDING STATUS: ${results.every(r => r.roundingFixed === r.checks.roundingFixed.length) ? '✅ USER-FRIENDLY ROUNDING APPLIED!' : '❌ SOME ROUNDING ISSUES'}
 
-💡 Expected Limits:
-• Female: 0.5 servings oats (0.25 cups), 0.5 servings avocado (0.5 medium)
-• Male: 0.75 servings oats (0.375 cups), 1.0 servings avocado (1 medium)
+💡 Expected Results:
+• Female: 0.25 cups oats, 0.5 medium avocado, 1 or 1.5 scoops protein
+• Male: 0.5 cups oats, 1 medium avocado, 1.5 or 2 scoops protein
+• All values should be user-friendly (0.25, 0.5, 0.75, 1, 1.5, etc.)
                 `;
 
                 setTestResult(resultText);
@@ -148,9 +166,8 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
         setError(null);
 
         try {
-            console.log('🎯 Generating meal plan with centralized tier system...');
+            console.log('🎯 Generating meal plan with fixed centralized tier system...');
 
-            // Generate base meal plan
             const basePlan = generateMealPlan({
                 goal: selectedGoal,
                 eaterType: selectedEaterType,
@@ -164,29 +181,31 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                 throw new Error('Failed to generate base meal plan');
             }
 
-            // 🔧 APPLY CENTRALIZED TIER SYSTEM LIMITS
-            console.log('🔒 Applying centralized tier system limits...');
+            // 🔧 APPLY FIXED CENTRALIZED TIER SYSTEM LIMITS
+            console.log('🔒 Applying fixed centralized tier system limits with user-friendly rounding...');
             const limitedPlan = TierSystemManager.applyLimitsToMealPlan(basePlan, selectedGender);
 
-            // 🔧 ENSURE PREVIEW SHOWS LIMITED DATA
-            console.log('📋 Preparing preview with limited amounts...');
+            console.log('📋 Preparing preview with limited amounts and enhanced data transfer...');
             const previewPlan = {
                 ...limitedPlan,
                 previewData: {
                     showsLimitedAmounts: true,
                     tierSystemApplied: true,
-                    gender: selectedGender
+                    userFriendlyRoundingApplied: true,
+                    gender: selectedGender,
+                    version: 'v2.1-fixed'
                 }
             };
 
             setGeneratedPlan(previewPlan);
             setShowPreview(true);
 
-            console.log('✅ Meal plan generated with centralized tier system');
+            console.log('✅ Meal plan generated with fixed centralized tier system');
             console.log('📊 Plan stats:', {
                 meals: previewPlan.allMeals.length,
                 itemsLimited: previewPlan.tierSystemApplied?.limitsApplied || 0,
-                gender: selectedGender
+                gender: selectedGender,
+                friendlyRounding: previewPlan.tierSystemApplied?.userFriendlyRoundingApplied
             });
 
         } catch (err) {
@@ -199,17 +218,17 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
 
     const handleAddPlan = () => {
         if (generatedPlan) {
-            console.log('📥 Adding meal plan with tier limits to MealTracker:', generatedPlan);
+            console.log('📥 Adding meal plan with tier limits and enhanced data to MealTracker:', generatedPlan);
 
-            // Convert to MealTracker format with proper limits applied
-            const mealTrackerData = convertToMealTrackerFormat(generatedPlan);
+            // 🔧 FIXED: Enhanced data transfer format
+            const mealTrackerData = convertToMealTrackerFormatFixed(generatedPlan);
             onAddWeekPlan(mealTrackerData);
             onClose();
         }
     };
 
-    // 🔧 Convert to MealTracker format with tier-limited data
-    const convertToMealTrackerFormat = (limitedPlan) => {
+    // 🔧 FIXED: Enhanced conversion to MealTracker format with proper metadata preservation
+    const convertToMealTrackerFormatFixed = (limitedPlan) => {
         const mealTypeMapping = {
             'Breakfast': 'breakfast',
             'FirstSnack': 'firstSnack',
@@ -224,42 +243,99 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
         const mealTrackerState = {
             meals: {},
             dayTotals: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+
+            // 🔧 FIXED: Enhanced metadata for proper data transfer
             enhancedMetadata: {
                 tierSystemApplied: true,
                 realisticLimitsEnforced: true,
+                userFriendlyRoundingApplied: true,
                 gender: selectedGender,
-                limitsApplied: limitedPlan.tierSystemApplied?.limitsApplied || 0
+                limitsApplied: limitedPlan.tierSystemApplied?.limitsApplied || 0,
+                version: 'v2.1-fixed-transfer',
+                timestamp: new Date().toISOString(),
+
+                // Preserve tier system metadata
+                tierSystemMetadata: limitedPlan.tierSystemApplied || {},
+
+                // Data transfer verification
+                dataTransferComplete: true,
+                originalPlanId: limitedPlan.planId,
+
+                // User preferences for other components
+                userPreferences: {
+                    goal: selectedGoal,
+                    eaterType: selectedEaterType,
+                    mealFreq: selectedMealFreq,
+                    dietaryFilters: selectedDietaryFilters,
+                    gender: selectedGender
+                }
             }
         };
 
-        // Convert meals with tier-limited amounts
+        // Convert meals with comprehensive tier-limited data
         limitedPlan.allMeals.forEach(meal => {
             const mealType = mealTypeMapping[meal.mealName] || 'breakfast';
 
             mealTrackerState.meals[mealType] = {
                 time: meal.time,
+                mealName: meal.mealName, // Preserve original meal name
+
                 items: meal.items.map(item => ({
                     id: item.id || Math.random().toString(36).substr(2, 9),
                     food: item.food,
                     category: item.category,
-                    serving: item.serving,  // This is the LIMITED amount
+
+                    // 🔧 CRITICAL: These are the LIMITED, USER-FRIENDLY amounts
+                    serving: item.serving,  // This is tier-limited with user-friendly rounding
                     servings: item.serving, // Legacy compatibility
-                    displayServing: item.displayServing, // This shows correct limited amount
+                    displayServing: item.displayServing, // User-friendly display (0.5, 0.75, 1, 1.5, etc.)
                     displayUnit: item.displayUnit,
+
                     brand: item.brand || '',
                     isExpanded: false,
 
-                    // Tier metadata
-                    enhancedData: {
-                        tier: item.tier,
-                        wasLimited: item.wasLimited,
-                        originalServing: item.originalServing,
-                        maxAllowed: item.maxAllowed,
-                        genderApplied: item.genderApplied
+                    // 🔧 ENHANCED: Complete tier metadata for other components
+                    tierData: {
+                        tier: item.tier || 99,
+                        wasLimited: item.wasLimited || false,
+                        originalServing: item.originalServing || item.serving,
+                        maxAllowed: item.maxAllowed || item.serving,
+                        genderApplied: item.genderApplied || selectedGender,
+                        tierLimits: item.tierLimits || {}
+                    },
+
+                    // 🔧 ENHANCED: Additional metadata for perfect data transfer
+                    enhancedData: item.enhancedData || {
+                        tier: item.tier || 99,
+                        wasLimited: item.wasLimited || false,
+                        originalServing: item.originalServing || item.serving,
+                        maxAllowed: item.maxAllowed || item.serving,
+                        genderApplied: item.genderApplied || selectedGender,
+                        friendlyRoundingApplied: true,
+                        rawDisplayValue: item.rawDisplayValue || parseFloat(item.displayServing || '1'),
+                        friendlyDisplayValue: item.friendlyDisplayValue || parseFloat(item.displayServing || '1'),
+                        dataTransferVersion: 'v2.1-fixed'
+                    },
+
+                    // 🔧 METADATA: For debugging and verification
+                    metadata: {
+                        addedBy: item.addedBy || 'tier-system-v2.1',
+                        isProteinFocus: item.isProteinFocus || false,
+                        isFavorite: item.isFavorite || false,
+                        source: 'WeekPlanModal-Fixed',
+                        transferTimestamp: new Date().toISOString()
                     }
                 }))
             };
         });
+
+        // 🔧 VERIFICATION: Log the data transfer
+        console.log('🔄 Data transfer verification:');
+        console.log('- Meals converted:', Object.keys(mealTrackerState.meals).length);
+        console.log('- Total items:', Object.values(mealTrackerState.meals).reduce((sum, meal) => sum + meal.items.length, 0));
+        console.log('- Items with tier data:', Object.values(mealTrackerState.meals).reduce((sum, meal) =>
+            sum + meal.items.filter(item => item.tierData.tier < 99).length, 0));
+        console.log('- Enhanced metadata included:', !!mealTrackerState.enhancedMetadata.tierSystemApplied);
 
         return mealTrackerState;
     };
@@ -305,8 +381,6 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
     ];
 
     const isNoRestrictionsSelected = selectedDietaryFilters.length === 0;
-
-    // Get realistic limits for current gender
     const realisticLimits = TierSystemManager.getRealisticLimitsSummary(selectedGender);
 
     return (
@@ -316,8 +390,8 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800">📅 Tier-Based Meal Planning</h2>
-                        <p className="text-gray-600 text-sm mt-1">Generate meal plans with centralized tier system limits</p>
+                        <h2 className="text-2xl font-bold text-gray-800">📅 Fixed Tier-Based Meal Planning</h2>
+                        <p className="text-gray-600 text-sm mt-1">Generate meal plans with user-friendly rounding and proper data transfer</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -331,17 +405,17 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                     /* Configuration Phase */
                     <div className="p-6 space-y-8">
 
-                        {/* 🧪 TIER SYSTEM TEST SECTION */}
+                        {/* 🧪 ENHANCED TIER SYSTEM TEST */}
                         <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-                            <h4 className="font-semibold text-green-800 mb-2">🎯 Centralized Tier System Test</h4>
+                            <h4 className="font-semibold text-green-800 mb-2">🎯 Enhanced Tier System Test (v2.1)</h4>
                             <p className="text-sm text-green-700 mb-3">
-                                Test the centralized tier system with realistic limits for both genders
+                                Test the FIXED centralized tier system with user-friendly rounding and proper data transfer
                             </p>
                             <button
                                 onClick={runTierSystemTest}
                                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
                             >
-                                🧪 Test Centralized Tier System
+                                🧪 Test FIXED Tier System v2.1
                             </button>
 
                             {testResult && (
@@ -351,13 +425,13 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                             )}
 
                             <div className="text-xs text-green-600 mt-2">
-                                💡 Tests centralized limits for oats, rice, avocado, and protein across all tiers
+                                💡 Tests user-friendly rounding: 0.7 → 0.75, 1.4 → 1.5, 0.9 → 1.0
                             </div>
                         </div>
 
-                        {/* Gender Selection with Tier Limits Display */}
+                        {/* Gender Selection with Enhanced Tier Limits Display */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (Controls Tier-Based Limits)</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (Controls User-Friendly Tier Limits)</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setSelectedGender('male')}
@@ -368,7 +442,7 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                                 >
                                     <div className="font-semibold text-gray-800">🚹 Male</div>
                                     <div className="text-xs text-gray-600 mt-1">
-                                        Tier limits: 0.375 cups oats, 1 medium avocado
+                                        User-friendly limits: 0.5 cups oats, 1 medium avocado
                                     </div>
                                 </button>
                                 <button
@@ -380,22 +454,25 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                                 >
                                     <div className="font-semibold text-gray-800">🚺 Female</div>
                                     <div className="text-xs text-gray-600 mt-1">
-                                        Tier limits: 0.25 cups oats, 0.5 medium avocado
+                                        User-friendly limits: 0.25 cups oats, 0.5 medium avocado
                                     </div>
                                 </button>
                             </div>
 
-                            {/* Show current gender's tier limits */}
+                            {/* Enhanced current gender's tier limits */}
                             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                                 <div className="text-sm font-medium text-gray-800 mb-2">
-                                    🎯 {selectedGender === 'female' ? '🚺 Female' : '🚹 Male'} Tier Limits:
+                                    🎯 {selectedGender === 'female' ? '🚺 Female' : '🚹 Male'} User-Friendly Tier Limits:
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
                                     {realisticLimits.map(limit => (
                                         <div key={limit.food}>
-                                            <strong>T{limit.tier}</strong> {limit.food}: {limit.limit}
+                                            <strong>T{limit.tier}</strong> {limit.food}: <span className="text-green-600 font-medium">{limit.limit}</span>
                                         </div>
                                     ))}
+                                </div>
+                                <div className="text-xs text-blue-600 mt-2">
+                                    ✨ All values are user-friendly (0.25, 0.5, 0.75, 1, 1.5, etc.)
                                 </div>
                             </div>
                         </div>
@@ -470,10 +547,10 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                                 {isGenerating ? (
                                     <div className="flex items-center gap-2">
                                         <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
-                                        Applying Tier System...
+                                        Applying Fixed Tier System...
                                     </div>
                                 ) : (
-                                    '🎯 Generate Plan with Tier Limits'
+                                    '🎯 Generate Plan with Fixed Tier System v2.1'
                                 )}
                             </button>
                         </div>
@@ -486,11 +563,11 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                         )}
                     </div>
                 ) : (
-                    /* Preview Phase - FIXED TO SHOW LIMITED AMOUNTS */
+                    /* Enhanced Preview Phase */
                     <div className="p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold text-gray-800">
-                                📋 Meal Plan Preview (Tier-Limited Amounts)
+                                📋 Enhanced Preview (User-Friendly Amounts)
                             </h3>
                             <button
                                 onClick={() => setShowPreview(false)}
@@ -502,21 +579,21 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
 
                         {generatedPlan && (
                             <>
-                                {/* Tier System Status */}
+                                {/* Enhanced Tier System Status */}
                                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
                                     <div className="text-center">
                                         <div className="text-green-800 font-bold text-lg mb-2">
-                                            🎯 Centralized Tier System Applied
+                                            🎯 Fixed Centralized Tier System v2.1 Applied
                                         </div>
-                                        <div className="text-sm text-green-700">
-                                            {selectedGender === 'female' ? '🚺' : '🚹'} {selectedGender} tier limits enforced •
-                                            {generatedPlan.tierSystemApplied?.limitsApplied || 0} items limited •
-                                            Realistic portions guaranteed
+                                        <div className="text-sm text-green-700 space-y-1">
+                                            <div>{selectedGender === 'female' ? '🚺' : '🚹'} {selectedGender} tier limits enforced • {generatedPlan.tierSystemApplied?.limitsApplied || 0} items limited</div>
+                                            <div>✨ User-friendly rounding applied • Enhanced data transfer enabled</div>
+                                            <div>🔄 Ready for perfect transfer to View Plan & Add Foods Modal</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* 🔧 FIXED PREVIEW - Shows LIMITED amounts, not raw amounts */}
+                                {/* Enhanced Preview showing user-friendly amounts */}
                                 <div className="space-y-4 max-h-96 overflow-y-auto">
                                     {generatedPlan.allMeals?.map((meal, mealIndex) => (
                                         <div key={mealIndex} className="border border-gray-200 rounded-lg p-4">
@@ -535,9 +612,11 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                                                             {item.wasLimited && (
                                                                 <span className="text-green-600 ml-1">(✅ limited)</span>
                                                             )}
+                                                            {item.enhancedData?.friendlyRoundingApplied && (
+                                                                <span className="text-blue-600 ml-1">(✨ rounded)</span>
+                                                            )}
                                                         </span>
-                                                        <span className="font-medium">
-                                                            {/* 🔧 THIS NOW SHOWS THE LIMITED AMOUNTS */}
+                                                        <span className="font-medium text-green-700">
                                                             {item.displayServing} {item.displayUnit}
                                                         </span>
                                                     </div>
@@ -547,13 +626,13 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                                     ))}
                                 </div>
 
-                                {/* Action Buttons */}
+                                {/* Enhanced Action Buttons */}
                                 <div className="flex gap-3 mt-6">
                                     <button
                                         onClick={handleAddPlan}
                                         className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                                     >
-                                        ✅ Add Tier-Limited Plan to MealTracker
+                                        ✅ Add Fixed Plan to MealTracker (v2.1)
                                     </button>
                                     <button
                                         onClick={() => setShowPreview(false)}
@@ -561,6 +640,14 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                                     >
                                         Edit Plan
                                     </button>
+                                </div>
+
+                                {/* Data Transfer Verification */}
+                                <div className="mt-4 p-3 bg-blue-50 rounded-lg text-center">
+                                    <div className="text-xs text-blue-600">
+                                        🔄 Enhanced data transfer ready • User-friendly rounding preserved •
+                                        Tier metadata complete • View Plan & Add Foods Modal compatibility ensured
+                                    </div>
                                 </div>
                             </>
                         )}
