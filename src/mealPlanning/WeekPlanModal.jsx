@@ -227,59 +227,25 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
         }
     };
 
-    // 🔧 FIXED: Enhanced conversion to MealTracker format with proper metadata preservation
+    // 🔧 FIXED: Enhanced conversion to MealTracker format - CORRECTED VERSION
     const convertToMealTrackerFormatFixed = (limitedPlan) => {
         const mealTypeMapping = {
-            'Breakfast': 'breakfast',
-            'FirstSnack': 'firstSnack',
-            'SecondSnack': 'secondSnack',
-            'Lunch': 'lunch',
-            'MidAfternoon Snack': 'midAfternoon',
-            'Dinner': 'dinner',
-            'Late Snack': 'lateSnack',
-            'PostWorkout': 'postWorkout'
+            'Breakfast': 'Breakfast',
+            'FirstSnack': 'FirstSnack',
+            'SecondSnack': 'SecondSnack',
+            'Lunch': 'Lunch',
+            'MidAfternoon Snack': 'MidAfternoon Snack',
+            'Dinner': 'Dinner',
+            'Late Snack': 'Late Snack',
+            'PostWorkout': 'PostWorkout'
         };
 
-        const mealTrackerState = {
-            meals: {},
-            dayTotals: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-
-            // 🔧 FIXED: Enhanced metadata for proper data transfer
-            enhancedMetadata: {
-                tierSystemApplied: true,
-                realisticLimitsEnforced: true,
-                userFriendlyRoundingApplied: true,
-                gender: selectedGender,
-                limitsApplied: limitedPlan.tierSystemApplied?.limitsApplied || 0,
-                version: 'v2.1-fixed-transfer',
-                timestamp: new Date().toISOString(),
-
-                // Preserve tier system metadata
-                tierSystemMetadata: limitedPlan.tierSystemApplied || {},
-
-                // Data transfer verification
-                dataTransferComplete: true,
-                originalPlanId: limitedPlan.planId,
-
-                // User preferences for other components
-                userPreferences: {
-                    goal: selectedGoal,
-                    eaterType: selectedEaterType,
-                    mealFreq: selectedMealFreq,
-                    dietaryFilters: selectedDietaryFilters,
-                    gender: selectedGender
-                }
-            }
-        };
-
-        // Convert meals with comprehensive tier-limited data
-        limitedPlan.allMeals.forEach(meal => {
-            const mealType = mealTypeMapping[meal.mealName] || 'breakfast';
-
-            mealTrackerState.meals[mealType] = {
+        // 🔧 CRITICAL FIX: Return the format that handleAddWeekPlan expects!
+        const correctedFormat = {
+            // This is what handleAddWeekPlan expects
+            allMeals: limitedPlan.allMeals.map(meal => ({
+                mealName: meal.mealName,
                 time: meal.time,
-                mealName: meal.mealName, // Preserve original meal name
-
                 items: meal.items.map(item => ({
                     id: item.id || Math.random().toString(36).substr(2, 9),
                     food: item.food,
@@ -288,56 +254,52 @@ ${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier
                     // 🔧 CRITICAL: These are the LIMITED, USER-FRIENDLY amounts
                     serving: item.serving,  // This is tier-limited with user-friendly rounding
                     servings: item.serving, // Legacy compatibility
-                    displayServing: item.displayServing, // User-friendly display (0.5, 0.75, 1, 1.5, etc.)
-                    displayUnit: item.displayUnit,
 
-                    brand: item.brand || '',
-                    isExpanded: false,
-
-                    // 🔧 ENHANCED: Complete tier metadata for other components
+                    // 🔧 ENHANCED: Complete tier metadata for perfect data transfer
                     tierData: {
                         tier: item.tier || 99,
                         wasLimited: item.wasLimited || false,
                         originalServing: item.originalServing || item.serving,
                         maxAllowed: item.maxAllowed || item.serving,
-                        genderApplied: item.genderApplied || selectedGender,
-                        tierLimits: item.tierLimits || {}
+                        genderApplied: item.genderApplied || selectedGender
                     },
 
-                    // 🔧 ENHANCED: Additional metadata for perfect data transfer
-                    enhancedData: item.enhancedData || {
-                        tier: item.tier || 99,
-                        wasLimited: item.wasLimited || false,
-                        originalServing: item.originalServing || item.serving,
-                        maxAllowed: item.maxAllowed || item.serving,
-                        genderApplied: item.genderApplied || selectedGender,
-                        friendlyRoundingApplied: true,
-                        rawDisplayValue: item.rawDisplayValue || parseFloat(item.displayServing || '1'),
-                        friendlyDisplayValue: item.friendlyDisplayValue || parseFloat(item.displayServing || '1'),
-                        dataTransferVersion: 'v2.1-fixed'
-                    },
+                    // Source tracking
+                    source: 'weekplan-enhanced',
 
                     // 🔧 METADATA: For debugging and verification
-                    metadata: {
-                        addedBy: item.addedBy || 'tier-system-v2.1',
-                        isProteinFocus: item.isProteinFocus || false,
-                        isFavorite: item.isFavorite || false,
-                        source: 'WeekPlanModal-Fixed',
-                        transferTimestamp: new Date().toISOString()
-                    }
+                    originalFood: item.originalFood,
+                    substitutionReason: item.substitutionReason,
+                    dietaryCompliant: !item.substitutionReason,
+                    dietaryTags: item.dietaryTags || {}
                 }))
-            };
-        });
+            })),
+
+            // 🔧 ENHANCED: Metadata for the plan
+            generatedWith: 'weekplan-enhanced',
+            dietaryFilters: selectedDietaryFilters,
+            goalType: selectedGoal,
+            eaterType: selectedEaterType,
+            mealFrequency: selectedMealFreq,
+
+            // 🔧 TIER SYSTEM: Preserve tier system metadata
+            tierSystemApplied: {
+                gender: selectedGender,
+                limitsApplied: limitedPlan.tierSystemApplied?.limitsApplied || 0,
+                timestamp: new Date().toISOString(),
+                userFriendlyRoundingApplied: true,
+                version: 'v2.1-fixed-transfer'
+            }
+        };
 
         // 🔧 VERIFICATION: Log the data transfer
-        console.log('🔄 Data transfer verification:');
-        console.log('- Meals converted:', Object.keys(mealTrackerState.meals).length);
-        console.log('- Total items:', Object.values(mealTrackerState.meals).reduce((sum, meal) => sum + meal.items.length, 0));
-        console.log('- Items with tier data:', Object.values(mealTrackerState.meals).reduce((sum, meal) =>
-            sum + meal.items.filter(item => item.tierData.tier < 99).length, 0));
-        console.log('- Enhanced metadata included:', !!mealTrackerState.enhancedMetadata.tierSystemApplied);
+        console.log('🔄 FIXED Data transfer verification:');
+        console.log('- Format:', correctedFormat.allMeals ? 'allMeals ✅' : 'meals ❌');
+        console.log('- Meals converted:', correctedFormat.allMeals?.length || 0);
+        console.log('- Total items:', correctedFormat.allMeals?.reduce((sum, meal) => sum + meal.items.length, 0) || 0);
+        console.log('- Enhanced metadata included:', !!correctedFormat.tierSystemApplied);
 
-        return mealTrackerState;
+        return correctedFormat;
     };
 
     const handleDietaryFilterToggle = (filterValue) => {
