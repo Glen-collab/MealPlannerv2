@@ -2008,22 +2008,22 @@ const MealSwipeApp = () => {
               <div className="grid grid-cols-4 gap-3 text-center mb-4">
               {/* Macro Grid */}
               <div className="grid grid-cols-4 gap-3 text-center mb-4">
-                <div className="bg-blue-100 rounded-lg p-2">
+                <div className="bg-blue-100 rounded-lg p-3">
                   <div className="text-xs text-blue-600 font-medium">Protein</div>
                   <div className="text-lg font-bold text-blue-800">{Math.round(totalMacros.protein)}g</div>
                   <div className="text-xs text-blue-500">
                     {profile.goal === 'dirty-bulk' ? '150g' : profile.goal === 'Gain-muscle' ? '130g' : profile.goal === 'lose' ? '120g' : '100g'} target
                   </div>
                 </div>
-                <div className="bg-green-100 rounded-lg p-2">
+                <div className="bg-green-100 rounded-lg p-3">
                   <div className="text-xs text-green-600 font-medium">Carbs</div>
                   <div className="text-lg font-bold text-green-800">{Math.round(totalMacros.carbs)}g</div>
                 </div>
-                <div className="bg-yellow-100 rounded-lg p-2">
+                <div className="bg-yellow-100 rounded-lg p-3">
                   <div className="text-xs text-yellow-600 font-medium">Fat</div>
                   <div className="text-lg font-bold text-yellow-800">{Math.round(totalMacros.fat)}g</div>
                 </div>
-                <div className="bg-purple-100 rounded-lg p-2">
+                <div className="bg-purple-100 rounded-lg p-3">
                   <div className="text-xs text-purple-600 font-medium">Calories</div>
                   <div className="text-lg font-bold text-purple-800">{Math.round(totalMacros.calories)}</div>
                   <div className="text-xs text-purple-500">
