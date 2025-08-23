@@ -1,34 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { generateMealPlan } from './MealPlanGenerator.js';
-import { applyDietaryFilters, validateDietaryCompliance } from './DietaryFilterSystem.js';
+import { TierSystemManager, enforceRealisticLimits } from './CentralizedTierSystem.js';
 
-function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieData, isMobile = false }) {
+function WeekPlanModal({
+    isOpen,
+    onClose,
+    onAddWeekPlan,
+    userProfile,
+    calorieData,
+    isMobile = false
+}) {
     const [selectedGoal, setSelectedGoal] = useState(userProfile?.goal || 'maintain');
     const [selectedEaterType, setSelectedEaterType] = useState('balanced');
     const [selectedMealFreq, setSelectedMealFreq] = useState(5);
     const [selectedDietaryFilters, setSelectedDietaryFilters] = useState([]);
+    const [selectedGender, setSelectedGender] = useState(userProfile?.gender || 'male');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedPlan, setGeneratedPlan] = useState(null);
     const [error, setError] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [testResult, setTestResult] = useState(null);
-    const [selectedGender, setSelectedGender] = useState(userProfile?.gender || 'male');
 
-    // 🧪 ENHANCED TEST FUNCTION - checks comprehensive meal plan generation
-    const runVisibleTest = () => {
-        console.log('🧪 Running comprehensive meal plan test...');
-        setTestResult('🔄 Testing enhanced meal plan generation... please wait...');
+    // 🧪 TIER SYSTEM TEST - Tests the centralized tier system
+    const runTierSystemTest = () => {
+        console.log('🧪 Testing Centralized Tier System with ENFORCED limits...');
+        setTestResult('🔄 Testing centralized tier system... please wait...');
 
         setTimeout(() => {
             try {
-                console.log('🔄 Generating test meal plans...');
-
-                // Test different combinations
                 const testConfigs = [
-                    { goal: 'maintain', gender: 'female', expected: 'Female portions + realistic limits' },
-                    { goal: 'maintain', gender: 'male', expected: 'Male portions + larger limits' },
-                    { goal: 'lose', gender: 'female', expected: 'Female cutting portions' },
-                    { goal: 'gain-muscle', gender: 'male', expected: 'Male muscle building' }
+                    { goal: 'maintain', gender: 'female' },
+                    { goal: 'maintain', gender: 'male' },
+                    { goal: 'gain-muscle', gender: 'female' },
+                    { goal: 'gain-muscle', gender: 'male' }
                 ];
 
                 const results = [];
@@ -36,94 +40,104 @@ function WeekPlanModal({ isOpen, onClose, onAddWeekPlan, userProfile, calorieDat
                 testConfigs.forEach((config, index) => {
                     console.log(`Testing config ${index + 1}:`, config);
 
+                    // Generate meal plan
                     const testPlan = generateMealPlan({
                         goal: config.goal,
                         eaterType: 'balanced',
                         mealFreq: 5,
                         dietaryFilters: [],
-                        userProfile: {
-                            gender: config.gender,
-                            goal: config.goal,
-                            weight: config.gender === 'female' ? '130' : '180'
-                        },
-                        calorieData: null
+                        userProfile: { gender: config.gender }
                     });
 
-                    console.log(`✅ Generated plan for ${config.goal}-${config.gender}:`, testPlan);
+                    // Apply tier system limits
+                    const limitedPlan = TierSystemManager.applyLimitsToMealPlan(testPlan, config.gender);
 
-                    // Analyze the generated plan
-                    const totalCalories = testPlan.nutrition?.calories || 0;
-                    const totalProtein = testPlan.nutrition?.protein || 0;
-                    const proteinItems = testPlan.proteinItemsAdded || 0;
-                    const mealCount = testPlan.allMeals?.length || 0;
+                    // Check all food items for tier compliance
+                    const allItems = [];
+                    limitedPlan.allMeals?.forEach(meal => {
+                        meal.items?.forEach(item => allItems.push(item));
+                    });
 
-                    // Check for carb limits (females)
-                    const carbItems = [];
-                    if (testPlan.allMeals) {
-                        testPlan.allMeals.forEach(meal => {
-                            meal.items?.forEach(item => {
-                                if (['Oats (dry)', 'Brown Rice (cooked)', 'Sweet Potato'].includes(item.food)) {
-                                    carbItems.push({
-                                        food: item.food,
-                                        amount: parseFloat(item.displayServing),
-                                        unit: item.displayUnit,
-                                        limited: item.genderLimited || false
-                                    });
-                                }
-                            });
-                        });
-                    }
+                    // Validate specific problematic foods
+                    const checks = {
+                        oats: { found: false, compliant: true, amount: 0 },
+                        rice: { found: false, compliant: true, amount: 0 },
+                        avocado: { found: false, compliant: true, amount: 0 },
+                        protein: { found: false, compliant: true, amount: 0 }
+                    };
 
-                    const oatsItem = carbItems.find(item => item.food === 'Oats (dry)');
-                    const femaleOatsOK = config.gender === 'female' ? (!oatsItem || oatsItem.amount <= 0.75) : true;
+                    allItems.forEach(item => {
+                        const limits = TierSystemManager.getFoodLimits(item.food, config.gender);
+
+                        if (item.food === 'Oats (dry)') {
+                            checks.oats.found = true;
+                            checks.oats.amount = item.serving;
+                            checks.oats.compliant = item.serving <= limits.maxServing;
+                        }
+                        if (item.food === 'Brown Rice (cooked)') {
+                            checks.rice.found = true;
+                            checks.rice.amount = item.serving;
+                            checks.rice.compliant = item.serving <= limits.maxServing;
+                        }
+                        if (item.food === 'Avocado') {
+                            checks.avocado.found = true;
+                            checks.avocado.amount = item.serving;
+                            checks.avocado.compliant = item.serving <= limits.maxServing;
+                        }
+                        if (item.food.includes('Protein')) {
+                            checks.protein.found = true;
+                            checks.protein.amount = Math.max(checks.protein.amount, item.serving);
+                            checks.protein.compliant = checks.protein.compliant && (item.serving <= limits.maxServing);
+                        }
+                    });
+
+                    // Get tier limits for comparison
+                    const tierLimits = TierSystemManager.getRealisticLimitsSummary(config.gender);
+
+                    const allCompliant = Object.values(checks).every(check => !check.found || check.compliant);
 
                     results.push({
                         config: `${config.goal}-${config.gender}`,
-                        calories: totalCalories,
-                        protein: totalProtein,
-                        proteinItems: proteinItems,
-                        meals: mealCount,
-                        oatsAmount: oatsItem ? `${oatsItem.amount} ${oatsItem.unit}` : 'None',
-                        femaleOatsOK: femaleOatsOK,
-                        carbItemsFound: carbItems.length,
-                        success: testPlan && mealCount > 0
+                        checks,
+                        tierLimits,
+                        itemsLimited: limitedPlan.tierSystemApplied?.limitsApplied || 0,
+                        totalItems: allItems.length,
+                        allCompliant
                     });
                 });
 
-                // Format results
                 const resultText = `
-🧪 COMPREHENSIVE MEAL PLAN TEST RESULTS
+🧪 CENTRALIZED TIER SYSTEM TEST RESULTS
 
 ${results.map((r, i) => `
 ────────── CONFIG ${i + 1}: ${r.config.toUpperCase()} ──────────
-✅ Plan Generated: ${r.success ? 'YES' : 'NO'}
-📊 Calories: ${Math.round(r.calories)}
-💪 Protein: ${Math.round(r.protein)}g
-🥤 Protein Items: ${r.proteinItems}
-🍽️ Meals: ${r.meals}
-🥣 Oats Found: ${r.oatsAmount}
-🚺 Female Oats OK: ${r.femaleOatsOK ? 'YES' : 'NO'}
-🌾 Carb Items: ${r.carbItemsFound}
+🥣 Oats: ${r.checks.oats.found ? `${r.checks.oats.amount} (${r.checks.oats.compliant ? '✅' : '❌'})` : 'Not found'}
+🍚 Rice: ${r.checks.rice.found ? `${r.checks.rice.amount} (${r.checks.rice.compliant ? '✅' : '❌'})` : 'Not found'}
+🥑 Avocado: ${r.checks.avocado.found ? `${r.checks.avocado.amount} (${r.checks.avocado.compliant ? '✅' : '❌'})` : 'Not found'}
+🥤 Protein: ${r.checks.protein.found ? `${r.checks.protein.amount} (${r.checks.protein.compliant ? '✅' : '❌'})` : 'Not found'}
+🔒 Items Limited: ${r.itemsLimited}/${r.totalItems}
+✅ All Compliant: ${r.allCompliant ? 'YES' : 'NO'}
+
+📏 Tier Limits for ${r.config.split('-')[1]}:
+${r.tierLimits.map(limit => `   • ${limit.food}: ${limit.limit} (T${limit.tier})`).join('\n')}
 `).join('')}
 
 📊 SUMMARY:
-• Plans Generated: ${results.filter(r => r.success).length}/${results.length}
-• Female Oats Compliant: ${results.filter(r => r.femaleOatsOK).length}/${results.filter(r => r.config.includes('female')).length}
-• Average Calories: ${Math.round(results.reduce((sum, r) => sum + r.calories, 0) / results.length)}
-• Total Protein Items: ${results.reduce((sum, r) => sum + r.proteinItems, 0)}
+• Configs Tested: ${results.length}
+• All Compliant: ${results.filter(r => r.allCompliant).length}/${results.length}
+• Total Items Limited: ${results.reduce((sum, r) => sum + r.itemsLimited, 0)}
 
-🎯 STATUS: ${results.every(r => r.success && r.femaleOatsOK) ? '✅ ALL TESTS PASSED!' : '❌ SOME TESTS FAILED'}
+🎯 TIER SYSTEM STATUS: ${results.every(r => r.allCompliant) ? '✅ ALL LIMITS ENFORCED!' : '❌ SOME LIMITS BROKEN'}
 
-💡 Expected Results:
-• Female maintain: ~1400 cal, ≤0.75 cups oats, ≤4 protein items
-• Male maintain: ~2200 cal, ≤1.5 cups oats, ≤8 protein items  
-• Plans should have 5 meals with realistic portions
+💡 Expected Limits:
+• Female: 0.5 servings oats (0.25 cups), 0.5 servings avocado (0.5 medium)
+• Male: 0.75 servings oats (0.375 cups), 1.0 servings avocado (1 medium)
                 `;
 
                 setTestResult(resultText);
 
             } catch (error) {
-                console.error('❌ Test failed:', error);
+                console.error('❌ Tier system test failed:', error);
                 setTestResult(`❌ TEST FAILED: ${error.message}\n\nFull error: ${error.stack}`);
             }
         }, 100);
@@ -134,62 +148,45 @@ ${results.map((r, i) => `
         setError(null);
 
         try {
-            console.log('🎯 Generating meal plan with enhanced system...');
-            console.log('📋 Options:', {
+            console.log('🎯 Generating meal plan with centralized tier system...');
+
+            // Generate base meal plan
+            const basePlan = generateMealPlan({
                 goal: selectedGoal,
                 eaterType: selectedEaterType,
                 mealFreq: selectedMealFreq,
                 dietaryFilters: selectedDietaryFilters,
-                gender: selectedGender
+                userProfile: { ...userProfile, gender: selectedGender },
+                calorieData
             });
 
-            const options = {
-                goal: selectedGoal,
-                eaterType: selectedEaterType,
-                mealFreq: selectedMealFreq,
-                dietaryFilters: selectedDietaryFilters,
-                userProfile: {
-                    ...userProfile,
-                    gender: selectedGender,
-                    goal: selectedGoal // Ensure goal is in userProfile
-                },
-                calorieData: calorieData
+            if (!basePlan || !basePlan.allMeals) {
+                throw new Error('Failed to generate base meal plan');
+            }
+
+            // 🔧 APPLY CENTRALIZED TIER SYSTEM LIMITS
+            console.log('🔒 Applying centralized tier system limits...');
+            const limitedPlan = TierSystemManager.applyLimitsToMealPlan(basePlan, selectedGender);
+
+            // 🔧 ENSURE PREVIEW SHOWS LIMITED DATA
+            console.log('📋 Preparing preview with limited amounts...');
+            const previewPlan = {
+                ...limitedPlan,
+                previewData: {
+                    showsLimitedAmounts: true,
+                    tierSystemApplied: true,
+                    gender: selectedGender
+                }
             };
 
-            console.log('🔄 Calling generateMealPlan with options:', options);
-
-            const plan = generateMealPlan(options);
-
-            console.log('📋 Generated plan result:', plan);
-
-            if (!plan) {
-                throw new Error('generateMealPlan returned null or undefined');
-            }
-
-            if (!plan.allMeals || plan.allMeals.length === 0) {
-                throw new Error('Generated plan has no meals');
-            }
-
-            // Validate dietary compliance if filters are selected
-            if (selectedDietaryFilters.length > 0) {
-                const validation = validateDietaryCompliance(plan, selectedDietaryFilters);
-                plan.validationResults = validation;
-                console.log('🔍 Dietary validation:', validation);
-            }
-
-            // Add metadata
-            plan.generatedWith = 'enhanced-weekplan-v2';
-            plan.generationTimestamp = new Date().toISOString();
-            plan.requestedOptions = options;
-
-            setGeneratedPlan(plan);
+            setGeneratedPlan(previewPlan);
             setShowPreview(true);
 
-            console.log('✅ Enhanced meal plan generated successfully');
+            console.log('✅ Meal plan generated with centralized tier system');
             console.log('📊 Plan stats:', {
-                meals: plan.allMeals.length,
-                calories: plan.nutrition?.calories || 'Not calculated',
-                proteinItems: plan.proteinItemsAdded || 0
+                meals: previewPlan.allMeals.length,
+                itemsLimited: previewPlan.tierSystemApplied?.limitsApplied || 0,
+                gender: selectedGender
             });
 
         } catch (err) {
@@ -202,19 +199,75 @@ ${results.map((r, i) => `
 
     const handleAddPlan = () => {
         if (generatedPlan) {
-            console.log('📥 Adding generated plan to meals:', generatedPlan);
-            onAddWeekPlan(generatedPlan);
+            console.log('📥 Adding meal plan with tier limits to MealTracker:', generatedPlan);
+
+            // Convert to MealTracker format with proper limits applied
+            const mealTrackerData = convertToMealTrackerFormat(generatedPlan);
+            onAddWeekPlan(mealTrackerData);
             onClose();
         }
     };
 
-    // 🆕 ENHANCED: Handle "No Restrictions" and multiple dietary filters
+    // 🔧 Convert to MealTracker format with tier-limited data
+    const convertToMealTrackerFormat = (limitedPlan) => {
+        const mealTypeMapping = {
+            'Breakfast': 'breakfast',
+            'FirstSnack': 'firstSnack',
+            'SecondSnack': 'secondSnack',
+            'Lunch': 'lunch',
+            'MidAfternoon Snack': 'midAfternoon',
+            'Dinner': 'dinner',
+            'Late Snack': 'lateSnack',
+            'PostWorkout': 'postWorkout'
+        };
+
+        const mealTrackerState = {
+            meals: {},
+            dayTotals: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+            enhancedMetadata: {
+                tierSystemApplied: true,
+                realisticLimitsEnforced: true,
+                gender: selectedGender,
+                limitsApplied: limitedPlan.tierSystemApplied?.limitsApplied || 0
+            }
+        };
+
+        // Convert meals with tier-limited amounts
+        limitedPlan.allMeals.forEach(meal => {
+            const mealType = mealTypeMapping[meal.mealName] || 'breakfast';
+
+            mealTrackerState.meals[mealType] = {
+                time: meal.time,
+                items: meal.items.map(item => ({
+                    id: item.id || Math.random().toString(36).substr(2, 9),
+                    food: item.food,
+                    category: item.category,
+                    serving: item.serving,  // This is the LIMITED amount
+                    servings: item.serving, // Legacy compatibility
+                    displayServing: item.displayServing, // This shows correct limited amount
+                    displayUnit: item.displayUnit,
+                    brand: item.brand || '',
+                    isExpanded: false,
+
+                    // Tier metadata
+                    enhancedData: {
+                        tier: item.tier,
+                        wasLimited: item.wasLimited,
+                        originalServing: item.originalServing,
+                        maxAllowed: item.maxAllowed,
+                        genderApplied: item.genderApplied
+                    }
+                }))
+            };
+        });
+
+        return mealTrackerState;
+    };
+
     const handleDietaryFilterToggle = (filterValue) => {
         if (filterValue === 'none') {
-            // "No Restrictions" selected - clear all filters
             setSelectedDietaryFilters([]);
         } else {
-            // Regular dietary filter toggle
             if (selectedDietaryFilters.includes(filterValue)) {
                 setSelectedDietaryFilters(selectedDietaryFilters.filter(f => f !== filterValue));
             } else {
@@ -223,47 +276,38 @@ ${results.map((r, i) => `
         }
     };
 
-    const calculatePlanCalories = (plan) => {
-        if (!plan?.allMeals) return 0;
-
-        return plan.allMeals.reduce((total, meal) => {
-            return total + (meal.items?.reduce((mealTotal, item) => {
-                return mealTotal + (item.calories || 0);
-            }, 0) || 0);
-        }, 0);
-    };
-
     if (!isOpen) return null;
 
     const goalOptions = [
-        { value: 'lose', label: '🔥 Lose Weight', desc: 'Calorie deficit for fat loss' },
-        { value: 'maintain', label: '⚖️ Maintain', desc: 'Balanced nutrition' },
-        { value: 'gain-muscle', label: '💪 Gain Muscle', desc: 'Lean muscle building' },
-        { value: 'dirty-bulk', label: '🚀 Dirty Bulk', desc: 'Maximum muscle gain' }
+        { value: 'lose', label: '🔥 Lose Weight', desc: 'Calorie deficit with tier limits' },
+        { value: 'maintain', label: '⚖️ Maintain', desc: 'Balanced nutrition with limits' },
+        { value: 'gain-muscle', label: '💪 Gain Muscle', desc: 'Muscle building with realistic portions' },
+        { value: 'dirty-bulk', label: '🚀 Dirty Bulk', desc: 'Higher calories (still limited)' }
     ];
 
     const eaterTypeOptions = [
-        { value: 'balanced', label: '🌟 Balanced', desc: 'Well-rounded nutrition' },
-        { value: 'performance', label: '⚡ Performance', desc: 'Athletic optimization' }
+        { value: 'balanced', label: '🌟 Balanced', desc: 'Well-rounded with tier limits' },
+        { value: 'performance', label: '⚡ Performance', desc: 'Athletic with realistic portions' }
     ];
 
     const mealFreqOptions = [
-        { value: 3, label: '3 Meals', desc: 'Traditional meal pattern' },
+        { value: 3, label: '3 Meals', desc: 'Traditional pattern' },
         { value: 5, label: '5 Meals', desc: 'Frequent eating (recommended)' },
         { value: 6, label: '6 Meals', desc: 'Maximum frequency' }
     ];
 
-    // 🆕 ENHANCED: Added "No Restrictions" option at the top
     const dietaryOptions = [
-        { value: 'none', label: '🚫 No Restrictions', desc: 'All foods allowed' },
-        { value: 'vegetarian', label: '🥬 Vegetarian', desc: 'Plant-based proteins' },
-        { value: 'glutenFree', label: '🌾 Gluten-Free', desc: 'No gluten-containing foods' },
-        { value: 'keto', label: '🥑 Keto', desc: 'Low-carb, high-fat' },
-        { value: 'dairyFree', label: '🥛 Dairy-Free', desc: 'No dairy products' }
+        { value: 'none', label: '🚫 No Restrictions', desc: 'All foods (with tier limits)' },
+        { value: 'vegetarian', label: '🥬 Vegetarian', desc: 'Plant-based with limits' },
+        { value: 'glutenFree', label: '🌾 Gluten-Free', desc: 'No gluten (tier limited)' },
+        { value: 'keto', label: '🥑 Keto', desc: 'Low-carb with realistic fats' },
+        { value: 'dairyFree', label: '🥛 Dairy-Free', desc: 'No dairy (tier limited)' }
     ];
 
-    // Check if "No Restrictions" is effectively selected (empty filters array)
     const isNoRestrictionsSelected = selectedDietaryFilters.length === 0;
+
+    // Get realistic limits for current gender
+    const realisticLimits = TierSystemManager.getRealisticLimitsSummary(selectedGender);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -272,8 +316,8 @@ ${results.map((r, i) => `
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800">📅 Enhanced Meal Planning</h2>
-                        <p className="text-gray-600 text-sm mt-1">Generate personalized meal plans with tier-based scaling</p>
+                        <h2 className="text-2xl font-bold text-gray-800">📅 Tier-Based Meal Planning</h2>
+                        <p className="text-gray-600 text-sm mt-1">Generate meal plans with centralized tier system limits</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -287,17 +331,17 @@ ${results.map((r, i) => `
                     /* Configuration Phase */
                     <div className="p-6 space-y-8">
 
-                        {/* 🧪 ENHANCED TEST SECTION */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                            <h4 className="font-semibold text-blue-800 mb-2">🧪 Enhanced System Test</h4>
-                            <p className="text-sm text-blue-700 mb-3">
-                                Test the complete meal plan generation with tier rules, gender limits, and protein distribution
+                        {/* 🧪 TIER SYSTEM TEST SECTION */}
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                            <h4 className="font-semibold text-green-800 mb-2">🎯 Centralized Tier System Test</h4>
+                            <p className="text-sm text-green-700 mb-3">
+                                Test the centralized tier system with realistic limits for both genders
                             </p>
                             <button
-                                onClick={runVisibleTest}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
+                                onClick={runTierSystemTest}
+                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium mb-2"
                             >
-                                🧪 Test Complete System (All Goals + Genders)
+                                🧪 Test Centralized Tier System
                             </button>
 
                             {testResult && (
@@ -306,14 +350,14 @@ ${results.map((r, i) => `
                                 </div>
                             )}
 
-                            <div className="text-xs text-blue-600 mt-2">
-                                💡 Tests: Female limits (0.75 cups carbs, 4 protein max), Male limits (1.5 cups carbs, 8 protein max)
+                            <div className="text-xs text-green-600 mt-2">
+                                💡 Tests centralized limits for oats, rice, avocado, and protein across all tiers
                             </div>
                         </div>
 
-                        {/* Gender Selection */}
+                        {/* Gender Selection with Tier Limits Display */}
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (Critical for Portion Control)</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">👤 Gender (Controls Tier-Based Limits)</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setSelectedGender('male')}
@@ -323,7 +367,9 @@ ${results.map((r, i) => `
                                         }`}
                                 >
                                     <div className="font-semibold text-gray-800">🚹 Male</div>
-                                    <div className="text-xs text-gray-600 mt-1">Larger portions: 1.5 cups carbs, up to 8 protein scoops/day</div>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                        Tier limits: 0.375 cups oats, 1 medium avocado
+                                    </div>
                                 </button>
                                 <button
                                     onClick={() => setSelectedGender('female')}
@@ -333,8 +379,24 @@ ${results.map((r, i) => `
                                         }`}
                                 >
                                     <div className="font-semibold text-gray-800">🚺 Female</div>
-                                    <div className="text-xs text-gray-600 mt-1">Realistic portions: 0.75 cups carbs, max 4 protein scoops/day</div>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                        Tier limits: 0.25 cups oats, 0.5 medium avocado
+                                    </div>
                                 </button>
+                            </div>
+
+                            {/* Show current gender's tier limits */}
+                            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                <div className="text-sm font-medium text-gray-800 mb-2">
+                                    🎯 {selectedGender === 'female' ? '🚺 Female' : '🚹 Male'} Tier Limits:
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                    {realisticLimits.map(limit => (
+                                        <div key={limit.food}>
+                                            <strong>T{limit.tier}</strong> {limit.food}: {limit.limit}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -398,87 +460,20 @@ ${results.map((r, i) => `
                             </div>
                         </div>
 
-                        {/* 🆕 ENHANCED: Dietary Preferences with "No Restrictions" */}
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">🥗 Dietary Preferences</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {dietaryOptions.map(option => {
-                                    const isSelected = option.value === 'none'
-                                        ? isNoRestrictionsSelected
-                                        : selectedDietaryFilters.includes(option.value);
-
-                                    // Different styling for "No Restrictions"
-                                    const baseClasses = "p-4 rounded-xl border-2 text-left transition-all";
-                                    const selectedClasses = option.value === 'none'
-                                        ? 'border-gray-500 bg-gray-50 shadow-lg'
-                                        : 'border-orange-500 bg-orange-50 shadow-lg';
-                                    const unselectedClasses = 'border-gray-200 hover:border-gray-300 hover:bg-gray-50';
-
-                                    return (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => handleDietaryFilterToggle(option.value)}
-                                            className={`${baseClasses} ${isSelected ? selectedClasses : unselectedClasses}`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-semibold text-gray-800">{option.label}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">{option.desc}</div>
-                                                </div>
-                                                {isSelected && (
-                                                    <div className={`text-lg ${option.value === 'none' ? 'text-gray-500' : 'text-orange-500'}`}>
-                                                        ✓
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* 🆕 ENHANCED: Show current dietary selection status */}
-                            <div className="mt-3 text-center">
-                                {isNoRestrictionsSelected ? (
-                                    <div className="text-sm text-gray-600 bg-gray-100 rounded-lg px-3 py-2 inline-block">
-                                        🚫 No dietary restrictions - all foods allowed
-                                    </div>
-                                ) : (
-                                    <div className="text-sm text-orange-600 bg-orange-100 rounded-lg px-3 py-2 inline-block">
-                                        🔒 Dietary filters: {selectedDietaryFilters.join(', ')}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Current Selection Summary */}
-                        <div className="bg-gray-50 rounded-xl p-4">
-                            <h4 className="font-semibold text-gray-800 mb-2">📋 Your Selection</h4>
-                            <div className="text-sm text-gray-700 space-y-1">
-                                <div><strong>Goal:</strong> {goalOptions.find(g => g.value === selectedGoal)?.label}</div>
-                                <div><strong>Style:</strong> {eaterTypeOptions.find(e => e.value === selectedEaterType)?.label}</div>
-                                <div><strong>Meals:</strong> {selectedMealFreq} meals per day</div>
-                                <div><strong>Dietary:</strong> {isNoRestrictionsSelected ? 'No restrictions' : selectedDietaryFilters.join(', ')}</div>
-                                <div><strong>Gender:</strong> {selectedGender} {selectedGender === 'female' ? '(max 4 protein, 0.75 cups carbs)' : '(up to 8 protein, larger portions)'}</div>
-                                {calorieData && (
-                                    <div><strong>Target Calories:</strong> ~{calorieData.targetCalories} cal/day</div>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Generate Button */}
                         <div className="flex justify-center">
                             <button
                                 onClick={generatePlan}
                                 disabled={isGenerating}
-                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:transform-none"
+                                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:transform-none"
                             >
                                 {isGenerating ? (
                                     <div className="flex items-center gap-2">
                                         <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
-                                        Generating Enhanced Plan...
+                                        Applying Tier System...
                                     </div>
                                 ) : (
-                                    '🚀 Generate Enhanced Meal Plan'
+                                    '🎯 Generate Plan with Tier Limits'
                                 )}
                             </button>
                         </div>
@@ -487,15 +482,16 @@ ${results.map((r, i) => `
                             <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                                 <div className="text-red-600 font-medium">❌ Error</div>
                                 <div className="text-red-700 text-sm mt-1">{error}</div>
-                                <div className="text-red-600 text-xs mt-2">Check browser console for details</div>
                             </div>
                         )}
                     </div>
                 ) : (
-                    /* Preview Phase */
+                    /* Preview Phase - FIXED TO SHOW LIMITED AMOUNTS */
                     <div className="p-6">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold text-gray-800">📋 Generated Meal Plan Preview</h3>
+                            <h3 className="text-xl font-bold text-gray-800">
+                                📋 Meal Plan Preview (Tier-Limited Amounts)
+                            </h3>
                             <button
                                 onClick={() => setShowPreview(false)}
                                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
@@ -506,109 +502,44 @@ ${results.map((r, i) => `
 
                         {generatedPlan && (
                             <>
-                                {/* Enhanced Plan Summary */}
-                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6">
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                        <div>
-                                            <div className="text-2xl font-bold text-blue-600">
-                                                {Math.round(generatedPlan.nutrition?.calories || calculatePlanCalories(generatedPlan))}
-                                            </div>
-                                            <div className="text-sm text-gray-600">Total Calories</div>
+                                {/* Tier System Status */}
+                                <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                                    <div className="text-center">
+                                        <div className="text-green-800 font-bold text-lg mb-2">
+                                            🎯 Centralized Tier System Applied
                                         </div>
-                                        <div>
-                                            <div className="text-2xl font-bold text-green-600">
-                                                {Math.round(generatedPlan.nutrition?.protein || 0)}g
-                                            </div>
-                                            <div className="text-sm text-gray-600">Protein</div>
+                                        <div className="text-sm text-green-700">
+                                            {selectedGender === 'female' ? '🚺' : '🚹'} {selectedGender} tier limits enforced •
+                                            {generatedPlan.tierSystemApplied?.limitsApplied || 0} items limited •
+                                            Realistic portions guaranteed
                                         </div>
-                                        <div>
-                                            <div className="text-2xl font-bold text-yellow-600">
-                                                {Math.round(generatedPlan.nutrition?.carbs || 0)}g
-                                            </div>
-                                            <div className="text-sm text-gray-600">Carbs</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-2xl font-bold text-red-600">
-                                                {Math.round(generatedPlan.nutrition?.fat || 0)}g
-                                            </div>
-                                            <div className="text-sm text-gray-600">Fat</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Enhancement Status */}
-                                    <div className="mt-4 text-center">
-                                        <div className="text-sm text-gray-600">
-                                            ✅ Enhanced with: Gender-aware portions • Tier-based scaling • Protein distribution
-                                        </div>
-                                        {generatedPlan.proteinItemsAdded > 0 && (
-                                            <div className="text-xs text-blue-600 mt-1">
-                                                🥤 {generatedPlan.proteinItemsAdded} protein items added
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
-                                {/* Dietary Compliance Status */}
-                                {generatedPlan.validationResults ? (
-                                    <div className={`p-3 rounded-lg mb-4 ${generatedPlan.validationResults.isCompliant
-                                        ? 'bg-green-50 border border-green-200'
-                                        : 'bg-yellow-50 border border-yellow-200'
-                                        }`}>
-                                        <div className="text-sm font-medium">
-                                            {generatedPlan.validationResults.isCompliant ? '✅' : '⚠️'}
-                                            {' '}{generatedPlan.validationResults.summary}
-                                        </div>
-                                    </div>
-                                ) : isNoRestrictionsSelected && (
-                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg mb-4">
-                                        <div className="text-sm font-medium text-gray-700">
-                                            🚫 No dietary restrictions applied - all foods included
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Gender Analysis */}
-                                {generatedPlan.genderAnalysis && (
-                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
-                                        <div className="text-sm">
-                                            <div className="font-medium text-purple-800">
-                                                {selectedGender === 'female' ? '🚺' : '🚹'} Gender-Aware Portions Applied
-                                            </div>
-                                            <div className="text-purple-700 mt-1">
-                                                Items limited: {generatedPlan.genderAnalysis.itemsLimited} •
-                                                Max oats allowed: {generatedPlan.genderAnalysis.maxOatsAllowed}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Meal Plan Preview */}
+                                {/* 🔧 FIXED PREVIEW - Shows LIMITED amounts, not raw amounts */}
                                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                                    {generatedPlan.allMeals?.map((meal, index) => (
-                                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                    {generatedPlan.allMeals?.map((meal, mealIndex) => (
+                                        <div key={mealIndex} className="border border-gray-200 rounded-lg p-4">
                                             <div className="flex items-center justify-between mb-2">
                                                 <h4 className="font-semibold text-gray-800">{meal.mealName}</h4>
                                                 <span className="text-sm text-gray-500">{meal.time}</span>
                                             </div>
                                             <div className="space-y-1">
                                                 {meal.items?.map((item, itemIndex) => (
-                                                    <div key={itemIndex} className="text-sm text-gray-700 flex justify-between">
+                                                    <div key={itemIndex} className="text-sm text-gray-700 flex justify-between items-center">
                                                         <span>
                                                             {item.food}
-                                                            {item.genderLimited && (
-                                                                <span className="text-pink-600 ml-1">(🚺 limited)</span>
-                                                            )}
-                                                            {item.isProteinFocus && (
-                                                                <span className="text-blue-600 ml-1">(💪 protein)</span>
-                                                            )}
-                                                            {item.originalFood && (
-                                                                <span className="text-orange-600 ml-1">(was {item.originalFood})</span>
-                                                            )}
-                                                            {item.tier !== undefined && (
+                                                            {item.tier && (
                                                                 <span className="text-gray-500 ml-1">(T{item.tier})</span>
                                                             )}
+                                                            {item.wasLimited && (
+                                                                <span className="text-green-600 ml-1">(✅ limited)</span>
+                                                            )}
                                                         </span>
-                                                        <span className="font-medium">{item.displayServing} {item.displayUnit}</span>
+                                                        <span className="font-medium">
+                                                            {/* 🔧 THIS NOW SHOWS THE LIMITED AMOUNTS */}
+                                                            {item.displayServing} {item.displayUnit}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -622,7 +553,7 @@ ${results.map((r, i) => `
                                         onClick={handleAddPlan}
                                         className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                                     >
-                                        ✅ Add Enhanced Plan to My Meals
+                                        ✅ Add Tier-Limited Plan to MealTracker
                                     </button>
                                     <button
                                         onClick={() => setShowPreview(false)}
