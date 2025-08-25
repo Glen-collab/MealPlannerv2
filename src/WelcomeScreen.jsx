@@ -1,6 +1,118 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 
+// Enhanced Game Mode Burn & Learn Component
+function GameModeBurnAndLearn({ onGameSelect }) {
+  const games = [
+    {
+      id: 'protein',
+      title: '🍗 Protein Power',
+      description: 'Master protein science from basics to biochemistry',
+      color: 'blue',
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-800',
+      subtitleColor: 'text-blue-500'
+    },
+    {
+      id: 'carbs',
+      title: '🍌 Carb Truth',
+      description: 'Understand carbohydrates at every level',
+      color: 'yellow',
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-800',
+      subtitleColor: 'text-yellow-600'
+    },
+    {
+      id: 'fats',
+      title: '🥑 Fat Facts',
+      description: 'Navigate lipid science from simple to complex',
+      color: 'green',
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-800',
+      subtitleColor: 'text-green-500'
+    },
+    {
+      id: 'alcohol',
+      title: '🍷 Liquid Calories',
+      description: 'Alcohol metabolism from basics to research',
+      color: 'purple',
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-800',
+      subtitleColor: 'text-purple-500'
+    },
+    {
+      id: 'tdee',
+      title: '🔥 Burn Reality',
+      description: 'Energy expenditure science across all levels',
+      color: 'red',
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-800',
+      subtitleColor: 'text-red-500'
+    },
+    {
+      id: 'calories',
+      title: '📊 Calorie Detective',
+      description: 'Food energy from counting to calorimetry',
+      color: 'indigo',
+      bgColor: 'bg-indigo-100',
+      textColor: 'text-indigo-800',
+      subtitleColor: 'text-indigo-500'
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        {/* Fun Title with Crossed Out Effect */}
+        <div className="relative mb-2">
+          <h3 className="text-2xl font-bold text-gray-800">
+            🔥 Burn & <span className="line-through decoration-red-500 decoration-2">Lurn</span>
+          </h3>
+          <div
+            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-lg font-bold text-green-600"
+            style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}
+          >
+            Learn
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 mt-4">Choose your nutrition challenge</p>
+      </div>
+
+      {/* Game Buttons Grid - 2 columns, 3 rows */}
+      <div className="grid grid-cols-2 gap-3">
+        {games.map((game) => (
+          <button
+            key={game.id}
+            onClick={() => onGameSelect(game.id)}
+            className={`${game.bgColor} rounded-lg p-3 text-center hover:shadow-md transform hover:scale-105 transition-all`}
+          >
+            <div className={`text-xs ${game.subtitleColor} font-medium mb-1`}>
+              {game.title.split(' ')[0]} {/* Emoji */}
+            </div>
+            <div className={`text-sm font-bold ${game.textColor} mb-1`}>
+              {game.title.substring(2)} {/* Title without emoji */}
+            </div>
+            <div className={`text-xs ${game.subtitleColor} leading-tight`}>
+              {game.description}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Game Info Section */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <h4 className="font-semibold text-gray-800 mb-2 text-center">🎯 How It Works</h4>
+        <div className="text-sm text-gray-600 space-y-1">
+          <div>• 5 difficulty levels from Elementary to Doctoral</div>
+          <div>• Questions change daily for fresh challenges</div>
+          <div>• Master nutrition science step by step</div>
+          <div>• Track your progress across all topics</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Enhanced Clickable Burn & Learn Component
 function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
   const calorieData = {
@@ -673,7 +785,6 @@ export function WelcomeScreen({ profile, totalMacros, meals }) {
   );
 }
 
-// Export all components
 export {
   BurnAndLearnView,
   TrendsView,
@@ -682,5 +793,6 @@ export {
   ClickableBurnAndLearnView,
   CustomTrendsView,
   CustomBarChartView,
-  DailyPieChartView
+  DailyPieChartView,
+  GameModeBurnAndLearn
 };
