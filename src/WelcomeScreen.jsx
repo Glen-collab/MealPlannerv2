@@ -69,8 +69,11 @@ function GameModeBurnAndLearn({ onGameSelect }) {
             🔥 Burn & <span className="line-through decoration-red-500 decoration-2">Lurn</span>
           </h3>
           <div
-            className="absolute -bottom-5 right-12 text-lg font-bold text-green-600"
-            style={{ fontFamily: 'Comic Sans MS, cursive, sans-serif' }}
+            className="absolute -bottom-5 right-14 text-lg font-bold text-green-600"
+            style={{
+              fontFamily: 'Comic Sans MS, cursive, sans-serif',
+              fontWeight: '900'
+            }}
           >
             Learn
           </div>
