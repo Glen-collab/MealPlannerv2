@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Get current day of week (0-6) for question rotation
 const getCurrentDay = () => new Date().getDay();
 
 // Main Burn & Learn Module
-export default function BurnAndLearnModule() {
-  const [activeGame, setActiveGame] = useState(null);
+export default function BurnAndLearnModule({ activeGame = null, onExit = null }) {
+  const [currentActiveGame, setCurrentActiveGame] = useState(activeGame);
+
+  // If activeGame prop changes, update internal state
+  useEffect(() => {
+    if (activeGame) {
+      setCurrentActiveGame(activeGame);
+    }
+  }, [activeGame]);
 
   const games = [
     {
@@ -59,13 +66,13 @@ export default function BurnAndLearnModule() {
   ];
 
   const renderGame = () => {
-    switch(activeGame) {
-      case 'protein': return <ProteinGame onExit={() => setActiveGame(null)} />;
-      case 'carbs': return <CarbGame onExit={() => setActiveGame(null)} />;
-      case 'fats': return <FatGame onExit={() => setActiveGame(null)} />;
-      case 'alcohol': return <AlcoholGame onExit={() => setActiveGame(null)} />;
-      case 'tdee': return <TDEEGame onExit={() => setActiveGame(null)} />;
-      case 'calories': return <CalorieGame onExit={() => setActiveGame(null)} />;
+    switch(currentactiveGame) {
+      case 'protein': return <ProteinGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
+      case 'carbs': return <CarbGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
+      case 'fats': return <FatGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
+      case 'alcohol': return <AlcoholGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
+      case 'tdee': return <TDEEGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
+      case 'calories': return <CalorieGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
       default: return null;
     }
   };
@@ -97,7 +104,7 @@ export default function BurnAndLearnModule() {
           {games.map((game) => (
             <button
               key={game.id}
-              onClick={() => setActiveGame(game.id)}
+              onClick={() => setCurrentActiveGame(game.id)}
               className={`w-full ${game.bgColor} rounded-xl p-6 text-left hover:shadow-lg transform hover:scale-105 transition-all`}
             >
               <div className="flex items-center justify-between">
