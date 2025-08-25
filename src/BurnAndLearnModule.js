@@ -66,7 +66,7 @@ export default function BurnAndLearnModule({ activeGame = null, onExit = null })
   ];
 
   const renderGame = () => {
-    switch(currentactiveGame) {
+    switch(currentActiveGame) {
       case 'protein': return <ProteinGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
       case 'carbs': return <CarbGame onExit={onExit || (() => setCurrentActiveGame(null))} />;
       case 'fats': return <FatGame onExit={onExit || (() => setCurrentActiveGame(null))} />;

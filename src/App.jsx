@@ -2080,7 +2080,7 @@ const MealSwipeApp = () => {
               {/* Analytics Grid - Same 4-column format */}
               <div className="grid grid-cols-4 gap-3 mb-4">
                 <button
-                  onClick={() => setShowBurnAndLearn(true)}
+                  onClick={() => setShowBurnAndLearnGames(true)}
                   className="bg-gradient-to-br from-red-500 to-red-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
                   <div className="text-lg mb-1">🎮</div>
