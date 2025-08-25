@@ -21,8 +21,10 @@ import {
   CustomTrendsView,
   CustomBarChartView,
   DailyPieChartView,
-  BarChartView
+  BarChartView,
+  GameModeBurnAndLearn
 } from './WelcomeScreen.jsx';
+import BurnAndLearnModule from './BurnAndLearnModule.js';
 
 // 🔧 FIXED: Move helper functions to top level, outside of any component
 const timeToMinutes = (timeStr) => {
@@ -1010,12 +1012,13 @@ const MealSwipeApp = () => {
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Analytics modals state
-  const [showBurnAndLearn, setShowBurnAndLearn] = useState(false);
   const [showTrends, setShowTrends] = useState(false);
   const [showPieChart, setShowPieChart] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
   const [burnAndLearnDetails, setBurnAndLearnDetails] = useState(null);
   const [showGlenSays, setShowGlenSays] = useState(false);
+  const [showBurnAndLearnGames, setShowBurnAndLearnGames] = useState(false);
+  const [activeBurnAndLearnGame, setActiveBurnAndLearnGame] = useState(null);
 
   const dragRef = useRef({ startX: 0, startY: 0 });
 
@@ -1117,6 +1120,16 @@ const MealSwipeApp = () => {
       }
     };
     setBurnAndLearnDetails(details[item.id]);
+  };
+
+  // Handle Burn & Learn Game Selection
+  const handleBurnAndLearnGameSelect = (gameId) => {
+    setActiveBurnAndLearnGame(gameId);
+  };
+
+  const closeBurnAndLearnGames = () => {
+    setShowBurnAndLearnGames(false);
+    setActiveBurnAndLearnGame(null);
   };
 
   // NEW: Add Foods Modal handlers
@@ -2070,8 +2083,8 @@ const MealSwipeApp = () => {
                   onClick={() => setShowBurnAndLearn(true)}
                   className="bg-gradient-to-br from-red-500 to-red-600 text-white p-3 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-center"
                 >
-                  <div className="text-lg mb-1">🔥</div>
-                  <div className="text-xs font-semibold">Burn & Learn</div>
+                  <div className="text-lg mb-1">🎮</div>
+                  <div className="text-xs font-semibold">Nutrition Games</div>
                 </button>
                 <button
                   onClick={() => setShowTrends(true)}
@@ -2449,37 +2462,22 @@ const MealSwipeApp = () => {
           isMobile={true}
         />
 
-        {/* Analytics Modals */}
-        {showBurnAndLearn && (
+        {/* Nutrition Games Modal */}
+        {showBurnAndLearnGames && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
               <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">🔥 Burn & Learn</h3>
-                <button onClick={() => {
-                  setShowBurnAndLearn(false);
-                  setBurnAndLearnDetails(null);
-                }} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                <h3 className="text-xl font-bold text-gray-800">🎮 Nutrition Games</h3>
+                <button onClick={closeBurnAndLearnGames} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
               <div className="p-4">
-                {burnAndLearnDetails ? (
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setBurnAndLearnDetails(null)}
-                      className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-                    >
-                      ← Back to overview
-                    </button>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-800 mb-3">{burnAndLearnDetails.title}</h4>
-                      <p className="text-gray-700 leading-relaxed">{burnAndLearnDetails.content}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <ClickableBurnAndLearnView
-                    totalMacros={totalMacros}
-                    profile={profile}
-                    onItemClick={handleBurnAndLearnClick}
+                {activeBurnAndLearnGame ? (
+                  <BurnAndLearnModule
+                    activeGame={activeBurnAndLearnGame}
+                    onExit={closeBurnAndLearnGames}
                   />
+                ) : (
+                  <GameModeBurnAndLearn onGameSelect={handleBurnAndLearnGameSelect} />
                 )}
               </div>
             </div>
