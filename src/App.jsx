@@ -826,6 +826,9 @@ function FullScreenSwipeInterface({
 
       // Use the new time update function instead of claiming ownership
       updateMealTime(meal.name, newTime);
+
+      // IMPORTANT: Close the time picker modal
+      closeTimePicker();
     }
   };
 
