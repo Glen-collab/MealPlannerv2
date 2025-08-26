@@ -287,7 +287,7 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
   );
 }
 
-function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
+{
   const [selectedHour, setSelectedHour] = useState(12);
   const [selectedMinute, setSelectedMinute] = useState('00');
   const [selectedPeriod, setSelectedPeriod] = useState('AM');
