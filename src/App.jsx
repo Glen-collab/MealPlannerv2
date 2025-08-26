@@ -323,7 +323,6 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   const handleConfirm = () => {
     const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
     onSelectTime(formattedTime);
-    onClose();
   };
 
   if (!isOpen) return null;
