@@ -25,7 +25,6 @@ import {
   GameModeBurnAndLearn
 } from './WelcomeScreen.jsx';
 import BurnAndLearnModule from './BurnAndLearnModule.js';
-import TimePickerModal from './TimePickerModal';
 
 // 🔧 FIXED: Move helper functions to top level, outside of any component
 const timeToMinutes = (timeStr) => {
@@ -287,56 +286,55 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
   );
 }
 
-{
-  const [selectedHour, setSelectedHour] = useState(12);
-  const [selectedMinute, setSelectedMinute] = useState('00');
-  const [selectedPeriod, setSelectedPeriod] = useState('AM');
+function App() {
+  const [isTimePickerOpen, setIsTimePickerOpen] = React.useState(false);
+  const [currentTime, setCurrentTime] = React.useState('');
 
-  useEffect(() => {
-    if (isOpen && currentTime) {
-      const [time, period] = currentTime.split(' ');
-      if (time && period) {
-        const [hour, minute] = time.split(':');
-        setSelectedHour(parseInt(hour));
-        setSelectedMinute(minute);
-        setSelectedPeriod(period);
+  // Hard-coded TimePickerModal component inside App
+  function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
+    const [selectedHour, setSelectedHour] = React.useState(12);
+    const [selectedMinute, setSelectedMinute] = React.useState('00');
+    const [selectedPeriod, setSelectedPeriod] = React.useState('AM');
+
+    React.useEffect(() => {
+      if (isOpen && currentTime) {
+        const [time, period] = currentTime.split(' ');
+        if (time && period) {
+          const [hour, minute] = time.split(':');
+          setSelectedHour(parseInt(hour));
+          setSelectedMinute(minute);
+          setSelectedPeriod(period);
+        }
       }
-    }
-  }, [isOpen, currentTime]);
+    }, [isOpen, currentTime]);
 
-  const handleConfirm = () => {
-    const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
-    onSelectTime(formattedTime); // Parent handles update + closing
-  };
+    if (!isOpen) return null;
 
-  if (!isOpen) return null;
+    const handleConfirm = () => {
+      const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
+      onSelectTime(formattedTime);
+      onClose();
+    };
 
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-  const minutes = ['00', '15', '30', '45'];
-  const periods = ['AM', 'PM'];
+    const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+    const minutes = ['00', '15', '30', '45'];
+    const periods = ['AM', 'PM'];
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-lg">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-        </div>
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl w-full max-w-lg p-6">
+          <h3 className="text-xl font-bold mb-4">Select Time</h3>
 
-        {/* Time Pickers */}
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            {/* Hour */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {/* Hour picker */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
-              <div className="grid grid-cols-2 gap-2">
+              <h4 className="text-center font-semibold mb-2">Hour</h4>
+              <div className="grid grid-cols-3 gap-2">
                 {hours.map(hour => (
                   <button
                     key={hour}
                     onClick={() => setSelectedHour(hour)}
-                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
+                    className={`p-2 rounded ${selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                   >
                     {hour}
                   </button>
@@ -344,33 +342,31 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
               </div>
             </div>
 
-            {/* Minutes */}
+            {/* Minute picker */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
-              <div className="space-y-3">
+              <h4 className="text-center font-semibold mb-2">Minutes</h4>
+              <div className="grid grid-cols-2 gap-2">
                 {minutes.map(minute => (
                   <button
                     key={minute}
                     onClick={() => setSelectedMinute(minute)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
+                    className={`p-2 rounded ${selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
                   >
-                    :{minute}
+                    {minute}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Period */}
+            {/* Period picker */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
-              <div className="space-y-3">
+              <h4 className="text-center font-semibold mb-2">AM/PM</h4>
+              <div className="grid grid-cols-1 gap-2">
                 {periods.map(period => (
                   <button
                     key={period}
                     onClick={() => setSelectedPeriod(period)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
+                    className={`p-2 rounded ${selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-200'}`}
                   >
                     {period}
                   </button>
@@ -379,31 +375,48 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
             </div>
           </div>
 
-          {/* Selected Time Preview */}
-          <div className="text-center mb-6">
-            <div className="text-2xl font-bold text-gray-800 mb-2">
-              {selectedHour}:{selectedMinute} {selectedPeriod}
-            </div>
-            <p className="text-gray-600">Selected Time</p>
-          </div>
+          {/* Selected time preview */}
+          <p className="text-center mb-4 text-lg font-bold">
+            Selected Time: {selectedHour}:{selectedMinute} {selectedPeriod}
+          </p>
 
-          {/* Footer Buttons */}
-          <div className="flex gap-3">
+          {/* Footer buttons */}
+          <div className="flex gap-4">
             <button
               onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
+              className="flex-1 py-2 rounded bg-gray-300 hover:bg-gray-400"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              className="flex-1 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
             >
-              Confirm Time
+              Confirm
             </button>
           </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <button
+        onClick={() => setIsTimePickerOpen(true)}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        Pick a Time
+      </button>
+      <p className="mt-4 text-lg">Selected Time: {currentTime}</p>
+
+      {/* Render modal */}
+      <TimePickerModal
+        isOpen={isTimePickerOpen}
+        currentTime={currentTime}
+        onSelectTime={(time) => setCurrentTime(time)}
+        onClose={() => setIsTimePickerOpen(false)}
+      />
     </div>
   );
 }
