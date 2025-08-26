@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TimePickerModal from './TimePickerModal.jsx';
 
 // USDA API Configuration
 const USDA_API_KEY = 'tdlBSP5YGMzEbAkkehT6VFCctFwrVwmg2nYsrgjx';
@@ -182,123 +183,6 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
   );
 }
 
-// Time Picker Modal Component
-function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose, mealType }) {
-  const [selectedHour, setSelectedHour] = useState(12);
-  const [selectedMinute, setSelectedMinute] = useState('00');
-  const [selectedPeriod, setSelectedPeriod] = useState('AM');
-
-  useEffect(() => {
-    if (isOpen && currentTime) {
-      const timeParts = currentTime.split(' ');
-      if (timeParts.length === 2) {
-        const [time, period] = timeParts;
-        const [hour, minute] = time.split(':');
-        setSelectedHour(parseInt(hour));
-        setSelectedMinute(minute);
-        setSelectedPeriod(period);
-      }
-    }
-  }, [isOpen, currentTime]);
-
-  const handleConfirm = () => {
-    const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
-    onSelectTime(formattedTime);
-  };
-
-  if (!isOpen) return null;
-
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-  const minutes = ['00', '15', '30', '45'];
-  const periods = ['AM', 'PM'];
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
-      <div className="bg-white rounded-2xl w-full max-w-lg">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <div>
-            <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
-            <p className="text-sm text-gray-600">{mealType?.name}</p>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-        </div>
-        
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            {/* Hours Column */}
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {hours.map((hour) => (
-                  <button
-                    key={hour}
-                    onClick={() => setSelectedHour(hour)}
-                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    {hour}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Minutes Column */}
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
-              <div className="space-y-3">
-                {minutes.map((minute) => (
-                  <button
-                    key={minute}
-                    onClick={() => setSelectedMinute(minute)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    :{minute}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* AM/PM Column */}
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
-              <div className="space-y-3">
-                {periods.map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => setSelectedPeriod(period)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    {period}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mb-6">
-            <div className="text-2xl font-bold text-gray-800 mb-2">
-              {selectedHour}:{selectedMinute} {selectedPeriod}
-            </div>
-            <p className="text-gray-600">Selected Time</p>
-          </div>
-
-          <button 
-            onClick={handleConfirm} 
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
-          >
-            Confirm {mealType?.name} at {selectedHour}:{selectedMinute} {selectedPeriod}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Main USDA Meal Creator Component
 export function USDAMealCreator({ 
   isOpen, 
@@ -394,8 +278,9 @@ export function USDAMealCreator({
     setConflictMealType(null);
   };
 
-  // Handle time confirmation
+  // Make sure handleTimeConfirm function works properly:
   const handleTimeConfirm = (time) => {
+    console.log('USDA: Time confirmed:', time);
     setSelectedMealType(pendingMealType.name);
     setSelectedMealTime(time);
     setShowTimePicker(false);
@@ -856,7 +741,8 @@ export function USDAMealCreator({
           currentTime={selectedMealTime}
           onSelectTime={handleTimeConfirm}
           onClose={() => setShowTimePicker(false)}
-          mealType={pendingMealType}
+          title="Select Meal Time"
+          subtitle={pendingMealType?.name}
         />
 
         {/* Serving Picker Modal */}
