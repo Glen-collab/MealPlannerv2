@@ -393,21 +393,7 @@ function MealMessageSection({ meal, profile, getMealMessage }) {
 
 // UPDATED Food Category Grid - Now just shows Add Foods button
 function FoodCategoryGrid({ mealId, onSelectCategory, mealSources, mealName, onOpenMealIdeas, onOpenAddFoodsModal }) {
-  const source = mealSources[mealName];
-  const isUSDAOwned = source === 'usda';
   const supportsMealIdeas = ['Breakfast', 'Lunch', 'Dinner'].includes(mealName);
-
-  if (isUSDAOwned) {
-    return (
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Add Foods</h3>
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-          <div className="text-blue-600 font-medium text-sm">🔒 This meal is managed by USDA Search</div>
-          <div className="text-blue-500 text-xs mt-1">Use the USDA Create Meal to modify</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-3">
@@ -689,11 +675,6 @@ function FullScreenSwipeInterface({
   const [selectedMealForTime, setSelectedMealForTime] = useState(null);
 
   const openTimePicker = (mealId) => {
-    const meal = meals.find(m => m.id === mealId);
-    const source = mealSources[meal?.name];
-
-    if (source === 'usda') return;
-
     setSelectedMealForTime(mealId);
     setShowTimePicker(true);
   };
@@ -1525,18 +1506,6 @@ const MealSwipeApp = () => {
     const meal = meals.find(m => m.id === mealId);
     if (!meal) return;
 
-    // Check if meal is owned by another system
-    const source = mealSources[meal.name];
-    if (source && source !== 'quickview') {
-      console.warn(`Cannot modify ${meal.name} - owned by ${source} system`);
-      return;
-    }
-
-    // Claim the meal for quickview if not already claimed
-    if (!source) {
-      claimMeal(meal.name, 'quickview');
-    }
-
     console.log(`✅ Manual addition: ${foodName} - ${servings} servings (no tier limits applied)`);
 
     setMeals(prev => prev.map(meal => {
@@ -1577,13 +1546,6 @@ const MealSwipeApp = () => {
   const removeFoodFromMeal = (mealId, itemIndex) => {
     const meal = meals.find(m => m.id === mealId);
     if (!meal) return;
-
-    // Check if meal is owned by another system
-    const source = mealSources[meal.name];
-    if (source && source !== 'quickview') {
-      console.warn(`Cannot modify ${meal.name} - owned by ${source} system`);
-      return;
-    }
 
     setMeals(prev => prev.map(meal => {
       if (meal.id === mealId) {

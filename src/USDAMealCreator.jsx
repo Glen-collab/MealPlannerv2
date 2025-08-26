@@ -266,7 +266,13 @@ export function USDAMealCreator({
     
     try {
       const response = await fetch(
-        `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=20&api_key=${USDA_API_KEY}`
+        `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=20&api_key=${USDA_API_KEY}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
       
       if (!response.ok) throw new Error('Search failed');
