@@ -1594,6 +1594,37 @@ const MealSwipeApp = () => {
     return allMeals;
   };
 
+  // 🆕 NEW: Calculate dynamic macro goals based on weight and goal
+  const calculateMacroGoals = (userProfile) => {
+    const weight = parseFloat(userProfile.weight) || 150; // Default to 150lbs if no weight
+    const goal = userProfile.goal || 'maintain';
+
+    // Protein multipliers (grams per pound of body weight)
+    const proteinMultipliers = {
+      'lose': 0.9,
+      'maintain': 1.0,
+      'Gain-muscle': 1.3,
+      'dirty-bulk': 1.3
+    };
+
+    // Carb multipliers (grams per pound of body weight)  
+    const carbMultipliers = {
+      'lose': 0.5,
+      'maintain': 1.0,
+      'Gain-muscle': 0.8,
+      'dirty-bulk': 2.0
+    };
+
+    const proteinTarget = Math.round(weight * (proteinMultipliers[goal] || 1.0));
+    const carbTarget = Math.round(weight * (carbMultipliers[goal] || 1.0));
+
+    return {
+      protein: proteinTarget,
+      carbs: carbTarget,
+      weightBased: true
+    };
+ };
+
   // 🆕 ENHANCED: Calculate calorie data with better meal planning support
   const calculateTDEE = (userProfile) => {
     const { heightFeet, heightInches, weight, exerciseLevel, goal, gender } = userProfile;
@@ -1659,6 +1690,7 @@ const MealSwipeApp = () => {
   };
 
   const calorieData = calculateTDEE(profile);
+  const macroGoals = calculateMacroGoals(profile);
 
   const getMealMessage = (meal) => {
     if (!meal || meal.calories < 25) return null;
