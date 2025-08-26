@@ -17,9 +17,9 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
       if (currentServing) {
         const wholeNumber = Math.floor(currentServing);
         const fraction = currentServing - wholeNumber;
-        
+
         setSelectedAmount(wholeNumber || 1);
-        
+
         // Set fraction based on decimal
         if (Math.abs(fraction - 0.25) < 0.01) setSelectedFraction(0.25);
         else if (Math.abs(fraction - 0.5) < 0.01) setSelectedFraction(0.5);
@@ -76,7 +76,7 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-3 gap-6 mb-6">
             {/* Whole Numbers Column */}
@@ -87,9 +87,8 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
-                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedAmount === amount ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedAmount === amount ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     {amount}
                   </button>
@@ -105,9 +104,8 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
                   <button
                     key={fraction.value}
                     onClick={() => setSelectedFraction(fraction.value)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${
-                      selectedFraction === fraction.value ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedFraction === fraction.value ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     {fraction.display}
                   </button>
@@ -123,9 +121,8 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
                   <button
                     key={unit}
                     onClick={() => setSelectedUnit(unit)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-sm ${
-                      selectedUnit === unit ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-sm ${selectedUnit === unit ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     {unit}
                   </button>
@@ -144,7 +141,7 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
                 <div>Reference: {foodData.servingInfo.description}</div>
               )}
             </div>
-            
+
             {/* Nutrition Preview */}
             <div className="bg-gray-50 rounded-xl p-3">
               <div className="text-sm font-medium text-gray-700 mb-2">Nutrition Preview:</div>
@@ -260,10 +257,10 @@ export function USDAMealCreator({
   // Search USDA database
   const searchFoods = async (query) => {
     if (!query.trim()) return;
-    
-    setIsLoading(true);s
+
+    setIsLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch(
         `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=20&api_key=${USDA_API_KEY}`,
@@ -274,11 +271,11 @@ export function USDAMealCreator({
           }
         }
       );
-      
+
       if (!response.ok) throw new Error('Search failed');
-      
+
       const data = await response.json();
-      
+
       const processedResults = data.foods.map(food => ({
         fdcId: food.fdcId,
         description: food.description,
@@ -287,9 +284,9 @@ export function USDAMealCreator({
         servingInfo: extractServingInfo(food),
         nutrition: extractNutritionPerServing(food.foodNutrients, food)
       }));
-      
+
       setSearchResults(processedResults);
-      
+
       // Initialize servings to 1 serving instead of 100g
       const initialServings = {};
       processedResults.forEach(food => {
@@ -319,7 +316,7 @@ export function USDAMealCreator({
         servingDescription = portion.portionDescription || `1 serving (${servingSize}g)`;
       }
     }
-    
+
     // Check for serving size in food attributes
     if (food.servingSize && food.servingSizeUnit) {
       servingDescription = `1 serving (${food.servingSize}${food.servingSizeUnit})`;
@@ -341,7 +338,7 @@ export function USDAMealCreator({
   const extractNutritionPerServing = (nutrients, food) => {
     const nutritionMap = {
       protein: 0,
-      carbs: 0, 
+      carbs: 0,
       fat: 0,
       calories: 0,
       sugar: 0
@@ -362,7 +359,7 @@ export function USDAMealCreator({
     // Convert from per 100g to per serving
     const servingInfo = extractServingInfo(food);
     const servingMultiplier = servingInfo.size / 100; // Convert from 100g to actual serving size
-    
+
     return {
       protein: Math.round(nutritionMap.protein * servingMultiplier * 10) / 10,
       carbs: Math.round(nutritionMap.carbs * servingMultiplier * 10) / 10,
@@ -415,10 +412,10 @@ export function USDAMealCreator({
     const internalName = mealTypeObj?.internalName;
 
     if (internalName) {
+      // FIXED: Don't claim the meal - just update with time and item
       onUpdateMeal(internalName, {
         time: selectedMealTime,
-        addItem: foodItem,
-        source: 'usda'
+        addItem: foodItem
       });
 
       setHasAddedFoods(true);
@@ -443,14 +440,14 @@ export function USDAMealCreator({
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
       <div className="h-full flex flex-col">
-        
+
         {/* Header with Daily Totals */}
         <div className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-4">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-xl font-bold">Create Meal (USDA)</h2>
             <button onClick={handleClose} className="text-white hover:text-gray-200 text-2xl">×</button>
           </div>
-          
+
           <div className="grid grid-cols-4 gap-2 text-center">
             <div className="bg-white bg-opacity-20 rounded-lg p-2">
               <div className="text-xs font-medium">Protein</div>
@@ -474,7 +471,8 @@ export function USDAMealCreator({
         {/* Content */}
         <div className="flex-1 overflow-y-auto bg-white">
           <div className="space-y-6 p-4">
-            
+
+            {/* FIXED: Removed the undefined showConflictModal reference */}
             {/* Meal Selection Button */}
             {!showMealPicker && !showTimePicker && (
               <div className="sticky top-0 bg-white pb-4 z-10">
@@ -538,7 +536,7 @@ export function USDAMealCreator({
               <div className="space-y-4">
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-xl font-bold text-gray-800 mb-4">Search Foods</h3>
-                  
+
                   <div className="flex gap-3 mb-6">
                     <input
                       type="text"
@@ -558,7 +556,7 @@ export function USDAMealCreator({
                   </div>
 
                   {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                  
+
                   {/* Search Results */}
                   <div className="space-y-3">
                     {isLoading && (
@@ -567,7 +565,7 @@ export function USDAMealCreator({
                         <p className="text-gray-600">Searching USDA database...</p>
                       </div>
                     )}
-                    
+
                     {searchResults.map((food) => (
                       <div key={food.fdcId} className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
                         <div className="space-y-3">
@@ -585,7 +583,7 @@ export function USDAMealCreator({
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2">
                               <label className="text-sm font-medium text-gray-700">Servings:</label>
@@ -596,12 +594,12 @@ export function USDAMealCreator({
                                 {foodServings[food.fdcId] || 1} servings
                               </button>
                             </div>
-                            
+
                             <div className="flex-1 text-xs text-gray-600">
                               {Math.round(food.nutrition.calories * (foodServings[food.fdcId] || 1))} cal •{' '}
                               {Math.round(food.nutrition.protein * (foodServings[food.fdcId] || 1) * 10) / 10}g protein
                             </div>
-                            
+
                             <button
                               onClick={() => addFoodToSelectedMeal(food, foodServings[food.fdcId] || 1)}
                               className="bg-blue-500 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-600 transition-colors"
@@ -612,7 +610,7 @@ export function USDAMealCreator({
                         </div>
                       </div>
                     ))}
-                    
+
                     {searchResults.length === 0 && searchQuery && !isLoading && (
                       <div className="text-center py-8 text-gray-500">
                         <div className="text-2xl mb-2">🍽️</div>
@@ -634,7 +632,7 @@ export function USDAMealCreator({
                 <h3 className="text-xl font-bold text-gray-800">Select Meal</h3>
                 <button onClick={() => setShowMealPicker(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="grid grid-cols-2 gap-3">
                   {allMealTypes.map((mealType) => (
