@@ -25,6 +25,7 @@ import {
   GameModeBurnAndLearn
 } from './WelcomeScreen.jsx';
 import BurnAndLearnModule from './BurnAndLearnModule.js';
+import TimePickerModal from './TimePickerModal';
 
 // 🔧 FIXED: Move helper functions to top level, outside of any component
 const timeToMinutes = (timeStr) => {
@@ -40,21 +41,6 @@ const timeToMinutes = (timeStr) => {
   }
 
   return totalMinutes;
-};
-
-// ADD: New function specifically for updating meal times without affecting ownership
-const updateMealTime = (mealName, newTime) => {
-  console.log(`Updating ${mealName} time to ${newTime} (preserving data)`);
-
-  setMeals(prev => prev.map(meal => {
-    if (meal.name === mealName) {
-      return {
-        ...meal,
-        time: newTime
-      };
-    }
-    return meal;
-  }));
 };
 
 // 1. ADD THIS MISSING FUNCTION - Add this near the top with your other helper functions
@@ -301,7 +287,8 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
   );
 }
 
-// Time Picker Modal Component
+import { useState, useEffect } from 'react';
+
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   const [selectedHour, setSelectedHour] = useState(12);
   const [selectedMinute, setSelectedMinute] = useState('00');
@@ -309,9 +296,8 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
 
   useEffect(() => {
     if (isOpen && currentTime) {
-      const timeParts = currentTime.split(' ');
-      if (timeParts.length === 2) {
-        const [time, period] = timeParts;
+      const [time, period] = currentTime.split(' ');
+      if (time && period) {
         const [hour, minute] = time.split(':');
         setSelectedHour(parseInt(hour));
         setSelectedMinute(minute);
@@ -322,7 +308,7 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
 
   const handleConfirm = () => {
     const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
-    onSelectTime(formattedTime);
+    onSelectTime(formattedTime); // Parent handles update + closing
   };
 
   if (!isOpen) return null;
@@ -334,48 +320,59 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl w-full max-w-lg">
+        {/* Header */}
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
         </div>
+
+        {/* Time Pickers */}
         <div className="p-6">
           <div className="grid grid-cols-3 gap-6 mb-6">
+            {/* Hour */}
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Hour</h4>
               <div className="grid grid-cols-2 gap-2">
-                {hours.map((hour) => (
+                {hours.map(hour => (
                   <button
                     key={hour}
                     onClick={() => setSelectedHour(hour)}
-                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     {hour}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Minutes */}
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Minutes</h4>
               <div className="space-y-3">
-                {minutes.map((minute) => (
+                {minutes.map(minute => (
                   <button
                     key={minute}
                     onClick={() => setSelectedMinute(minute)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     :{minute}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Period */}
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Period</h4>
               <div className="space-y-3">
-                {periods.map((period) => (
+                {periods.map(period => (
                   <button
                     key={period}
                     onClick={() => setSelectedPeriod(period)}
-                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     {period}
                   </button>
@@ -383,17 +380,27 @@ function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
               </div>
             </div>
           </div>
+
+          {/* Selected Time Preview */}
           <div className="text-center mb-6">
             <div className="text-2xl font-bold text-gray-800 mb-2">
               {selectedHour}:{selectedMinute} {selectedPeriod}
             </div>
             <p className="text-gray-600">Selected Time</p>
           </div>
+
+          {/* Footer Buttons */}
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
+            >
               Cancel
             </button>
-            <button onClick={handleConfirm} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
+            <button
+              onClick={handleConfirm}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+            >
               Confirm Time
             </button>
           </div>
@@ -1020,6 +1027,21 @@ const MealSwipeApp = () => {
   const [showCardMagic, setShowCardMagic] = useState(false); // NEW: Card Magic state
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
+
+  // ADD: New function specifically for updating meal times without affecting ownership
+  const updateMealTime = (mealName, newTime) => {
+    console.log(`Updating ${mealName} time to ${newTime} (preserving data)`);
+
+    setMeals(prev => prev.map(meal => {
+      if (meal.name === mealName) {
+        return {
+          ...meal,
+          time: newTime
+        };
+      }
+      return meal;
+    }));
+  };
 
   // NEW: Add Foods Modal state
   const [showAddFoodsModal, setShowAddFoodsModal] = useState(false);
