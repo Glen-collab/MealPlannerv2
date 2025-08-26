@@ -42,6 +42,10 @@ const timeToMinutes = (timeStr) => {
   return totalMinutes;
 };
 
+// 1. ADD THIS MISSING FUNCTION - Add this near the top with your other helper functions
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
+
 const getSortedMealsByTime = (meals) => {
   return [...meals].sort((a, b) => {
     const timeA = timeToMinutes(a.time);
@@ -1811,14 +1815,34 @@ const MealSwipeApp = () => {
     );
   };
 
+  // 2. REPLACE your current openFoodSelection function with this enhanced version
   const openFoodSelection = (category, mealId) => {
+    console.log('🔍 openFoodSelection called:', { category, mealId });
+
     const meal = meals.find(m => m.id === mealId);
-    if (meal && mealSources[meal.name] === 'usda') return;
-    setSelectedCategory(category);
-    setSelectedMealForFood(mealId);
+    console.log('🍽️ Found meal:', meal?.name);
+
+    // Check if meal is USDA owned
+    if (meal && mealSources[meal.name] === 'usda') {
+      console.log('🔒 Cannot modify USDA meal:', meal.name);
+      return;
+    }
+
+    // Close AddFoodsModal first
+    handleCloseAddFoodsModal();
+
+    // Set selection state with delay to ensure modal transitions
+    setTimeout(() => {
+      console.log('✅ Setting selectedCategory:', category);
+      console.log('✅ Setting selectedMealForFood:', mealId);
+      setSelectedCategory(category);
+      setSelectedMealForFood(mealId);
+    }, 100);
   };
 
+  // 3. REPLACE your current closeFoodSelection function with this
   const closeFoodSelection = () => {
+    console.log('🔍 closeFoodSelection called');
     setSelectedCategory(null);
     setSelectedMealForFood(null);
   };
