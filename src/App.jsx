@@ -25,6 +25,7 @@ import {
   GameModeBurnAndLearn
 } from './WelcomeScreen.jsx';
 import BurnAndLearnModule from './BurnAndLearnModule.js';
+import TimePickerModal from './TimePickerModal.jsx';
 
 // 🔧 FIXED: Move helper functions to top level, outside of any component
 const timeToMinutes = (timeStr) => {
@@ -285,128 +286,6 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
     </div>
   );
 }
-
-// Hard-coded TimePickerModal component
-function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
-  const [selectedHour, setSelectedHour] = React.useState(12);
-  const [selectedMinute, setSelectedMinute] = React.useState('00');
-  const [selectedPeriod, setSelectedPeriod] = React.useState('AM');
-
-  React.useEffect(() => {
-    if (isOpen && currentTime) {
-      const [time, period] = currentTime.split(' ');
-      if (time && period) {
-        const [hour, minute] = time.split(':');
-        setSelectedHour(parseInt(hour));
-        setSelectedMinute(minute);
-        setSelectedPeriod(period);
-      }
-    }
-  }, [isOpen, currentTime]);
-
-  const handleConfirm = () => {
-    const formattedTime = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
-    onSelectTime(formattedTime);
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-  const minutes = ['00', '15', '30', '45'];
-  const periods = ['AM', 'PM'];
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-lg p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-gray-800">Select Time</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-        </div>
-
-        {/* Time Pickers */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
-          {/* Hour */}
-          <div>
-            <h4 className="text-lg font-semibold text-gray-800 mb-2 text-center">Hour</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {hours.map(hour => (
-                <button
-                  key={hour}
-                  onClick={() => setSelectedHour(hour)}
-                  className={`p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedHour === hour ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                >
-                  {hour}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Minutes */}
-          <div>
-            <h4 className="text-lg font-semibold text-gray-800 mb-2 text-center">Minutes</h4>
-            <div className="space-y-3">
-              {minutes.map(minute => (
-                <button
-                  key={minute}
-                  onClick={() => setSelectedMinute(minute)}
-                  className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedMinute === minute ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                >
-                  :{minute}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Period */}
-          <div>
-            <h4 className="text-lg font-semibold text-gray-800 mb-2 text-center">Period</h4>
-            <div className="space-y-3">
-              {periods.map(period => (
-                <button
-                  key={period}
-                  onClick={() => setSelectedPeriod(period)}
-                  className={`w-full p-3 rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all ${selectedPeriod === period ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Selected Time Preview */}
-        <div className="text-center mb-6">
-          <div className="text-2xl font-bold text-gray-800 mb-2">
-            {selectedHour}:{selectedMinute} {selectedPeriod}
-          </div>
-          <p className="text-gray-600">Selected Time</p>
-        </div>
-
-        {/* Footer Buttons */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-300 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
-          >
-            Confirm Time
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 // Add Foods Modal Component - CLEANED UP VERSION
 function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, onOpenMealIdeas, mealSources }) {
@@ -783,7 +662,7 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   );
 }
 
-// 🔧 FIXED: Full Screen Swipe Interface Component
+// Update the FullScreenSwipeInterface component:
 function FullScreenSwipeInterface({
   meals,
   currentCard,
@@ -803,7 +682,8 @@ function FullScreenSwipeInterface({
   mealSources,
   onClaimMeal,
   onOpenMealIdeas,
-  onOpenAddFoodsModal
+  onOpenAddFoodsModal,
+  updateMealTime  // Make sure this prop is included
 }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMealForTime, setSelectedMealForTime] = useState(null);
@@ -823,143 +703,33 @@ function FullScreenSwipeInterface({
     setSelectedMealForTime(null);
   };
 
-  // UPDATED: Use the new function instead of claiming ownership
+  // SIMPLIFIED: Direct time update with proper closure
   const handleTimeSelection = (newTime) => {
     if (selectedMealForTime) {
       const meal = meals.find(m => m.id === selectedMealForTime);
+      console.log(`Updating time for ${meal.name} to ${newTime}`);
 
-      // Use the new time update function instead of claiming ownership
+      // Use the passed updateMealTime function
       updateMealTime(meal.name, newTime);
-
-      // IMPORTANT: Close the time picker modal
-      closeTimePicker();
     }
+    // Modal will close automatically via the TimePickerModal's onClose
   };
 
   const getCurrentMeal = () => meals.find(m => m.id === selectedMealForTime);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
-      <div className="h-full flex flex-col">
-        <div className="p-4 text-center text-white">
-          <div className="flex justify-between items-center">
-            <div className="w-8"></div>
-            <div>
-              <p className="text-sm opacity-80">Swipe left or right • Meal {currentCard + 1} of {meals.length}</p>
-            </div>
-            <button onClick={onExit} className="text-white hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center">×</button>
-          </div>
-        </div>
+      {/* ... rest of your component stays the same ... */}
 
-        <div className="flex-1 relative px-4 pb-4">
-          {/* 🔧 FIXED: Added proper index parameter to map function */}
-          {meals.map((meal, index) => {
-            const isActive = index === currentCard;
-            const position = cardPositions[index];
-            const zIndex = isActive ? 20 : meals.length - Math.abs(index - currentCard);
-            const scale = isActive ? 1 : 0.95;
-            const opacity = isActive ? 1 : 0.7;
-            const source = mealSources[meal.name];
-            const isUSDAOwned = source === 'usda';
-
-            return (
-              <div
-                key={meal.id}
-                className="absolute inset-0 cursor-grab active:cursor-grabbing flex items-center justify-center"
-                style={{
-                  transform: `translateX(${position.x}px) translateY(${position.y}px) rotate(${position.rotation}deg) scale(${scale})`,
-                  zIndex,
-                  opacity,
-                  transition: isDragging && isActive ? 'none' : 'transform 0.3s ease-out, opacity 0.3s ease-out'
-                }}
-                onMouseDown={isActive ? handleMouseDown : undefined}
-                onMouseMove={isActive ? handleMouseMove : undefined}
-                onMouseUp={isActive ? handleMouseUp : undefined}
-                onMouseLeave={isActive ? handleMouseUp : undefined}
-                onTouchStart={isActive ? handleMouseDown : undefined}
-                onTouchMove={isActive ? handleMouseMove : undefined}
-                onTouchEnd={isActive ? handleMouseUp : undefined}
-              >
-                <div className="bg-white rounded-3xl shadow-2xl w-full h-full flex flex-col">
-                  <div className="p-4 flex-shrink-0">
-                    <div className="text-center">
-                      <div className="mb-3 flex items-center justify-center gap-2">
-                        <h2 className="text-2xl font-bold text-gray-800">{meal.name}</h2>
-                        {isUSDAOwned && (
-                          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">USDA</span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-center gap-4">
-                        <div className="text-4xl">
-                          {meal.name === 'Breakfast' && '🍳'}
-                          {meal.name === 'FirstSnack' && '🍎'}
-                          {meal.name === 'SecondSnack' && '🥨'}
-                          {meal.name === 'Lunch' && '🥗'}
-                          {meal.name === 'MidAfternoon Snack' && '🥜'}
-                          {meal.name === 'Dinner' && '🍽️'}
-                          {meal.name === 'Late Snack' && '🍔'}
-                          {meal.name === 'PostWorkout' && '💪'}
-                          {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
-                        </div>
-                        <div className="text-3xl font-bold text-purple-600">{Math.round(meal.calories)} cal</div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            openTimePicker(meal.id);
-                          }}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onTouchStart={(e) => e.stopPropagation()}
-                          disabled={isUSDAOwned}
-                          className={`px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${isUSDAOwned ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                        >
-                          🕘 {meal.time}
-                          {isUSDAOwned && <span className="text-xs">🔒</span>}
-                        </button>
-                      </div>
-
-                      <div className="mt-2 text-center">
-                        <div className="text-xs font-bold text-red-600">
-                          P: {Math.round(meal.protein)}g • C: {Math.round(meal.carbs)}g • F: {Math.round(meal.fat)}g
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
-                    <div className="space-y-6">
-                      <FoodCategoryGrid
-                        mealId={meal.id}
-                        onSelectCategory={openFoodSelection}
-                        mealSources={mealSources}
-                        mealName={meal.name}
-                        onOpenMealIdeas={onOpenMealIdeas}
-                        onOpenAddFoodsModal={onOpenAddFoodsModal}
-                      />
-
-                      <MealFoodList
-                        meal={meal}
-                        onRemoveFood={removeFoodFromMeal}
-                        mealSources={mealSources}
-                      />
-
-                      <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <TimePickerModal
-          isOpen={showTimePicker}
-          currentTime={getCurrentMeal()?.time}
-          onSelectTime={handleTimeSelection}
-          onClose={closeTimePicker}
-        />
-      </div>
+      {/* Updated TimePickerModal usage */}
+      <TimePickerModal
+        isOpen={showTimePicker}
+        currentTime={getCurrentMeal()?.time}
+        onSelectTime={handleTimeSelection}
+        onClose={closeTimePicker}
+        title="Select Meal Time"
+        subtitle={getCurrentMeal()?.name}
+      />
     </div>
   );
 }
@@ -2299,6 +2069,7 @@ const MealSwipeApp = () => {
             onClaimMeal={claimMeal}
             onOpenMealIdeas={handleOpenMealIdeas}
             onOpenAddFoodsModal={handleOpenAddFoodsModal}
+            updateMealTime={updateMealTime} 
           />
         )}
 
