@@ -42,6 +42,21 @@ const timeToMinutes = (timeStr) => {
   return totalMinutes;
 };
 
+// ADD: New function specifically for updating meal times without affecting ownership
+const updateMealTime = (mealName, newTime) => {
+  console.log(`Updating ${mealName} time to ${newTime} (preserving data)`);
+
+  setMeals(prev => prev.map(meal => {
+    if (meal.name === mealName) {
+      return {
+        ...meal,
+        time: newTime
+      };
+    }
+    return meal;
+  }));
+};
+
 // 1. ADD THIS MISSING FUNCTION - Add this near the top with your other helper functions
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -804,11 +819,13 @@ function FullScreenSwipeInterface({
     setSelectedMealForTime(null);
   };
 
+  // UPDATED: Use the new function instead of claiming ownership
   const handleTimeSelection = (newTime) => {
     if (selectedMealForTime) {
       const meal = meals.find(m => m.id === selectedMealForTime);
-      onClaimMeal(meal.name, 'quickview');
-      setMeals(prev => prev.map(m => m.id === selectedMealForTime ? { ...m, time: newTime } : m));
+
+      // Use the new time update function instead of claiming ownership
+      updateMealTime(meal.name, newTime);
     }
   };
 
