@@ -1969,7 +1969,8 @@ const MealSwipeApp = () => {
                 <div className="bg-green-100 rounded-lg p-3">
                   <div className="text-xs text-green-600 font-medium">Carbs</div>
                   <div className="text-lg font-bold text-green-800">{Math.round(totalMacros.carbs)}g</div>
-                  {macroGoals.carbs}g target      {/* ← Should show carb target */}
+                  <div className="text-xs text-green-500"></div>
+                    {macroGoals.carbs}g target      {/* ← Should show carb target */}
                 </div>
                 <div className="bg-yellow-100 rounded-lg p-3">
                   <div className="text-xs text-yellow-600 font-medium">Fat</div>
