@@ -662,7 +662,7 @@ function MealFoodList({ meal, onRemoveFood, mealSources, readOnly = false }) {
   );
 }
 
-// Update the FullScreenSwipeInterface component:
+// Complete FullScreenSwipeInterface component with all functionality restored
 function FullScreenSwipeInterface({
   meals,
   currentCard,
@@ -683,7 +683,7 @@ function FullScreenSwipeInterface({
   onClaimMeal,
   onOpenMealIdeas,
   onOpenAddFoodsModal,
-  updateMealTime  // Make sure this prop is included
+  updateMealTime
 }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMealForTime, setSelectedMealForTime] = useState(null);
@@ -719,17 +719,128 @@ function FullScreenSwipeInterface({
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
-      {/* ... rest of your component stays the same ... */}
+      <div className="h-full flex flex-col">
+        <div className="p-4 text-center text-white">
+          <div className="flex justify-between items-center">
+            <div className="w-8"></div>
+            <div>
+              <p className="text-sm opacity-80">Swipe left or right • Meal {currentCard + 1} of {meals.length}</p>
+            </div>
+            <button onClick={onExit} className="text-white hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center">×</button>
+          </div>
+        </div>
 
-      {/* Updated TimePickerModal usage */}
-      <TimePickerModal
-        isOpen={showTimePicker}
-        currentTime={getCurrentMeal()?.time}
-        onSelectTime={handleTimeSelection}
-        onClose={closeTimePicker}
-        title="Select Meal Time"
-        subtitle={getCurrentMeal()?.name}
-      />
+        <div className="flex-1 relative px-4 pb-4">
+          {/* Meal cards */}
+          {meals.map((meal, index) => {
+            const isActive = index === currentCard;
+            const position = cardPositions[index];
+            const zIndex = isActive ? 20 : meals.length - Math.abs(index - currentCard);
+            const scale = isActive ? 1 : 0.95;
+            const opacity = isActive ? 1 : 0.7;
+            const source = mealSources[meal.name];
+            const isUSDAOwned = source === 'usda';
+
+            return (
+              <div
+                key={meal.id}
+                className="absolute inset-0 cursor-grab active:cursor-grabbing flex items-center justify-center"
+                style={{
+                  transform: `translateX(${position.x}px) translateY(${position.y}px) rotate(${position.rotation}deg) scale(${scale})`,
+                  zIndex,
+                  opacity,
+                  transition: isDragging && isActive ? 'none' : 'transform 0.3s ease-out, opacity 0.3s ease-out'
+                }}
+                onMouseDown={isActive ? handleMouseDown : undefined}
+                onMouseMove={isActive ? handleMouseMove : undefined}
+                onMouseUp={isActive ? handleMouseUp : undefined}
+                onMouseLeave={isActive ? handleMouseUp : undefined}
+                onTouchStart={isActive ? handleMouseDown : undefined}
+                onTouchMove={isActive ? handleMouseMove : undefined}
+                onTouchEnd={isActive ? handleMouseUp : undefined}
+              >
+                <div className="bg-white rounded-3xl shadow-2xl w-full h-full flex flex-col">
+                  <div className="p-4 flex-shrink-0">
+                    <div className="text-center">
+                      <div className="mb-3 flex items-center justify-center gap-2">
+                        <h2 className="text-2xl font-bold text-gray-800">{meal.name}</h2>
+                        {isUSDAOwned && (
+                          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">USDA</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-center gap-4">
+                        <div className="text-4xl">
+                          {meal.name === 'Breakfast' && '🍳'}
+                          {meal.name === 'FirstSnack' && '🍎'}
+                          {meal.name === 'SecondSnack' && '🥨'}
+                          {meal.name === 'Lunch' && '🥗'}
+                          {meal.name === 'MidAfternoon Snack' && '🥜'}
+                          {meal.name === 'Dinner' && '🍽️'}
+                          {meal.name === 'Late Snack' && '🍔'}
+                          {meal.name === 'PostWorkout' && '💪'}
+                          {!['Breakfast', 'FirstSnack', 'SecondSnack', 'Lunch', 'MidAfternoon Snack', 'Dinner', 'Late Snack', 'PostWorkout'].includes(meal.name) && '🌟'}
+                        </div>
+                        <div className="text-3xl font-bold text-purple-600">{Math.round(meal.calories)} cal</div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openTimePicker(meal.id);
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onTouchStart={(e) => e.stopPropagation()}
+                          disabled={isUSDAOwned}
+                          className={`px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${isUSDAOwned ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                        >
+                          🕘 {meal.time}
+                          {isUSDAOwned && <span className="text-xs">🔒</span>}
+                        </button>
+                      </div>
+
+                      <div className="mt-2 text-center">
+                        <div className="text-xs font-bold text-red-600">
+                          P: {Math.round(meal.protein)}g • C: {Math.round(meal.carbs)}g • F: {Math.round(meal.fat)}g
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-6 pb-6 no-swipe-zone">
+                    <div className="space-y-6">
+                      <FoodCategoryGrid
+                        mealId={meal.id}
+                        onSelectCategory={openFoodSelection}
+                        mealSources={mealSources}
+                        mealName={meal.name}
+                        onOpenMealIdeas={onOpenMealIdeas}
+                        onOpenAddFoodsModal={onOpenAddFoodsModal}
+                      />
+
+                      <MealFoodList
+                        meal={meal}
+                        onRemoveFood={removeFoodFromMeal}
+                        mealSources={mealSources}
+                      />
+
+                      <MealMessageSection meal={meal} profile={profile} getMealMessage={getMealMessage} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <TimePickerModal
+          isOpen={showTimePicker}
+          currentTime={getCurrentMeal()?.time}
+          onSelectTime={handleTimeSelection}
+          onClose={closeTimePicker}
+          title="Select Meal Time"
+          subtitle={getCurrentMeal()?.name}
+        />
+      </div>
     </div>
   );
 }
