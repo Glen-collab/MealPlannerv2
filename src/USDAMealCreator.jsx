@@ -261,7 +261,7 @@ export function USDAMealCreator({
   const searchFoods = async (query) => {
     if (!query.trim()) return;
     
-    setIsLoading(true);
+    setIsLoading(true);s
     setError('');
     
     try {
@@ -476,7 +476,7 @@ export function USDAMealCreator({
           <div className="space-y-6 p-4">
             
             {/* Meal Selection Button */}
-            {!showMealPicker && !showTimePicker && !showConflictModal && (
+            {!showMealPicker && !showTimePicker && (
               <div className="sticky top-0 bg-white pb-4 z-10">
                 {!hasAddedFoods ? (
                   <button
