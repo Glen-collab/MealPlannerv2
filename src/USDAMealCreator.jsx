@@ -183,15 +183,14 @@ function USDAServingPickerModal({ isOpen, currentServing, currentUnit, foodData,
   );
 }
 
-// Main USDA Meal Creator Component
-export function USDAMealCreator({ 
-  isOpen, 
-  onClose, 
-  meals, 
-  onUpdateMeal, 
+export function USDAMealCreator({
+  isOpen,
+  onClose,
+  meals,
+  onUpdateMeal,
   totalMacros,
-  mealSources, // Track which system owns each meal
-  onClaimMeal  // Function to claim a meal for USDA system
+  mealSources, // Track which system owns each meal (kept for display only)
+  onClaimMeal  // Function to claim a meal (kept for compatibility but not used)
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMealType, setSelectedMealType] = useState('');
@@ -205,8 +204,6 @@ export function USDAMealCreator({
   const [hasAddedFoods, setHasAddedFoods] = useState(false);
   const [showAddedFeedback, setShowAddedFeedback] = useState('');
   const [foodServings, setFoodServings] = useState({});
-  const [showConflictModal, setShowConflictModal] = useState(false);
-  const [conflictMealType, setConflictMealType] = useState(null);
   const [showServingPicker, setShowServingPicker] = useState(false);
   const [selectedFoodForServing, setSelectedFoodForServing] = useState(null);
 
@@ -222,60 +219,25 @@ export function USDAMealCreator({
     { name: 'Post-Workout', internalName: 'PostWorkout', emoji: '💪', defaultTime: '5:00 PM' }
   ];
 
-  // Get available meal types (not owned by quick-view system)
-  const getAvailableMealTypes = () => {
+  // Get all meal types - no restrictions
+  const getAllMealTypes = () => {
     return mealTypes.map(mealType => {
       const meal = meals.find(m => m.name === mealType.internalName);
-      const source = mealSources[mealType.internalName];
-      const hasQuickViewData = source === 'quickview' && meal && (meal.calories > 0 || (meal.items && meal.items.length > 0));
-      
+
       return {
         ...mealType,
-        disabled: hasQuickViewData,
-        hasExistingData: hasQuickViewData,
-        existingCalories: meal?.calories || 0,
-        source: source
+        existingCalories: meal?.calories || 0
       };
     });
   };
 
-  // Handle meal selection with conflict detection
+  // Handle meal selection - direct selection without conflict checking
   const handleMealSelection = (mealType) => {
-    const meal = meals.find(m => m.name === mealType.internalName);
-    const source = mealSources[mealType.internalName];
-    
-    // Check if meal has quick-view data
-    if (source === 'quickview' && meal && (meal.calories > 0 || (meal.items && meal.items.length > 0))) {
-      setConflictMealType(mealType);
-      setShowConflictModal(true);
-      setShowMealPicker(false);
-      return;
-    }
-
-    // Proceed normally
+    // Proceed directly to time selection
     setPendingMealType(mealType);
     setSelectedMealTime(mealType.defaultTime);
     setShowMealPicker(false);
     setShowTimePicker(true);
-  };
-
-  // Handle conflict resolution
-  const handleConflictResolution = (action) => {
-    if (action === 'override') {
-      // Claim the meal for USDA system and reset its data
-      onClaimMeal(conflictMealType.internalName, 'usda');
-      
-      // Proceed with meal selection
-      setPendingMealType(conflictMealType);
-      setSelectedMealTime(conflictMealType.defaultTime);
-      setShowConflictModal(false);
-      setShowTimePicker(true);
-    } else {
-      // Cancel - go back to meal picker
-      setShowConflictModal(false);
-      setShowMealPicker(true);
-    }
-    setConflictMealType(null);
   };
 
   // Make sure handleTimeConfirm function works properly:
@@ -286,9 +248,6 @@ export function USDAMealCreator({
     setShowTimePicker(false);
     setPendingMealType(null);
     setHasAddedFoods(false);
-    
-    // Claim the meal for USDA system
-    onClaimMeal(pendingMealType.internalName, 'usda');
   };
 
   // Search on Enter key
@@ -450,9 +409,6 @@ export function USDAMealCreator({
     const internalName = mealTypeObj?.internalName;
 
     if (internalName) {
-      // Ensure the meal is claimed for USDA before adding food
-      onClaimMeal(internalName, 'usda');
-
       onUpdateMeal(internalName, {
         time: selectedMealTime,
         addItem: foodItem,
@@ -476,7 +432,7 @@ export function USDAMealCreator({
 
   if (!isOpen) return null;
 
-  const availableMealTypes = getAvailableMealTypes();
+  const allMealTypes = getAllMealTypes();
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 z-50">
@@ -675,60 +631,22 @@ export function USDAMealCreator({
               
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="grid grid-cols-2 gap-3">
-                  {availableMealTypes.map((mealType) => (
+                  {allMealTypes.map((mealType) => (
                     <button
                       key={mealType.name}
                       onClick={() => handleMealSelection(mealType)}
-                      disabled={mealType.disabled}
-                      className={`border border-gray-200 rounded-xl p-4 text-center transition-colors hover:shadow-lg ${
-                        mealType.disabled 
-                          ? 'bg-red-50 border-red-200 cursor-not-allowed opacity-60' 
-                          : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
+                      className="border border-gray-200 rounded-xl p-4 text-center transition-colors hover:shadow-lg bg-gray-50 hover:bg-gray-100"
                     >
                       <div className="text-3xl mb-2">{mealType.emoji}</div>
                       <div className="font-medium text-gray-800 text-sm">{mealType.name}</div>
                       <div className="text-xs text-gray-600 mt-1">{mealType.defaultTime}</div>
-                      {mealType.hasExistingData && (
-                        <div className="text-xs text-red-600 mt-1 font-medium">
-                          Quick View: {mealType.existingCalories} cal
+                      {mealType.existingCalories > 0 && (
+                        <div className="text-xs text-blue-600 mt-1 font-medium">
+                          Current: {mealType.existingCalories} cal
                         </div>
                       )}
                     </button>
                   ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Conflict Resolution Modal */}
-        {showConflictModal && conflictMealType && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
-            <div className="bg-white rounded-2xl w-full max-w-md">
-              <div className="p-6">
-                <div className="text-center mb-6">
-                  <div className="text-4xl mb-3">⚠️</div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">Meal Conflict</h3>
-                  <p className="text-gray-600">
-                    <strong>{conflictMealType.name}</strong> already has data from Quick View 
-                    ({meals.find(m => m.name === conflictMealType.internalName)?.calories || 0} calories).
-                  </p>
-                </div>
-                
-                <div className="space-y-3">
-                  <button
-                    onClick={() => handleConflictResolution('override')}
-                    className="w-full bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition-colors"
-                  >
-                    Override & Use USDA
-                  </button>
-                  <button
-                    onClick={() => handleConflictResolution('cancel')}
-                    className="w-full bg-gray-300 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-400 transition-colors"
-                  >
-                    Cancel & Choose Different Meal
-                  </button>
                 </div>
               </div>
             </div>
