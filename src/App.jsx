@@ -287,8 +287,6 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
   );
 }
 
-import { useState, useEffect } from 'react';
-
 function TimePickerModal({ isOpen, currentTime, onSelectTime, onClose }) {
   const [selectedHour, setSelectedHour] = useState(12);
   const [selectedMinute, setSelectedMinute] = useState('00');
