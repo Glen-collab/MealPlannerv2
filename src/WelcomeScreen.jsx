@@ -721,25 +721,50 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
     // Get user name for personalized messages
     const userName = profile?.name || profile?.firstName || 'friend';
 
-    // Find calorie and sugar correlation
-    const highCalHighSugar = meals.filter(meal => meal.calories > avgCalories && meal.sugar > 15);
-    const lowCalHighSugar = meals.filter(meal => meal.calories < avgCalories && meal.sugar > 15);
+    // Find highest calorie meal and highest sugar meal
+    const highestCalorieMeal = meals.reduce((prev, current) =>
+      (prev.calories > current.calories) ? prev : current, { calories: 0 });
+    const highestSugarMeal = meals.reduce((prev, current) =>
+      (prev.sugar > current.sugar) ? prev : current, { sugar: 0 });
 
-    if (highCalHighSugar.length > 0) {
-      insights.push({
-        type: 'energy-correlation',
-        icon: '🔗',
-        message: `Pattern alert, ${userName}: Your highest calorie meals also tend to be highest in sugar. This can cause energy crashes - try balancing with protein and healthy fats.`,
-        category: 'energy'
-      });
+    // Check if the highest calorie meal is also high in sugar
+    const highCalHighSugar = meals.filter(meal => meal.calories > avgCalories && meal.sugar > 15);
+
+    // More specific correlation analysis
+    if (highestCalorieMeal.calories > 0 && highestSugarMeal.sugar > 0) {
+      // Case 1: Same meal is both highest calorie AND highest sugar
+      if (highestCalorieMeal.fullName === highestSugarMeal.fullName && highestCalorieMeal.sugar > 15) {
+        insights.push({
+          type: 'energy-correlation',
+          icon: '🔗',
+          message: `Pattern alert, ${userName}: Your highest calorie meal, ${highestCalorieMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} at ${Math.round(highestCalorieMeal.calories)} calories, is also your highest sugar meal at ${Math.round(highestCalorieMeal.sugar)}g. This double-whammy creates massive energy spikes followed by crashes - try balancing with protein and healthy fats.`,
+          category: 'energy'
+        });
+      }
+      // Case 2: High calorie meals tend to be high sugar (but not necessarily the same meal)
+      else if (highCalHighSugar.length > 0 && highestCalorieMeal.sugar > 10) {
+        insights.push({
+          type: 'energy-correlation',
+          icon: '🔗',
+          message: `Pattern alert, ${userName}: Your highest calorie meal, ${highestCalorieMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} at ${Math.round(highestCalorieMeal.calories)} calories, also packs ${Math.round(highestCalorieMeal.sugar)}g of sugar. High-calorie + high-sugar = energy roller coaster. Balance it with protein and fiber.`,
+          category: 'energy'
+        });
+      }
     }
 
+    // Find low calorie but high sugar meals (empty calories) - but limit to 1 most significant
+    const lowCalHighSugar = meals
+      .filter(meal => meal.calories < avgCalories && meal.sugar > 12)
+      .sort((a, b) => (b.sugar / b.calories) - (a.sugar / a.calories)); // Sort by sugar-to-calorie ratio
+
     if (lowCalHighSugar.length > 0) {
-      const meal = lowCalHighSugar[0];
+      const meal = lowCalHighSugar[0]; // Just take the worst one
+      const sugarToCalorieRatio = meal.calories > 0 ? (meal.sugar * 4 / meal.calories * 100) : 0;
+
       insights.push({
         type: 'empty-calories',
         icon: '🍬',
-        message: `${userName}, ${meal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is relatively low in calories but high in sugar (${Math.round(meal.sugar)}g). Consider adding protein for better satiety.`,
+        message: `${userName}, your ${meal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is only ${Math.round(meal.calories)} calories but packs ${Math.round(meal.sugar)}g of sugar - that's ${Math.round(sugarToCalorieRatio)}% sugar calories! Consider adding protein for better satiety and blood sugar control.`,
         category: 'energy'
       });
     }
