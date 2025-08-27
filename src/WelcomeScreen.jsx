@@ -718,8 +718,52 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
   const analyzeEnergyBalance = (meals, avgCalories, profile) => {
     const insights = [];
 
-    // Get user name for personalized messages
+    // Get user info for personalized, goal-aware messages
     const userName = profile?.name || profile?.firstName || 'friend';
+    const userGoal = profile?.goal || 'maintain';
+
+    // Goal-specific sugar thresholds and messaging tone
+    const getGoalConfig = (goal) => {
+      switch (goal) {
+        case 'lose':
+          return {
+            highSugarThreshold: 15,
+            emptyCaloricThreshold: 12,
+            tone: 'harsh',
+            concern: 'sabotaging your weight loss'
+          };
+        case 'maintain':
+          return {
+            highSugarThreshold: 20,
+            emptyCaloricThreshold: 15,
+            tone: 'firm',
+            concern: 'disrupting your maintenance balance'
+          };
+        case 'gain-muscle':
+          return {
+            highSugarThreshold: 25,
+            emptyCaloricThreshold: 18,
+            tone: 'coaching',
+            concern: 'not supporting optimal muscle growth'
+          };
+        case 'dirty-bulk':
+          return {
+            highSugarThreshold: 50,
+            emptyCaloricThreshold: 30,
+            tone: 'sarcastic',
+            concern: 'making even dirty bulking look amateur'
+          };
+        default:
+          return {
+            highSugarThreshold: 20,
+            emptyCaloricThreshold: 15,
+            tone: 'firm',
+            concern: 'not supporting your goals'
+          };
+      }
+    };
+
+    const config = getGoalConfig(userGoal);
 
     // Find highest calorie meal and highest sugar meal
     const highestCalorieMeal = meals.reduce((prev, current) =>
@@ -728,25 +772,63 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
       (prev.sugar > current.sugar) ? prev : current, { sugar: 0 });
 
     // Check if the highest calorie meal is also high in sugar
-    const highCalHighSugar = meals.filter(meal => meal.calories > avgCalories && meal.sugar > 15);
+    const highCalHighSugar = meals.filter(meal => meal.calories > avgCalories && meal.sugar > config.highSugarThreshold);
 
-    // More specific correlation analysis
+    // Goal-specific correlation analysis
     if (highestCalorieMeal.calories > 0 && highestSugarMeal.sugar > 0) {
       // Case 1: Same meal is both highest calorie AND highest sugar
-      if (highestCalorieMeal.fullName === highestSugarMeal.fullName && highestCalorieMeal.sugar > 15) {
+      if (highestCalorieMeal.fullName === highestSugarMeal.fullName && highestCalorieMeal.sugar > config.highSugarThreshold) {
+        const mealName = highestCalorieMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match =>
+          match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match);
+
+        let message = '';
+        switch (config.tone) {
+          case 'harsh':
+            message = `Pattern alert, ${userName}: Your highest calorie meal, ${mealName} at ${Math.round(highestCalorieMeal.calories)} calories, is also your highest sugar meal at ${Math.round(highestCalorieMeal.sugar)}g. This double-whammy creates massive energy spikes followed by crashes - exactly what's ${config.concern}. Balance it with protein and healthy fats NOW.`;
+            break;
+          case 'firm':
+            message = `Pattern alert, ${userName}: Your highest calorie meal, ${mealName} at ${Math.round(highestCalorieMeal.calories)} calories, is also your highest sugar meal at ${Math.round(highestCalorieMeal.sugar)}g. This combination is ${config.concern} - try balancing with protein and healthy fats.`;
+            break;
+          case 'coaching':
+            message = `Pattern alert, ${userName}: Your highest calorie meal, ${mealName} at ${Math.round(highestCalorieMeal.calories)} calories, also has ${Math.round(highestCalorieMeal.sugar)}g sugar. For muscle building, this energy roller coaster isn't ideal - balance with quality protein and complex carbs.`;
+            break;
+          case 'sarcastic':
+            message = `Really, ${userName}? Your biggest meal ${mealName} at ${Math.round(highestCalorieMeal.calories)} calories also has ${Math.round(highestCalorieMeal.sugar)}g sugar? Even for dirty bulking, that's impressively chaotic. At least add some protein to this sugar circus - your muscles deserve better than just empty calories.`;
+            break;
+        }
+
         insights.push({
           type: 'energy-correlation',
           icon: '🔗',
-          message: `Pattern alert, ${userName}: Your highest calorie meal, ${highestCalorieMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} at ${Math.round(highestCalorieMeal.calories)} calories, is also your highest sugar meal at ${Math.round(highestCalorieMeal.sugar)}g. This double-whammy creates massive energy spikes followed by crashes - try balancing with protein and healthy fats.`,
+          message,
           category: 'energy'
         });
       }
       // Case 2: High calorie meals tend to be high sugar (but not necessarily the same meal)
-      else if (highCalHighSugar.length > 0 && highestCalorieMeal.sugar > 10) {
+      else if (highCalHighSugar.length > 0 && highestCalorieMeal.sugar > config.highSugarThreshold * 0.6) {
+        const mealName = highestCalorieMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match =>
+          match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match);
+
+        let message = '';
+        switch (config.tone) {
+          case 'harsh':
+            message = `Pattern alert, ${userName}: Your highest calorie meal, ${mealName} at ${Math.round(highestCalorieMeal.calories)} calories, also packs ${Math.round(highestCalorieMeal.sugar)}g of sugar. High-calorie + high-sugar = energy roller coaster that's ${config.concern}. Fix this with protein and fiber.`;
+            break;
+          case 'firm':
+            message = `Pattern alert, ${userName}: Your highest calorie meal, ${mealName} at ${Math.round(highestCalorieMeal.calories)} calories, contains ${Math.round(highestCalorieMeal.sugar)}g sugar. This combination is ${config.concern} - balance it with protein and fiber.`;
+            break;
+          case 'coaching':
+            message = `Pattern alert, ${userName}: Your biggest meal, ${mealName} at ${Math.round(highestCalorieMeal.calories)} calories, has ${Math.round(highestCalorieMeal.sugar)}g sugar. For muscle growth, pair these calories with quality protein and complex carbs instead.`;
+            break;
+          case 'sarcastic':
+            message = `${userName}, your ${mealName} clocks in at ${Math.round(highestCalorieMeal.calories)} calories with ${Math.round(highestCalorieMeal.sugar)}g sugar. I mean, if you're going to dirty bulk, at least make it strategic dirty bulking. Throw some protein in there!`;
+            break;
+        }
+
         insights.push({
           type: 'energy-correlation',
           icon: '🔗',
-          message: `Pattern alert, ${userName}: Your highest calorie meal, ${highestCalorieMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} at ${Math.round(highestCalorieMeal.calories)} calories, also packs ${Math.round(highestCalorieMeal.sugar)}g of sugar. High-calorie + high-sugar = energy roller coaster. Balance it with protein and fiber.`,
+          message,
           category: 'energy'
         });
       }
@@ -754,17 +836,35 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
 
     // Find low calorie but high sugar meals (empty calories) - but limit to 1 most significant
     const lowCalHighSugar = meals
-      .filter(meal => meal.calories < avgCalories && meal.sugar > 12)
+      .filter(meal => meal.calories < avgCalories && meal.sugar > config.emptyCaloricThreshold)
       .sort((a, b) => (b.sugar / b.calories) - (a.sugar / a.calories)); // Sort by sugar-to-calorie ratio
 
     if (lowCalHighSugar.length > 0) {
       const meal = lowCalHighSugar[0]; // Just take the worst one
       const sugarToCalorieRatio = meal.calories > 0 ? (meal.sugar * 4 / meal.calories * 100) : 0;
+      const mealName = meal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match =>
+        match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match);
+
+      let message = '';
+      switch (config.tone) {
+        case 'harsh':
+          message = `${userName}, your ${mealName} is only ${Math.round(meal.calories)} calories but packs ${Math.round(meal.sugar)}g of sugar - that's ${Math.round(sugarToCalorieRatio)}% sugar calories! This is pure sabotage for weight loss. Add protein for better satiety and blood sugar control.`;
+          break;
+        case 'firm':
+          message = `${userName}, your ${mealName} is ${Math.round(meal.calories)} calories but contains ${Math.round(meal.sugar)}g sugar - that's ${Math.round(sugarToCalorieRatio)}% sugar calories. Consider adding protein for better satiety and more balanced nutrition.`;
+          break;
+        case 'coaching':
+          message = `${userName}, your ${mealName} has ${Math.round(meal.calories)} calories with ${Math.round(meal.sugar)}g sugar - that's ${Math.round(sugarToCalorieRatio)}% sugar calories. For muscle building, pair this with protein to support your gains and improve satiety.`;
+          break;
+        case 'sarcastic':
+          message = `${userName}, your ${mealName} is ${Math.round(meal.calories)} calories but somehow manages ${Math.round(meal.sugar)}g of sugar - impressive ${Math.round(sugarToCalorieRatio)}% sugar efficiency! Even for dirty bulking, you could at least make it constructive calories. Add some protein, champ.`;
+          break;
+      }
 
       insights.push({
         type: 'empty-calories',
         icon: '🍬',
-        message: `${userName}, your ${meal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is only ${Math.round(meal.calories)} calories but packs ${Math.round(meal.sugar)}g of sugar - that's ${Math.round(sugarToCalorieRatio)}% sugar calories! Consider adding protein for better satiety and blood sugar control.`,
+        message,
         category: 'energy'
       });
     }
