@@ -288,16 +288,16 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Stats Summary - Compact */}
-      <div className="text-center mb-4">
+      <div className="text-center mb-4 flex-shrink-0">
         <p className="text-lg text-gray-600">{lineData.length} meals • {Math.round(totalMacros.calories)} total calories</p>
       </div>
 
       {lineData.length > 0 ? (
         <>
           {/* Chart Section - Fixed height */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mb-4">
             {/* Chart and Legend Container - Tight spacing */}
             <div className="space-y-1">
               {/* Line Chart */}
@@ -354,14 +354,14 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
             </div>
           </div>
 
-          {/* Insights Section - Sticky to bottom with flex-grow */}
-          <div className="flex-grow flex flex-col justify-end mt-4">
+          {/* Insights Section - Takes remaining space */}
+          <div className="flex-1 min-h-0">
             <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} />
           </div>
 
         </>
       ) : (
-        <div className="flex-grow flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+        <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
           <div className="text-center">
             <div className="text-4xl mb-2">📈</div>
             <p className="text-gray-500 font-medium">Add meals to see trends</p>
@@ -638,11 +638,11 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
   };
 
   return (
-    <div className="bg-gray-50 rounded-xl p-4">
-      <h4 className="font-semibold text-gray-800 mb-3">🔍 Smart Trend Analysis</h4>
+    <div className="bg-gray-50 rounded-xl p-4 h-full flex flex-col">
+      <h4 className="font-semibold text-gray-800 mb-3 flex-shrink-0">🔍 Smart Trend Analysis</h4>
 
-      {/* Scrollable Content Container - Now with better height management */}
-      <div className="max-h-[240px] overflow-y-auto pr-2 space-y-4">
+      {/* Scrollable Content Container - Properly constrained */}
+      <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
         {/* Timing Insights */}
         {insightCategories.timing.length > 0 && (
           <div>
