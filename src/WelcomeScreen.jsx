@@ -353,7 +353,7 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
           </div>
 
           {/* ENHANCED TREND INSIGHTS - Now directly below legend with minimal gap */}
-          <div className="-mt-3">
+          <div className="-mt-6">
             <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} />
           </div>
 
