@@ -15,15 +15,8 @@ import PrintableNutritionPlan from './PrintableNutritionPlan.jsx';
 import UltimateFitnessCardTrick from './UltimateFitnessCardTrick.jsx';
 import { GlenSaysMotivation, GlenSaysMini } from './MealMessages/DailyMotivation.js';
 import { TierSystemManager } from './mealPlanning/CentralizedTierSystem.js';
-// Import chart components from WelcomeScreen module
-import {
-  ClickableBurnAndLearnView,
-  CustomTrendsView,
-  CustomBarChartView,
-  DailyPieChartView,
-  BarChartView,
-  GameModeBurnAndLearn
-} from './WelcomeScreen.jsx';
+// 🆕 UPDATED: Import the unified AnalyticsModule instead of individual components
+import { AnalyticsModule } from './WelcomeScreen.jsx';
 import BurnAndLearnModule from './BurnAndLearnModule.js';
 import TimePickerModal from './TimePickerModal.jsx';
 
@@ -43,9 +36,7 @@ const timeToMinutes = (timeStr) => {
   return totalMinutes;
 };
 
-// 1. ADD THIS MISSING FUNCTION - Add this near the top with your other helper functions
 const generateId = () => Math.random().toString(36).substr(2, 9);
-
 
 const getSortedMealsByTime = (meals) => {
   return [...meals].sort((a, b) => {
@@ -54,6 +45,7 @@ const getSortedMealsByTime = (meals) => {
     return timeA - timeB;
   });
 };
+
 // 🔧 ADDED: Rounding function for user-friendly serving sizes
 const roundToUserFriendly = (serving, unit) => {
   if (serving <= 0) return 0.25; // Minimum serving
@@ -86,6 +78,7 @@ const roundToUserFriendly = (serving, unit) => {
     return Math.round(serving * 2) / 2;     // → 2, 2.5, 3, etc.
   }
 };
+
 // FIXED: ServingPickerModal - NO tier limits for manual additions
 function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, category, foodName, onSelectServing, onClose }) {
   const [selectedAmount, setSelectedAmount] = useState(1);
@@ -170,7 +163,6 @@ function ServingPickerModal({ isOpen, currentServing, currentUnit, foodData, cat
           <div>
             <h3 className="text-xl font-bold text-gray-800">Select Amount</h3>
             <p className="text-sm text-gray-600">{foodName}</p>
-            {/* 🔧 NEW: Show user freedom message */}
             <p className="text-xs text-blue-600">
               Add any amount you want • No limits on manual additions
             </p>
@@ -319,12 +311,7 @@ function AddFoodsModal({ isOpen, onClose, mealId, mealName, onSelectCategory, on
         {/* Header */}
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-xl font-bold text-gray-800">Add Foods to {mealName}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
         </div>
 
         {/* Content */}
@@ -464,7 +451,6 @@ function FoodSelectionModal({ category, mealId, onAddFood, onClose }) {
         <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
           <div>
             <h3 className="text-xl font-bold text-gray-800">{category}</h3>
-            {/* 🔧 NEW: Show user freedom message */}
             <p className="text-xs text-green-600">Manual addition • Add any amount you want</p>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
@@ -684,16 +670,11 @@ function FullScreenSwipeInterface({
     setSelectedMealForTime(null);
   };
 
-  // SIMPLIFIED: Direct time update with proper closure
   const handleTimeSelection = (newTime) => {
     if (selectedMealForTime) {
       const meal = meals.find(m => m.id === selectedMealForTime);
-      console.log(`Updating time for ${meal.name} to ${newTime}`);
-
-      // Use the passed updateMealTime function
       updateMealTime(meal.name, newTime);
     }
-    // Modal will close automatically via the TimePickerModal's onClose
   };
 
   const getCurrentMeal = () => meals.find(m => m.id === selectedMealForTime);
@@ -850,7 +831,7 @@ const MealSwipeApp = () => {
     'PostWorkout': null
   });
 
-  // 🆕 NEW: Dietary filter state management
+  // NEW: Dietary filter state management
   const [selectedDietaryFilters, setSelectedDietaryFilters] = useState([]);
   const [complianceCheck, setComplianceCheck] = useState({ isCompliant: true, violations: [] });
 
@@ -866,14 +847,14 @@ const MealSwipeApp = () => {
   };
 
   const [meals, setMeals] = useState([
-    { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] }, // FIRST - 5:00 AM
-    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },      // SECOND - 7:00 AM  
-    { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },    // THIRD - 9:30 AM
-    { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },  // FOURTH - 11:00 AM
-    { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },        // FIFTH - 12:30 PM
-    { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] }, // SIXTH - 3:30 PM
-    { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },        // SEVENTH - 6:30 PM
-    { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] }     // EIGHTH - 8:30 PM
+    { id: 8, name: 'PostWorkout', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '5:00 AM', items: [] },
+    { id: 1, name: 'Breakfast', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '7:00 AM', items: [] },
+    { id: 2, name: 'FirstSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '9:30 AM', items: [] },
+    { id: 3, name: 'SecondSnack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '11:00 AM', items: [] },
+    { id: 4, name: 'Lunch', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '12:30 PM', items: [] },
+    { id: 5, name: 'MidAfternoon Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '3:30 PM', items: [] },
+    { id: 6, name: 'Dinner', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '6:30 PM', items: [] },
+    { id: 7, name: 'Late Snack', protein: 0, carbs: 0, fat: 0, sugar: 0, calories: 0, time: '8:30 PM', items: [] }
   ]);
 
   const [currentCard, setCurrentCard] = useState(0);
@@ -884,20 +865,15 @@ const MealSwipeApp = () => {
   const [isFullScreenSwipe, setIsFullScreenSwipe] = useState(false);
   const [showCreateMeal, setShowCreateMeal] = useState(false);
   const [showGame, setShowGame] = useState(false);
-  const [showCardMagic, setShowCardMagic] = useState(false); // NEW: Card Magic state
+  const [showCardMagic, setShowCardMagic] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState(null);
 
-  // ADD: New function specifically for updating meal times without affecting ownership
+  // Add function specifically for updating meal times without affecting ownership
   const updateMealTime = (mealName, newTime) => {
-    console.log(`Updating ${mealName} time to ${newTime} (preserving data)`);
-
     setMeals(prev => prev.map(meal => {
       if (meal.name === mealName) {
-        return {
-          ...meal,
-          time: newTime
-        };
+        return { ...meal, time: newTime };
       }
       return meal;
     }));
@@ -916,7 +892,7 @@ const MealSwipeApp = () => {
   const [isWeekPlanModalOpen, setIsWeekPlanModalOpen] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
-  // Analytics modals state
+  // Analytics modals state - kept for AnalyticsModule
   const [showTrends, setShowTrends] = useState(false);
   const [showPieChart, setShowPieChart] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
@@ -927,7 +903,7 @@ const MealSwipeApp = () => {
 
   const dragRef = useRef({ startX: 0, startY: 0 });
 
-  // 🆕 NEW: Check dietary compliance when dietary filters change
+  // NEW: Check dietary compliance when dietary filters change
   useEffect(() => {
     if (selectedDietaryFilters.length > 0) {
       const compliance = checkMealPlanCompliance(selectedDietaryFilters);
@@ -939,7 +915,7 @@ const MealSwipeApp = () => {
     }
   }, [selectedDietaryFilters, meals]);
 
-  // 🆕 NEW: Dietary compliance checking function
+  // NEW: Dietary compliance checking function
   const checkMealPlanCompliance = (dietaryFilters = []) => {
     if (dietaryFilters.length === 0) return { isCompliant: true, violations: [] };
 
@@ -974,31 +950,6 @@ const MealSwipeApp = () => {
     };
   };
 
-  // 🆕 NEW: Generate custom meal plan using enhanced system
-  const generateCustomMealPlan = async () => {
-    try {
-      const options = {
-        goal: profile.goal || 'maintain',
-        eaterType: 'balanced',
-        mealFreq: 5,
-        dietaryFilters: selectedDietaryFilters,
-        userProfile: profile,
-        calorieData: calculateTDEE(profile)
-      };
-
-      console.log('🎯 Generating custom meal plan with options:', options);
-
-      const customPlan = generateMealPlan(options);
-
-      if (customPlan) {
-        handleAddWeekPlan(customPlan);
-        console.log('✅ Custom meal plan generated successfully');
-      }
-    } catch (error) {
-      console.error('❌ Error generating custom meal plan:', error);
-    }
-  };
-
   // Handle Burn & Learn item clicks
   const handleBurnAndLearnClick = (item) => {
     const currentCalorieData = calculateTDEE(profile);
@@ -1027,16 +978,6 @@ const MealSwipeApp = () => {
     setBurnAndLearnDetails(details[item.id]);
   };
 
-  // Handle Burn & Learn Game Selection
-  const handleBurnAndLearnGameSelect = (gameId) => {
-    setActiveBurnAndLearnGame(gameId);
-  };
-
-  const closeBurnAndLearnGames = () => {
-    setShowBurnAndLearnGames(false);
-    setActiveBurnAndLearnGame(null);
-  };
-
   // NEW: Add Foods Modal handlers
   const handleOpenAddFoodsModal = (mealId, mealName) => {
     setSelectedMealForAddFoods(mealId);
@@ -1052,15 +993,12 @@ const MealSwipeApp = () => {
 
   // Helper function to handle meal ideas opening
   const handleOpenMealIdeas = (mealType) => {
-    console.log(`Opening meal ideas for ${mealType}`);
     setSelectedMealType(mealType);
     setShowMealIdeas(true);
   };
 
   // Helper function to add meal from MealIdeas to the actual meal
   const handleAddMealFromIdeas = (mealData) => {
-    console.log('Adding meal from ideas:', mealData);
-
     // Find the meal to add to based on selectedMealType
     const targetMealName = selectedMealType.charAt(0).toUpperCase() + selectedMealType.slice(1);
     const targetMeal = meals.find(m => m.name === targetMealName);
@@ -1072,17 +1010,6 @@ const MealSwipeApp = () => {
 
     // Claim the meal for mealideas (this overrides any existing ownership)
     claimMeal(targetMeal.name, 'mealideas');
-
-    // Clear existing items and reset totals
-    const clearedMeal = {
-      ...targetMeal,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      sugar: 0,
-      calories: 0,
-      items: []
-    };
 
     // Calculate totals for the new meal
     let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
@@ -1121,14 +1048,13 @@ const MealSwipeApp = () => {
         processedItems.push({
           food: item.food,
           category: dbCategory,
-          servings: roundToUserFriendly(serving, 'servings'), // ← APPLY ROUNDING HERE
+          servings: roundToUserFriendly(serving, 'servings'),
           protein: Math.round(protein),
           carbs: Math.round(carbs),
           fat: Math.round(fat),
           sugar: Math.round(sugar),
           calories: Math.round(calories),
           source: 'mealideas',
-          // 🆕 NEW: Add dietary tag information
           dietaryTags: foodData.dietaryTags || {},
           dietaryCompliant: true // From meal ideas, so assumed compliant
         });
@@ -1153,10 +1079,8 @@ const MealSwipeApp = () => {
     setShowMealIdeas(false);
   };
 
-  // 🆕 ENHANCED: Week Plan Handler with dietary support
+  // ENHANCED: Week Plan Handler with dietary support
   const handleAddWeekPlan = (weekPlan) => {
-    console.log('🆕 Received enhanced week plan:', weekPlan);
-
     // Create meal name mapping (same as before)
     const mealNameMapping = {
       'Breakfast': 'Breakfast',
@@ -1192,8 +1116,6 @@ const MealSwipeApp = () => {
         const appMealName = mealNameMapping[planMeal.mealName] || planMeal.mealName;
         const mealIndex = newMeals.findIndex(m => m.name === appMealName);
 
-        console.log(`Processing meal: ${planMeal.mealName} → ${appMealName} (index: ${mealIndex})`);
-
         if (mealIndex !== -1 && planMeal.items) {
           let totalProtein = 0, totalCarbs = 0, totalFat = 0, totalSugar = 0, totalCalories = 0;
 
@@ -1218,14 +1140,13 @@ const MealSwipeApp = () => {
                 return {
                   food: item.food,
                   category: item.category,
-                  servings: roundToUserFriendly(serving, 'servings'), // ← APPLY ROUNDING HERE
+                  servings: roundToUserFriendly(serving, 'servings'),
                   protein: Math.round(protein),
                   carbs: Math.round(carbs),
                   fat: Math.round(fat),
                   sugar: Math.round(sugar),
                   calories: Math.round(calories),
                   source: weekPlan.generatedWith || 'weekplan-enhanced',
-                  // 🆕 NEW: Enhanced metadata for tracking substitutions
                   originalFood: item.originalFood, // Track if this was substituted
                   substitutionReason: item.substitutionReason, // Why it was substituted
                   dietaryCompliant: !item.substitutionReason, // If no substitution, it's compliant
@@ -1257,35 +1178,9 @@ const MealSwipeApp = () => {
 
     setMeals(newMeals);
     setIsWeekPlanModalOpen(false);
-
-    // 🆕 NEW: Show success message with dietary info
-    if (weekPlan.dietaryFilters && weekPlan.dietaryFilters.length > 0) {
-      console.log(`✅ Applied dietary filters: ${weekPlan.dietaryFilters.join(', ')}`);
-
-      // Count substitutions made
-      const substitutionCount = newMeals.reduce((count, meal) => {
-        return count + (meal.items?.filter(item => item.substitutionReason).length || 0);
-      }, 0);
-
-      if (substitutionCount > 0) {
-        console.log(`🔄 Made ${substitutionCount} dietary substitutions`);
-      }
-    }
-
-    // 🆕 NEW: Log nutritional summary
-    const totalNutrition = newMeals.reduce((total, meal) => ({
-      calories: total.calories + meal.calories,
-      protein: total.protein + meal.protein,
-      carbs: total.carbs + meal.carbs,
-      fat: total.fat + meal.fat
-    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
-
-    console.log('📊 Week plan nutrition summary:', totalNutrition);
   };
 
   const claimMeal = (mealName, source) => {
-    console.log(`Claiming meal ${mealName} for ${source}`);
-
     const previousSource = mealSources[mealName];
 
     // Update meal sources
@@ -1506,11 +1401,9 @@ const MealSwipeApp = () => {
     const meal = meals.find(m => m.id === mealId);
     if (!meal) return;
 
-    console.log(`✅ Manual addition: ${foodName} - ${servings} servings (no tier limits applied)`);
-
     setMeals(prev => prev.map(meal => {
       if (meal.id === mealId) {
-        // 🔧 FIXED: Use rounded servings for user-friendly display, but NO tier limits
+        // FIXED: Use rounded servings for user-friendly display, but NO tier limits
         const roundedServings = roundToUserFriendly(servings, 'servings');
 
         const newItem = {
@@ -1524,7 +1417,6 @@ const MealSwipeApp = () => {
           sugar: Math.round((foodData.sugar || 0) * roundedServings),
           calories: Math.round(foodData.calories * roundedServings),
           source: 'manual-addition', // Mark as manual
-          // No tier data for manual additions - user choice
           dietaryTags: foodData.dietaryTags || {},
           dietaryCompliant: true
         };
@@ -1594,7 +1486,7 @@ const MealSwipeApp = () => {
     return allMeals;
   };
 
-  // 🆕 NEW: Calculate dynamic macro goals based on weight and goal
+  // NEW: Calculate dynamic macro goals based on weight and goal
   const calculateMacroGoals = (userProfile) => {
     const weight = parseFloat(userProfile.weight) || 150; // Default to 150lbs if no weight
     const goal = userProfile.goal || 'maintain';
@@ -1623,9 +1515,9 @@ const MealSwipeApp = () => {
       carbs: carbTarget,
       weightBased: true
     };
- };
+  };
 
-  // 🆕 ENHANCED: Calculate calorie data with better meal planning support
+  // ENHANCED: Calculate calorie data with better meal planning support
   const calculateTDEE = (userProfile) => {
     const { heightFeet, heightInches, weight, exerciseLevel, goal, gender } = userProfile;
 
@@ -1664,7 +1556,7 @@ const MealSwipeApp = () => {
 
     const tdee = bmr * activityMultipliers[exerciseLevel];
 
-    // Goal adjustments - 🆕 ENHANCED for better meal planning
+    // Goal adjustments - ENHANCED for better meal planning
     let targetCalories;
     switch (goal) {
       case 'lose':
@@ -1729,16 +1621,12 @@ const MealSwipeApp = () => {
     );
   };
 
-  // 2. REPLACE your current openFoodSelection function with this enhanced version
+  // REPLACE your current openFoodSelection function with this enhanced version
   const openFoodSelection = (category, mealId) => {
-    console.log('🔍 openFoodSelection called:', { category, mealId });
-
     const meal = meals.find(m => m.id === mealId);
-    console.log('🍽️ Found meal:', meal?.name);
 
     // Check if meal is USDA owned
     if (meal && mealSources[meal.name] === 'usda') {
-      console.log('🔒 Cannot modify USDA meal:', meal.name);
       return;
     }
 
@@ -1747,16 +1635,13 @@ const MealSwipeApp = () => {
 
     // Set selection state with delay to ensure modal transitions
     setTimeout(() => {
-      console.log('✅ Setting selectedCategory:', category);
-      console.log('✅ Setting selectedMealForFood:', mealId);
       setSelectedCategory(category);
       setSelectedMealForFood(mealId);
     }, 100);
   };
 
-  // 3. REPLACE your current closeFoodSelection function with this
+  // REPLACE your current closeFoodSelection function with this
   const closeFoodSelection = () => {
-    console.log('🔍 closeFoodSelection called');
     setSelectedCategory(null);
     setSelectedMealForFood(null);
   };
@@ -1764,7 +1649,6 @@ const MealSwipeApp = () => {
   const enterSwipeMode = () => {
     setIsSwipeMode(true);
     document.body.style.overflow = 'hidden';
-    // 🔧 FIXED: Add proper sorting setup
     setCurrentCard(0);
     const sortedMeals = getSortedMealsByTime(meals);
     setCardPositions(sortedMeals.map(() => ({ x: 0, y: 0, rotation: 0 })));
@@ -1791,7 +1675,6 @@ const MealSwipeApp = () => {
   const enterFullScreenSwipe = () => {
     setIsFullScreenSwipe(true);
     document.body.style.overflow = 'hidden';
-    // 🔧 FIXED: Add proper sorting setup
     setCurrentCard(0);
     const sortedMeals = getSortedMealsByTime(meals);
     setCardPositions(sortedMeals.map(() => ({ x: 0, y: 0, rotation: 0 })));
@@ -1864,7 +1747,6 @@ const MealSwipeApp = () => {
   // Handle profile updates from ProfileModule
   const handleProfileUpdate = (newProfile) => {
     setProfile(newProfile);
-    console.log('Profile updated:', newProfile);
   };
 
   // Calculate fruit budget remaining (3 fruits per day max recommended)
@@ -1946,7 +1828,7 @@ const MealSwipeApp = () => {
             {/* NEW UNIFIED Daily Nutrition Summary with Action Buttons and Analytics */}
             <div className="bg-white rounded-2xl p-4 mb-6 shadow-xl">
               <h2 className="text-lg font-bold text-gray-800 mb-3 text-center">Daily Nutrition Summary</h2>
-              
+
               {/* Show mixed approach status */}
               {profile.firstName && totalMacros.calories > 100 && (
                 <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-2 mb-4 text-center">
@@ -1956,21 +1838,21 @@ const MealSwipeApp = () => {
                   </div>
                 </div>
               )}
-              
+
               {/* Macro Grid */}
               <div className="grid grid-cols-4 gap-3 text-center mb-4">
                 <div className="bg-blue-100 rounded-lg p-3">
                   <div className="text-xs text-blue-600 font-medium">Protein</div>
                   <div className="text-lg font-bold text-blue-800">{Math.round(totalMacros.protein)}g</div>
                   <div className="text-xs text-blue-500">
-                    {macroGoals.protein}g target    {/* ← Should be dynamic */}
+                    {macroGoals.protein}g target
                   </div>
                 </div>
                 <div className="bg-green-100 rounded-lg p-3">
                   <div className="text-xs text-green-600 font-medium">Carbs</div>
                   <div className="text-lg font-bold text-green-800">{Math.round(totalMacros.carbs)}g</div>
                   <div className="text-xs text-green-500">
-                    {macroGoals.carbs}g target      {/* ← Should show carb target */}
+                    {macroGoals.carbs}g target
                   </div>
                 </div>
                 <div className="bg-yellow-100 rounded-lg p-3">
@@ -1985,7 +1867,7 @@ const MealSwipeApp = () => {
                   </div>
                 </div>
               </div>
-            
+
               {/* Action Buttons - Same 4-column grid for uniformity */}
               <div className="grid grid-cols-4 gap-3 mb-4">
                 <button
@@ -2177,7 +2059,7 @@ const MealSwipeApp = () => {
             onClaimMeal={claimMeal}
             onOpenMealIdeas={handleOpenMealIdeas}
             onOpenAddFoodsModal={handleOpenAddFoodsModal}
-            updateMealTime={updateMealTime} 
+            updateMealTime={updateMealTime}
           />
         )}
 
@@ -2201,7 +2083,6 @@ const MealSwipeApp = () => {
               {/* Scrollable Meals Section */}
               <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                 <div className="space-y-4 max-w-md mx-auto">
-                  {/* 🔧 FIXED: Use getSortedMealsByTime instead of undefined sortedMeals */}
                   {getSortedMealsByTime(meals).map((meal) => {
                     const source = mealSources[meal.name];
                     const isUSDAOwned = source === 'usda';
@@ -2239,7 +2120,7 @@ const MealSwipeApp = () => {
                           readOnly={true}
                         />
 
-                        {/* Meal Macros (without daily totals) */}
+                        {/* Meal Macros */}
                         {meal.calories > 0 && (
                           <div className="mt-3 bg-gray-50 rounded-lg p-2">
                             <div className="grid grid-cols-4 gap-2 text-center text-xs">
@@ -2319,7 +2200,7 @@ const MealSwipeApp = () => {
           />
         )}
 
-        {/* NEW: Add Foods Modal */}
+        {/* Add Foods Modal */}
         <AddFoodsModal
           isOpen={showAddFoodsModal}
           onClose={handleCloseAddFoodsModal}
@@ -2365,7 +2246,7 @@ const MealSwipeApp = () => {
           </div>
         )}
 
-        {/* NEW: Card Magic Modal */}
+        {/* Card Magic Modal */}
         {showCardMagic && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-screen overflow-y-auto">
@@ -2404,69 +2285,25 @@ const MealSwipeApp = () => {
           isMobile={true}
         />
 
-        {/* Nutrition Games Modal */}
-        {showBurnAndLearnGames && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">🎮 Nutrition Games</h3>
-                <button onClick={closeBurnAndLearnGames} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4">
-                {activeBurnAndLearnGame ? (
-                  <BurnAndLearnModule
-                    activeGame={activeBurnAndLearnGame}
-                    onExit={closeBurnAndLearnGames}
-                  />
-                ) : (
-                  <GameModeBurnAndLearn onGameSelect={handleBurnAndLearnGameSelect} />
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showTrends && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">📈 Daily Trends</h3>
-                <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
-                <CustomTrendsView meals={meals} totalMacros={totalMacros} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showPieChart && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">🥧 Macro Distribution</h3>
-                <button onClick={() => setShowPieChart(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
-                <DailyPieChartView totalMacros={totalMacros} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showGraphs && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">📊 Meal Breakdown</h3>
-                <button onClick={() => setShowGraphs(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
-              </div>
-              <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
-                <BarChartView meals={meals} />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Analytics Module - Handles all chart modals */}
+        <AnalyticsModule
+          meals={meals}
+          totalMacros={totalMacros}
+          profile={profile}
+          showTrends={showTrends}
+          setShowTrends={setShowTrends}
+          showPieChart={showPieChart}
+          setShowPieChart={setShowPieChart}
+          showGraphs={showGraphs}
+          setShowGraphs={setShowGraphs}
+          showBurnAndLearnGames={showBurnAndLearnGames}
+          setShowBurnAndLearnGames={setShowBurnAndLearnGames}
+          handleBurnAndLearnClick={handleBurnAndLearnClick}
+          burnAndLearnDetails={burnAndLearnDetails}
+          setBurnAndLearnDetails={setBurnAndLearnDetails}
+          activeBurnAndLearnGame={activeBurnAndLearnGame}
+          setActiveBurnAndLearnGame={setActiveBurnAndLearnGame}
+        />
       </div>
     </div>
   );

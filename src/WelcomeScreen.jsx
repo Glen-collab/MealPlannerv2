@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
+import BurnAndLearnModule from './BurnAndLearnModule.js';
+
+// ========================
+// CHART COMPONENTS
+// ========================
 
 // Enhanced Game Mode Burn & Learn Component
 function GameModeBurnAndLearn({ onGameSelect }) {
@@ -211,59 +216,176 @@ function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
   );
 }
 
-// Original Burn & Learn Component (for reference)
-function BurnAndLearnView({ totalMacros, profile }) {
-  const proteinCalories = totalMacros.protein * 4;
-  const carbCalories = totalMacros.carbs * 4;
-  const fatCalories = totalMacros.fat * 9;
-  const totalCaloriesFromMacros = proteinCalories + carbCalories + fatCalories;
+// New Enhanced Trends Line Chart Component
+function CalorieSugarTrendsView({ meals, totalMacros }) {
+  // Create line chart data from meals
+  const lineData = meals
+    .filter(meal => meal.calories > 0)
+    .map((meal, index) => {
+      // Calculate sugar safely - use actual sugar if available, otherwise estimate from carbs
+      const sugarValue = meal.sugar || Math.round(meal.carbs * 0.3);
 
-  const proteinPercent = totalCaloriesFromMacros > 0 ? Math.round((proteinCalories / totalCaloriesFromMacros) * 100) : 0;
-  const carbPercent = totalCaloriesFromMacros > 0 ? Math.round((carbCalories / totalCaloriesFromMacros) * 100) : 0;
-  const fatPercent = totalCaloriesFromMacros > 0 ? Math.round((fatCalories / totalCaloriesFromMacros) * 100) : 0;
+      // Get top 2 food items for display
+      const topFoods = meal.items && meal.items.length > 0
+        ? meal.items
+          .sort((a, b) => b.calories - a.calories)
+          .slice(0, 2)
+          .map(item => item.food)
+          .join(', ')
+        : 'No foods added';
 
-  // Calculate estimated metabolic boost
-  const proteinThermic = totalMacros.protein * 4 * 0.3; // 30% thermic effect
-  const carbThermic = totalMacros.carbs * 4 * 0.1; // 10% thermic effect
-  const fatThermic = totalMacros.fat * 9 * 0.05; // 5% thermic effect
-  const totalCalorieBurn = proteinThermic + carbThermic + fatThermic;
+      return {
+        name: meal.name.length > 8 ? meal.name.substring(0, 8) + '...' : meal.name,
+        fullName: meal.name,
+        time: meal.time,
+        calories: Math.round(meal.calories),
+        sugar: Math.round(sugarValue),
+        sugarScaled: Math.round(sugarValue * 10), // x10 for visibility on chart
+        topFoods: topFoods,
+        totalItems: meal.items ? meal.items.length : 0
+      };
+    })
+    .sort((a, b) => {
+      // Sort by time
+      const timeToMinutes = (timeStr) => {
+        const [time, period] = timeStr.split(' ');
+        const [hours, minutes] = time.split(':').map(Number);
+        let totalMinutes = hours * 60 + (minutes || 0);
+        if (period === 'PM' && hours !== 12) totalMinutes += 12 * 60;
+        if (period === 'AM' && hours === 12) totalMinutes -= 12 * 60;
+        return totalMinutes;
+      };
+      return timeToMinutes(a.time) - timeToMinutes(b.time);
+    });
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white border border-gray-300 rounded-lg p-3 shadow-lg">
+          <h4 className="font-bold text-gray-800">{data.fullName}</h4>
+          <p className="text-sm text-gray-600 mb-2">{data.time}</p>
+          <div className="space-y-1 text-sm">
+            <div className="text-blue-600">
+              <span className="font-medium">Calories:</span> {data.calories}
+            </div>
+            <div className="text-orange-600">
+              <span className="font-medium">Sugar:</span> {data.sugar}g
+            </div>
+            <div className="text-gray-700 mt-2">
+              <span className="font-medium">Top Foods:</span>
+              <div className="text-xs text-gray-600 mt-1">{data.topFoods}</div>
+            </div>
+            <div className="text-xs text-gray-500">
+              {data.totalItems} item{data.totalItems !== 1 ? 's' : ''} total
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="text-center mb-4">
-        <h3 className="text-xl font-bold text-gray-800 mb-2">🔥 Burn & Learn</h3>
-        <p className="text-sm text-gray-600">How your food choices affect calorie burn</p>
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">📈 Calorie vs Sugar Trends</h3>
+        <p className="text-lg text-gray-600">{lineData.length} meals • {Math.round(totalMacros.calories)} total calories</p>
       </div>
 
-      {/* Calorie Burn Estimate */}
-      <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-orange-600 mb-1">
-            +{Math.round(totalCalorieBurn)} cal
+      {lineData.length > 0 ? (
+        <>
+          {/* Line Chart */}
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10 }}
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip content={<CustomTooltip />} />
+
+                {/* Calories Line */}
+                <Line
+                  type="monotone"
+                  dataKey="calories"
+                  stroke="#3B82F6"
+                  strokeWidth={3}
+                  dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                  name="Calories"
+                />
+
+                {/* Sugar Line (x10 scale) */}
+                <Line
+                  type="monotone"
+                  dataKey="sugarScaled"
+                  stroke="#F97316"
+                  strokeWidth={3}
+                  dot={{ fill: '#F97316', strokeWidth: 2, r: 4 }}
+                  name="Sugar (x10)"
+                  strokeDasharray="5 5"
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-          <div className="text-sm text-orange-700 font-medium">Extra Calories Burned</div>
-          <div className="text-xs text-orange-600 mt-1">from digesting your food!</div>
-        </div>
-      </div>
 
-      {/* Macro Breakdown with Burn Info */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-          <div className="text-lg font-bold text-blue-600">{proteinPercent}%</div>
-          <div className="text-xs text-blue-700">Protein</div>
-          <div className="text-xs text-blue-600 mt-1">Burns {Math.round(proteinThermic)} cal</div>
+          {/* Legend */}
+          <div className="flex justify-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-1 bg-blue-500 rounded"></div>
+              <span className="text-gray-700">Calories</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-1 bg-orange-500 rounded border-dashed border border-orange-500"></div>
+              <span className="text-gray-700">Sugar (x10 scale)</span>
+            </div>
+          </div>
+
+          {/* Trend Insights */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <h4 className="font-semibold text-gray-800 mb-3">📊 Trend Insights</h4>
+            <div className="space-y-2 text-sm text-gray-700">
+              {(() => {
+                const avgCalories = Math.round(lineData.reduce((sum, meal) => sum + meal.calories, 0) / lineData.length);
+                const avgSugar = Math.round(lineData.reduce((sum, meal) => sum + meal.sugar, 0) / lineData.length);
+                const highestCalorieMeal = lineData.reduce((prev, current) => (prev.calories > current.calories) ? prev : current);
+                const highestSugarMeal = lineData.reduce((prev, current) => (prev.sugar > current.sugar) ? prev : current);
+                const totalSugar = lineData.reduce((sum, meal) => sum + meal.sugar, 0);
+
+                return (
+                  <>
+                    <div>🍽️ <strong>Average per meal:</strong> {avgCalories} cal, {avgSugar}g sugar</div>
+                    <div>📈 <strong>Highest calories:</strong> {highestCalorieMeal.fullName} ({highestCalorieMeal.calories} cal)</div>
+                    <div>🍭 <strong>Highest sugar:</strong> {highestSugarMeal.fullName} ({highestSugarMeal.sugar}g)</div>
+                    <div>📊 <strong>Total daily sugar:</strong> {Math.round(totalSugar)}g</div>
+                    <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                      <div className="text-xs text-blue-700">
+                        <strong>💡 Tip:</strong> Look for patterns! High sugar spikes often correspond to calorie spikes.
+                        The dashed orange line shows sugar trends (multiplied by 10 to match calorie scale).
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <div className="text-center">
+            <div className="text-4xl mb-2">📈</div>
+            <p className="text-gray-500 font-medium">Add meals to see trends</p>
+            <p className="text-gray-400 text-sm">Your calorie vs sugar trends will appear here</p>
+          </div>
         </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-          <div className="text-lg font-bold text-green-600">{carbPercent}%</div>
-          <div className="text-xs text-green-700">Carbs</div>
-          <div className="text-xs text-green-600 mt-1">Burns {Math.round(carbThermic)} cal</div>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
-          <div className="text-lg font-bold text-yellow-600">{fatPercent}%</div>
-          <div className="text-xs text-yellow-700">Fat</div>
-          <div className="text-xs text-yellow-600 mt-1">Burns {Math.round(fatThermic)} cal</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -330,110 +452,6 @@ function CustomTrendsView({ meals, totalMacros }) {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-// Original Trends Chart Component
-function TrendsView({ meals, totalMacros }) {
-  // Create timeline data from meals
-  const timelineData = meals
-    .filter(meal => meal.calories > 0)
-    .map((meal, index) => {
-      const timeToHours = (timeStr) => {
-        const [time, period] = timeStr.split(' ');
-        const [hours, minutes] = time.split(':').map(Number);
-        let hour24 = hours;
-        if (period === 'PM' && hours !== 12) hour24 += 12;
-        if (period === 'AM' && hours === 12) hour24 = 0;
-        return hour24 + minutes / 60;
-      };
-
-      return {
-        name: meal.name.length > 8 ? meal.name.substring(0, 8) + '...' : meal.name,
-        time: timeToHours(meal.time),
-        calories: Math.round(meal.calories),
-        protein: Math.round(meal.protein),
-        carbs: Math.round(meal.carbs),
-        fat: Math.round(meal.fat),
-        cumulativeCalories: 0 // Will be calculated below
-      };
-    })
-    .sort((a, b) => a.time - b.time);
-
-  // Calculate cumulative calories
-  let cumulative = 0;
-  timelineData.forEach(meal => {
-    cumulative += meal.calories;
-    meal.cumulativeCalories = cumulative;
-  });
-
-  return (
-    <div className="space-y-4">
-      <div className="text-center mb-4">
-        <h3 className="text-xl font-bold text-gray-800 mb-2">📈 Daily Trends</h3>
-        <p className="text-sm text-gray-600">Track your nutrition throughout the day</p>
-      </div>
-
-      {timelineData.length > 0 ? (
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={timelineData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 10 }}
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={60}
-              />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip
-                formatter={(value, name) => [value, name]}
-                labelFormatter={(label) => `Meal: ${label}`}
-              />
-              <Line
-                type="monotone"
-                dataKey="cumulativeCalories"
-                stroke="#8884d8"
-                strokeWidth={3}
-                name="Cumulative Calories"
-              />
-              <Line
-                type="monotone"
-                dataKey="protein"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                name="Protein (g)"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-          <div className="text-center">
-            <div className="text-4xl mb-2">📈</div>
-            <p className="text-gray-500 font-medium">Add meals to see trends</p>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Stats */}
-      {timelineData.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-            <div className="text-lg font-bold text-blue-600">{timelineData.length}</div>
-            <div className="text-xs text-blue-700">Meals Today</div>
-          </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-            <div className="text-lg font-bold text-green-600">
-              {Math.round(totalMacros.calories / timelineData.length)}
-            </div>
-            <div className="text-xs text-green-700">Avg Cal/Meal</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -656,6 +674,349 @@ function DailyPieChartView({ totalMacros }) {
   );
 }
 
+// ========================
+// MAIN ANALYTICS MODULE
+// ========================
+
+// Main Analytics Module that handles all chart modals
+function AnalyticsModule({
+  meals,
+  totalMacros,
+  profile,
+  showTrends,
+  setShowTrends,
+  showPieChart,
+  setShowPieChart,
+  showGraphs,
+  setShowGraphs,
+  showBurnAndLearnGames,
+  setShowBurnAndLearnGames,
+  handleBurnAndLearnClick,
+  burnAndLearnDetails,
+  setBurnAndLearnDetails,
+  activeBurnAndLearnGame,
+  setActiveBurnAndLearnGame
+}) {
+
+  const handleBurnAndLearnGameSelect = (gameId) => {
+    setActiveBurnAndLearnGame(gameId);
+  };
+
+  const closeBurnAndLearnGames = () => {
+    setShowBurnAndLearnGames(false);
+    setActiveBurnAndLearnGame(null);
+  };
+
+  return (
+    <>
+      {/* Trends Modal */}
+      {showTrends && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">📈 Calorie vs Sugar Trends</h3>
+              <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
+              <CalorieSugarTrendsView meals={meals} totalMacros={totalMacros} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pie Chart Modal */}
+      {showPieChart && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">🥧 Macro Distribution</h3>
+              <button onClick={() => setShowPieChart(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
+              <DailyPieChartView totalMacros={totalMacros} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Graphs Modal */}
+      {showGraphs && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md" style={{ height: '600px' }}>
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">📊 Meal Breakdown</h3>
+              <button onClick={() => setShowGraphs(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
+              <BarChartView meals={meals} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nutrition Games Modal */}
+      {showBurnAndLearnGames && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-screen overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">🎮 Nutrition Games</h3>
+              <button onClick={closeBurnAndLearnGames} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <div className="p-4">
+              {activeBurnAndLearnGame ? (
+                <BurnAndLearnModule
+                  activeGame={activeBurnAndLearnGame}
+                  onExit={closeBurnAndLearnGames}
+                />
+              ) : (
+                <GameModeBurnAndLearn onGameSelect={handleBurnAndLearnGameSelect} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Burn & Learn Details Modal */}
+      {burnAndLearnDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">{burnAndLearnDetails.title}</h3>
+              <button onClick={() => setBurnAndLearnDetails(null)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-700 leading-relaxed">{burnAndLearnDetails.content}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// Main Welcome Screen Component (Original)
+export function WelcomeScreen({ profile, totalMacros, meals }) {
+  const [viewMode, setViewMode] = useState('burn');
+
+  return (
+    <div className="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome {profile.name}!</h2>
+        <p className="text-gray-600">Ready to track your {profile.goal} journey? Let's get started!</p>
+      </div>
+
+      {/* View Mode Toggle Buttons */}
+      <div className="grid grid-cols-4 gap-2 mb-6">
+        <button
+          onClick={() => setViewMode('burn')}
+          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'burn'
+            ? 'bg-orange-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+        >
+          🔥 Burn
+        </button>
+        <button
+          onClick={() => setViewMode('trends')}
+          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'trends'
+            ? 'bg-blue-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+        >
+          📈 Trends
+        </button>
+        <button
+          onClick={() => setViewMode('bar')}
+          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'bar'
+            ? 'bg-green-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+        >
+          📊 Graph
+        </button>
+        <button
+          onClick={() => setViewMode('pie')}
+          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'pie'
+            ? 'bg-purple-500 text-white shadow-lg'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+        >
+          🥧 Pie
+        </button>
+      </div>
+
+      {/* Dynamic Chart Content */}
+      <div className="min-h-[300px]">
+        {viewMode === 'burn' && <BurnAndLearnView totalMacros={totalMacros} profile={profile} />}
+        {viewMode === 'trends' && <TrendsView meals={meals} totalMacros={totalMacros} />}
+        {viewMode === 'bar' && <BarChartView meals={meals} />}
+        {viewMode === 'pie' && <PieChartView totalMacros={totalMacros} />}
+      </div>
+    </div>
+  );
+}
+
+// Original Burn & Learn Component (for reference)
+function BurnAndLearnView({ totalMacros, profile }) {
+  const proteinCalories = totalMacros.protein * 4;
+  const carbCalories = totalMacros.carbs * 4;
+  const fatCalories = totalMacros.fat * 9;
+  const totalCaloriesFromMacros = proteinCalories + carbCalories + fatCalories;
+
+  const proteinPercent = totalCaloriesFromMacros > 0 ? Math.round((proteinCalories / totalCaloriesFromMacros) * 100) : 0;
+  const carbPercent = totalCaloriesFromMacros > 0 ? Math.round((carbCalories / totalCaloriesFromMacros) * 100) : 0;
+  const fatPercent = totalCaloriesFromMacros > 0 ? Math.round((fatCalories / totalCaloriesFromMacros) * 100) : 0;
+
+  // Calculate estimated metabolic boost
+  const proteinThermic = totalMacros.protein * 4 * 0.3; // 30% thermic effect
+  const carbThermic = totalMacros.carbs * 4 * 0.1; // 10% thermic effect
+  const fatThermic = totalMacros.fat * 9 * 0.05; // 5% thermic effect
+  const totalCalorieBurn = proteinThermic + carbThermic + fatThermic;
+
+  return (
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <h3 className="text-xl font-bold text-gray-800 mb-2">🔥 Burn & Learn</h3>
+        <p className="text-sm text-gray-600">How your food choices affect calorie burn</p>
+      </div>
+
+      {/* Calorie Burn Estimate */}
+      <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-orange-600 mb-1">
+            +{Math.round(totalCalorieBurn)} cal
+          </div>
+          <div className="text-sm text-orange-700 font-medium">Extra Calories Burned</div>
+          <div className="text-xs text-orange-600 mt-1">from digesting your food!</div>
+        </div>
+      </div>
+
+      {/* Macro Breakdown with Burn Info */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+          <div className="text-lg font-bold text-blue-600">{proteinPercent}%</div>
+          <div className="text-xs text-blue-700">Protein</div>
+          <div className="text-xs text-blue-600 mt-1">Burns {Math.round(proteinThermic)} cal</div>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+          <div className="text-lg font-bold text-green-600">{carbPercent}%</div>
+          <div className="text-xs text-green-700">Carbs</div>
+          <div className="text-xs text-green-600 mt-1">Burns {Math.round(carbThermic)} cal</div>
+        </div>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+          <div className="text-lg font-bold text-yellow-600">{fatPercent}%</div>
+          <div className="text-xs text-yellow-700">Fat</div>
+          <div className="text-xs text-yellow-600 mt-1">Burns {Math.round(fatThermic)} cal</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Original Trends Chart Component
+function TrendsView({ meals, totalMacros }) {
+  // Create timeline data from meals
+  const timelineData = meals
+    .filter(meal => meal.calories > 0)
+    .map((meal, index) => {
+      const timeToHours = (timeStr) => {
+        const [time, period] = timeStr.split(' ');
+        const [hours, minutes] = time.split(':').map(Number);
+        let hour24 = hours;
+        if (period === 'PM' && hours !== 12) hour24 += 12;
+        if (period === 'AM' && hours === 12) hour24 = 0;
+        return hour24 + minutes / 60;
+      };
+
+      return {
+        name: meal.name.length > 8 ? meal.name.substring(0, 8) + '...' : meal.name,
+        time: timeToHours(meal.time),
+        calories: Math.round(meal.calories),
+        protein: Math.round(meal.protein),
+        carbs: Math.round(meal.carbs),
+        fat: Math.round(meal.fat),
+        cumulativeCalories: 0 // Will be calculated below
+      };
+    })
+    .sort((a, b) => a.time - b.time);
+
+  // Calculate cumulative calories
+  let cumulative = 0;
+  timelineData.forEach(meal => {
+    cumulative += meal.calories;
+    meal.cumulativeCalories = cumulative;
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <h3 className="text-xl font-bold text-gray-800 mb-2">📈 Daily Trends</h3>
+        <p className="text-sm text-gray-600">Track your nutrition throughout the day</p>
+      </div>
+
+      {timelineData.length > 0 ? (
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={timelineData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 10 }}
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+              />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip
+                formatter={(value, name) => [value, name]}
+                labelFormatter={(label) => `Meal: ${label}`}
+              />
+              <Line
+                type="monotone"
+                dataKey="cumulativeCalories"
+                stroke="#8884d8"
+                strokeWidth={3}
+                name="Cumulative Calories"
+              />
+              <Line
+                type="monotone"
+                dataKey="protein"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                name="Protein (g)"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <div className="text-center">
+            <div className="text-4xl mb-2">📈</div>
+            <p className="text-gray-500 font-medium">Add meals to see trends</p>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Stats */}
+      {timelineData.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-blue-600">{timelineData.length}</div>
+            <div className="text-xs text-blue-700">Meals Today</div>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-green-600">
+              {Math.round(totalMacros.calories / timelineData.length)}
+            </div>
+            <div className="text-xs text-green-700">Avg Cal/Meal</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Original Simple Pie Chart View Component
 function PieChartView({ totalMacros }) {
   const pieData = totalMacros.calories > 0 ? [
@@ -726,68 +1087,6 @@ function PieChartView({ totalMacros }) {
   );
 }
 
-// Main Welcome Screen Component
-export function WelcomeScreen({ profile, totalMacros, meals }) {
-  const [viewMode, setViewMode] = useState('burn');
-
-  return (
-    <div className="bg-white rounded-2xl p-6 mb-6 shadow-xl">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome {profile.name}!</h2>
-        <p className="text-gray-600">Ready to track your {profile.goal} journey? Let's get started!</p>
-      </div>
-
-      {/* View Mode Toggle Buttons */}
-      <div className="grid grid-cols-4 gap-2 mb-6">
-        <button
-          onClick={() => setViewMode('burn')}
-          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'burn'
-            ? 'bg-orange-500 text-white shadow-lg'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-        >
-          🔥 Burn
-        </button>
-        <button
-          onClick={() => setViewMode('trends')}
-          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'trends'
-            ? 'bg-blue-500 text-white shadow-lg'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-        >
-          📈 Trends
-        </button>
-        <button
-          onClick={() => setViewMode('bar')}
-          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'bar'
-            ? 'bg-green-500 text-white shadow-lg'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-        >
-          📊 Graph
-        </button>
-        <button
-          onClick={() => setViewMode('pie')}
-          className={`py-3 px-2 rounded-xl font-medium text-sm transition-all ${viewMode === 'pie'
-            ? 'bg-purple-500 text-white shadow-lg'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-        >
-          🥧 Pie
-        </button>
-      </div>
-
-      {/* Dynamic Chart Content */}
-      <div className="min-h-[300px]">
-        {viewMode === 'burn' && <BurnAndLearnView totalMacros={totalMacros} profile={profile} />}
-        {viewMode === 'trends' && <TrendsView meals={meals} totalMacros={totalMacros} />}
-        {viewMode === 'bar' && <BarChartView meals={meals} />}
-        {viewMode === 'pie' && <PieChartView totalMacros={totalMacros} />}
-      </div>
-    </div>
-  );
-}
-
 export {
   BurnAndLearnView,
   TrendsView,
@@ -795,7 +1094,9 @@ export {
   PieChartView,
   ClickableBurnAndLearnView,
   CustomTrendsView,
+  CalorieSugarTrendsView,
   CustomBarChartView,
   DailyPieChartView,
-  GameModeBurnAndLearn
+  GameModeBurnAndLearn,
+  AnalyticsModule
 };
