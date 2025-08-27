@@ -297,60 +297,65 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
 
       {lineData.length > 0 ? (
         <>
-          {/* Line Chart */}
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10 }}
-                  interval={0}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip content={<CustomTooltip />} />
+          {/* Chart and Legend Container - Tight spacing */}
+          <div className="space-y-3">
+            {/* Line Chart */}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip content={<CustomTooltip />} />
 
-                {/* Calories Line */}
-                <Line
-                  type="monotone"
-                  dataKey="calories"
-                  stroke="#3B82F6"
-                  strokeWidth={3}
-                  dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                  name="Calories"
-                />
+                  {/* Calories Line */}
+                  <Line
+                    type="monotone"
+                    dataKey="calories"
+                    stroke="#3B82F6"
+                    strokeWidth={3}
+                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                    name="Calories"
+                  />
 
-                {/* Sugar Line (x10 scale) */}
-                <Line
-                  type="monotone"
-                  dataKey="sugarScaled"
-                  stroke="#F97316"
-                  strokeWidth={3}
-                  dot={{ fill: '#F97316', strokeWidth: 2, r: 4 }}
-                  name="Sugar (x10)"
-                  strokeDasharray="5 5"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                  {/* Sugar Line (x10 scale) */}
+                  <Line
+                    type="monotone"
+                    dataKey="sugarScaled"
+                    stroke="#F97316"
+                    strokeWidth={3}
+                    dot={{ fill: '#F97316', strokeWidth: 2, r: 4 }}
+                    name="Sugar (x10)"
+                    strokeDasharray="5 5"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Legend - Now closer to chart */}
+            <div className="flex justify-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-1 bg-blue-500 rounded"></div>
+                <span className="text-gray-700">Calories</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-1 bg-orange-500 rounded border-dashed border border-orange-500"></div>
+                <span className="text-gray-700">Sugar (x10 scale)</span>
+              </div>
+            </div>
           </div>
 
-          {/* Legend */}
-          <div className="flex justify-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-blue-500 rounded"></div>
-              <span className="text-gray-700">Calories</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-orange-500 rounded border-dashed border border-orange-500"></div>
-              <span className="text-gray-700">Sugar (x10 scale)</span>
-            </div>
+          {/* ENHANCED TREND INSIGHTS - Now directly below legend with minimal gap */}
+          <div className="-mt-3">
+            <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} />
           </div>
-
-          {/* ENHANCED TREND INSIGHTS - This replaces the old basic insights */}
-          <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} />
 
         </>
       ) : (
