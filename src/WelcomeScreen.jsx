@@ -298,11 +298,11 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
       {lineData.length > 0 ? (
         <>
           {/* Chart and Legend Container - Tight spacing */}
-          <div className="space-y-6">
+          <div className="space-y-1">
             {/* Line Chart */}
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+                <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="name"
