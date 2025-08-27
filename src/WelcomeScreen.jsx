@@ -640,7 +640,7 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
       <h4 className="font-semibold text-gray-800 mb-3">🔍 Smart Trend Analysis</h4>
 
       {/* Scrollable Content Container */}
-      <div className="max-h-[25vh] overflow-y-auto pr-2 space-y-4">
+      <div className="max-h-[20vh] overflow-y-auto pr-2 space-y-4">
         {/* Timing Insights */}
         {insightCategories.timing.length > 0 && (
           <div>
@@ -692,18 +692,6 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Quick Stats Footer - Always visible at bottom */}
-      <div className="mt-4 pt-3 border-t border-gray-200 bg-gray-50">
-        <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
-          <div>
-            <span className="font-medium">Meals analyzed:</span> {lineData.length}
-          </div>
-          <div>
-            <span className="font-medium">Insights generated:</span> {insights.length}
-          </div>
-        </div>
       </div>
     </div>
   );
