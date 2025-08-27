@@ -217,7 +217,7 @@ function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
 }
 
 // Updated CalorieSugarTrendsView component - Removed header and fixed insights positioning
-function CalorieSugarTrendsView({ meals, totalMacros }) {
+function CalorieSugarTrendsView({ meals, totalMacros, profile }) {
   // Create line chart data from meals
   const lineData = meals
     .filter(meal => meal.calories > 0)
@@ -356,7 +356,7 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
 
           {/* Insights Section - Takes remaining space */}
           <div className="flex-1 min-h-0">
-            <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} />
+            <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} profile={profile} />
           </div>
 
         </>
@@ -374,10 +374,10 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
 }
 
 // Enhanced Trend Insights Component (includes all the smart analysis)
-const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
+const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
 
   // Generate enhanced insights using the analysis functions
-  const generateEnhancedTrendInsights = (lineData, totalMacros) => {
+  const generateEnhancedTrendInsights = (lineData, totalMacros, profile) => {
     if (!lineData || lineData.length === 0) return [];
 
     const insights = [];
@@ -392,8 +392,8 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
     const mealTimings = analyzeMealTimings(lineData);
     insights.push(...mealTimings);
 
-    // 2. SUGAR PATTERN ANALYSIS  
-    const sugarPatterns = analyzeSugarPatterns(lineData, totalSugar, avgSugar);
+    // 2. SUGAR PATTERN ANALYSIS - Now with profile data
+    const sugarPatterns = analyzeSugarPatterns(lineData, totalSugar, avgSugar, profile);
     insights.push(...sugarPatterns);
 
     // 3. ENERGY BALANCE INSIGHTS
@@ -478,87 +478,234 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
     return insights;
   };
 
-  const analyzeSugarPatterns = (meals, totalSugar, avgSugar) => {
+  const analyzeSugarPatterns = (meals, totalSugar, avgSugar, profile) => {
     const insights = [];
 
-    // Find high sugar meals (>20g)
-    const highSugarMeals = meals.filter(meal => meal.sugar > 20);
+    // Get user profile from props (we'll need to pass this down)
+    const userGoal = profile?.goal || 'maintain';
+    const userName = profile?.name || 'friend';
+    const dietaryFilters = profile?.dietaryFilters || [];
 
-    // Sugar timing analysis
+    // Goal-specific thresholds with 3-tier step-up system
+    const getThresholds = (goal) => {
+      switch (goal) {
+        case 'lose':
+          return {
+            // Meal thresholds: Level 1 (15g), Level 2 (20g), Level 3 (25g)
+            mealLevel1: 15, mealLevel2: 20, mealLevel3: 25,
+            // Daily thresholds: Level 1 (30g), Level 2 (50g), Level 3 (75g)
+            dailyLevel1: 30, dailyLevel2: 50, dailyLevel3: 75,
+            mealPraise: 10, dailyPraise: 25, dailyExcellent: 20
+          };
+        case 'maintain':
+          return {
+            // Meal thresholds: Level 1 (20g), Level 2 (30g), Level 3 (40g)
+            mealLevel1: 20, mealLevel2: 30, mealLevel3: 40,
+            // Daily thresholds: Level 1 (75g), Level 2 (100g), Level 3 (125g)
+            dailyLevel1: 75, dailyLevel2: 100, dailyLevel3: 125,
+            mealPraise: 15, dailyPraise: 50, dailyExcellent: 40
+          };
+        case 'gain-muscle':
+          return {
+            // Meal thresholds: Level 1 (18g), Level 2 (28g), Level 3 (38g)
+            mealLevel1: 18, mealLevel2: 28, mealLevel3: 38,
+            // Daily thresholds: Level 1 (55g), Level 2 (80g), Level 3 (105g)
+            dailyLevel1: 55, dailyLevel2: 80, dailyLevel3: 105,
+            mealPraise: 12, dailyPraise: 40, dailyExcellent: 35
+          };
+        case 'dirty-bulk':
+          return {
+            // Meal thresholds: Level 1 (100g), Level 2 (110g), Level 3 (120g)
+            mealLevel1: 100, mealLevel2: 110, mealLevel3: 120,
+            // Daily thresholds: Level 1 (300g), Level 2 (320g), Level 3 (340g)
+            dailyLevel1: 300, dailyLevel2: 320, dailyLevel3: 340,
+            mealPraise: 50, dailyPraise: 200, dailyExcellent: 150
+          };
+        default:
+          return {
+            mealLevel1: 20, mealLevel2: 30, mealLevel3: 40,
+            dailyLevel1: 75, dailyLevel2: 100, dailyLevel3: 125,
+            mealPraise: 15, dailyPraise: 50, dailyExcellent: 40
+          };
+      }
+    };
+
+    const thresholds = getThresholds(userGoal);
+
+    // Check for special dietary filters that require stricter sugar limits
+    const isStrictDiet = dietaryFilters?.some(filter =>
+      ['keto', 'vegetarian', 'glutenFree', 'dairyFree'].includes(filter)
+    );
+
+    // If on strict diet, make thresholds 30% lower
+    if (isStrictDiet) {
+      Object.keys(thresholds).forEach(key => {
+        if (key !== 'mealPraise' && key !== 'dailyPraise' && key !== 'dailyExcellent') {
+          thresholds[key] = Math.round(thresholds[key] * 0.7);
+        }
+      });
+    }
+
+    // Find highest sugar meal
+    const highestSugarMeal = meals.reduce((prev, current) =>
+      (prev.sugar > current.sugar) ? prev : current, { sugar: 0 });
+
+    // Get goal display name
+    const getGoalName = (goal) => {
+      const goalNames = {
+        'lose': 'weight loss',
+        'maintain': 'maintenance',
+        'gain-muscle': 'muscle building',
+        'dirty-bulk': 'bulking'
+      };
+      return goalNames[goal] || 'fitness';
+    };
+
+    // Determine sugar severity level (0=excellent, 1=good, 2=caution, 3=warning, 4=crisis)
+    const getSugarSeverity = (mealSugar, totalSugar, thresholds) => {
+      // Check for praise levels first
+      if (totalSugar <= thresholds.dailyExcellent && mealSugar <= thresholds.mealPraise) return 0; // Excellent
+      if (totalSugar <= thresholds.dailyPraise && mealSugar <= thresholds.mealPraise) return 1; // Good
+
+      // Check for warning levels (higher levels = more severe)
+      const mealLevel = mealSugar >= thresholds.mealLevel3 ? 4 :
+        mealSugar >= thresholds.mealLevel2 ? 3 :
+          mealSugar >= thresholds.mealLevel1 ? 2 : 0;
+
+      const dailyLevel = totalSugar >= thresholds.dailyLevel3 ? 4 :
+        totalSugar >= thresholds.dailyLevel2 ? 3 :
+          totalSugar >= thresholds.dailyLevel1 ? 2 : 0;
+
+      return Math.max(mealLevel, dailyLevel);
+    };
+
+    const severity = getSugarSeverity(highestSugarMeal.sugar, totalSugar, thresholds);
+
+    // Generate messages based on severity level
+    switch (severity) {
+      case 0: // Excellent
+        insights.push({
+          type: 'sugar-excellent',
+          icon: '🏆',
+          message: `Outstanding work, ${userName}! Your sugar control is absolutely perfect for ${getGoalName(userGoal)}. ${Math.round(totalSugar)}g daily total with no meal over ${Math.round(highestSugarMeal.sugar)}g - this is exactly how champions fuel their bodies. Your pancreas is thanking you! ${isStrictDiet ? 'Especially impressive given your dietary restrictions!' : ''}`,
+          category: 'sugar-daily'
+        });
+        break;
+
+      case 1: // Good
+        insights.push({
+          type: 'sugar-great',
+          icon: '🌟',
+          message: `Excellent sugar discipline, ${userName}! At ${Math.round(totalSugar)}g daily, you're crushing your ${getGoalName(userGoal)} goals. This is the kind of consistency that gets real results. ${isStrictDiet ? 'Your dietary choices are spot-on!' : 'Keep this momentum going!'}`,
+          category: 'sugar-daily'
+        });
+        break;
+
+      case 2: // Caution (Level 1 exceeded)
+        const cautionAdvice = isStrictDiet ? `Remember why you chose your dietary path - stick to whole, unprocessed foods.` : `You're better than this - make choices that align with your goals.`;
+        insights.push({
+          type: 'sugar-caution',
+          icon: '🍭',
+          message: `Hey ${userName}, ${Math.round(totalSugar)}g of sugar isn't ideal for ${getGoalName(userGoal)}. ${highestSugarMeal.sugar > thresholds.mealLevel1 ? `That ${Math.round(highestSugarMeal.sugar)}g sugar hit in ${highestSugarMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is concerning. ` : ''}Try to keep meals under ${thresholds.mealLevel1}g and daily total under ${thresholds.dailyLevel1}g. ${cautionAdvice}`,
+          category: 'sugar-daily'
+        });
+        break;
+
+      case 3: // Warning (Level 2 exceeded)
+        const warningAdvice = isStrictDiet ? 'You made dietary choices for a reason - honor them by avoiding hidden sugars in processed foods.' : 'Focus on whole foods and read those nutrition labels.';
+        insights.push({
+          type: 'sugar-warning',
+          icon: '⚠️',
+          message: `${userName}, this isn't working for your ${getGoalName(userGoal)} goals. ${Math.round(totalSugar)}g of sugar daily is sabotaging your progress. ${highestSugarMeal.sugar > thresholds.mealLevel2 ? `That ${Math.round(highestSugarMeal.sugar)}g sugar bomb in ${highestSugarMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is particularly problematic - your blood sugar is spiking like a rocket. ` : ''}${warningAdvice} Your body deserves better fuel than this.`,
+          category: 'sugar-daily'
+        });
+        break;
+
+      case 4: // Crisis (Level 3 exceeded)
+        const dietMessage = isStrictDiet ? `Look ${userName}, you chose a ${dietaryFilters.join('/')} lifestyle - there's no excuse for ${Math.round(totalSugar)}g of sugar per day. ` : '';
+        const crisisIntensity = totalSugar >= thresholds.dailyLevel3 + 50 ? 'Your pancreas is basically shutting down and begging for mercy. This is pre-diabetes territory.' : 'Your pancreas is crying and your insulin is spiking dangerously.';
+        insights.push({
+          type: 'sugar-crisis',
+          icon: '🚨',
+          message: `${dietMessage}Seriously ${userName}? ${Math.round(highestSugarMeal.sugar)}g in one meal and ${Math.round(totalSugar)}g total for ${getGoalName(userGoal)}? Honestly, you will not get to where you want to be with that much sugar. ${crisisIntensity} ${userGoal === 'lose' ? 'Your fat cells are literally celebrating while your metabolism crashes.' : 'Your goals are slipping away faster than your blood sugar spikes.'} Time for some brutal honesty - cut the sugar NOW or accept staying exactly where you are.`,
+          category: 'sugar-daily'
+        });
+        break;
+    }
+
+    // Special dietary filter specific messages (only if sugar is problematic)
+    if (isStrictDiet && severity >= 2) {
+      const dietType = dietaryFilters.includes('keto') ? 'keto' :
+        dietaryFilters.includes('vegetarian') ? 'vegetarian' :
+          dietaryFilters.join('/');
+
+      if (dietType === 'vegetarian') {
+        const vegMessage = severity >= 4 ?
+          `${userName}, there's no reason to be a fat vegan. You're literally eating like someone who doesn't care about their body while pretending to care about animals.` :
+          severity >= 3 ?
+            `${userName}, being vegetarian doesn't mean loading up on processed sugar. Your plant-based choices should be nutrient-dense, not calorie-dense.` :
+            `${userName}, your vegetarian lifestyle should focus on whole foods - beans, quinoa, nuts, and vegetables, not sugary substitutes.`;
+
+        insights.push({
+          type: 'diet-specific',
+          icon: '🌱',
+          message: `${vegMessage} Make your dietary choice count for your health, not just ethics.`,
+          category: 'sugar-dietary'
+        });
+      } else if (dietType === 'keto') {
+        const ketoMessage = severity >= 4 ?
+          `${userName}, ${Math.round(totalSugar)}g of sugar completely annihilates your keto goals! You might as well be eating birthday cake for breakfast.` :
+          severity >= 3 ?
+            `${userName}, ${Math.round(totalSugar)}g of sugar kicks you out of ketosis and into sugar-burning mode. You're working against yourself.` :
+            `${userName}, ${Math.round(totalSugar)}g of sugar defeats your keto goals. Stick to avocados, nuts, and quality fats.`;
+
+        insights.push({
+          type: 'diet-specific',
+          icon: '🥑',
+          message: `${ketoMessage} Your body can't burn fat while processing all this sugar. Time to get back to basics.`,
+          category: 'sugar-dietary'
+        });
+      } else {
+        const generalMessage = severity >= 4 ?
+          `${userName}, your ${dietType} lifestyle requires discipline you're clearly not showing. These choices are sabotaging both your diet and your goals.` :
+          `${userName}, your ${dietType} lifestyle choice requires smarter decisions. You have fewer food options, so make each one count nutritionally.`;
+
+        insights.push({
+          type: 'diet-specific',
+          icon: '🎯',
+          message: `${generalMessage} Focus on whole, unprocessed foods that align with both your dietary restrictions and your ${getGoalName(userGoal)} goals.`,
+          category: 'sugar-dietary'
+        });
+      }
+    }
+
+    // Sugar timing analysis with personalization
     const morningSugar = meals.filter(meal => meal.time.includes('AM')).reduce((sum, meal) => sum + meal.sugar, 0);
-    const afternoonSugar = meals.filter(meal => {
-      const hour = parseInt(meal.time.split(':')[0]);
-      const isPM = meal.time.includes('PM');
-      return isPM && hour >= 12 && hour < 6;
-    }).reduce((sum, meal) => sum + meal.sugar, 0);
     const eveningSugar = meals.filter(meal => {
       const hour = parseInt(meal.time.split(':')[0]);
       const isPM = meal.time.includes('PM');
       return isPM && hour >= 6;
     }).reduce((sum, meal) => sum + meal.sugar, 0);
 
-    // Daily sugar assessment
-    if (totalSugar <= 40) {
-      insights.push({
-        type: 'sugar-excellent',
-        icon: '🌟',
-        message: `Excellent sugar control! Your daily total of ${Math.round(totalSugar)}g is well within healthy limits (under 50g/day).`,
-        category: 'sugar-daily'
-      });
-    } else if (totalSugar <= 60) {
-      insights.push({
-        type: 'sugar-good',
-        icon: '👍',
-        message: `Good sugar intake at ${Math.round(totalSugar)}g daily. Aim to keep it under 50g for optimal health benefits.`,
-        category: 'sugar-daily'
-      });
-    } else {
-      insights.push({
-        type: 'sugar-warning',
-        icon: '🍭',
-        message: `Daily sugar intake of ${Math.round(totalSugar)}g is high. Try to reduce to under 50g by choosing lower-sugar alternatives.`,
-        category: 'sugar-daily'
-      });
-    }
+    if (eveningSugar > morningSugar && eveningSugar > 20) {
+      const timingMessage = eveningSugar >= 40 ?
+        `${userName}, you're absolutely destroying your ${getGoalName(userGoal)} progress by loading up on ${Math.round(eveningSugar)}g of sugar at night. Your metabolism is shutting down and you're basically force-feeding your fat cells.` :
+        eveningSugar >= 30 ?
+          `${userName}, ${Math.round(eveningSugar)}g of evening sugar is working against your ${getGoalName(userGoal)} goals. Your body is winding down and can't process this effectively.` :
+          `${userName}, you're loading up on sugar (${Math.round(eveningSugar)}g) in the evening when your body is winding down. Move those carbs earlier when you can actually use the energy.`;
 
-    // High sugar meal alerts
-    if (highSugarMeals.length > 0) {
-      const highestSugar = Math.max(...highSugarMeals.map(m => m.sugar));
-      const highestSugarMeal = highSugarMeals.find(m => m.sugar === highestSugar);
-
-      insights.push({
-        type: 'sugar-spike',
-        icon: '📈',
-        message: `Sugar spike detected: ${highestSugarMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} contains ${Math.round(highestSugar)}g sugar. Consider pairing with protein or fiber to slow absorption.`,
-        category: 'sugar-meals'
-      });
-    }
-
-    // Sugar timing insights
-    if (eveningSugar > afternoonSugar && eveningSugar > morningSugar && eveningSugar > 15) {
       insights.push({
         type: 'sugar-timing',
         icon: '🌙',
-        message: `Most of your sugar (${Math.round(eveningSugar)}g) comes in the evening. Consider moving high-sugar foods earlier in the day for better energy utilization.`,
+        message: `${timingMessage} Your metabolism slows at night - don't make it store sugar as fat.`,
         category: 'sugar-timing'
       });
-    } else if (morningSugar > 20) {
+    } else if (morningSugar > 15 && morningSugar <= thresholds.mealPraise) {
       insights.push({
         type: 'sugar-timing-good',
         icon: '🌅',
-        message: `Great timing! You're consuming ${Math.round(morningSugar)}g sugar in the morning when your body can best utilize it for energy.`,
+        message: `Smart timing, ${userName}! Getting ${Math.round(morningSugar)}g of sugar in the morning gives you energy when you need it most. Perfect strategy for ${getGoalName(userGoal)} - your body can actually use this fuel instead of storing it.`,
         category: 'sugar-timing'
-      });
-    }
-
-    // Sugar distribution analysis
-    const sugarMealsCount = meals.filter(m => m.sugar > 5).length;
-    if (sugarMealsCount === meals.length && avgSugar < 15) {
-      insights.push({
-        type: 'sugar-distribution',
-        icon: '⚖️',
-        message: `Well-balanced approach! You're spreading ${Math.round(avgSugar)}g average sugar across all meals instead of having sugar spikes.`,
-        category: 'sugar-balance'
       });
     }
 
@@ -627,12 +774,13 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
     return insights;
   };
 
-  const insights = generateEnhancedTrendInsights(lineData, totalMacros);
+  const insights = generateEnhancedTrendInsights(lineData, totalMacros, profile);
 
   // Group insights by category for better organization
   const insightCategories = {
     timing: insights.filter(i => ['timing', 'spacing'].includes(i.category)),
     sugar: insights.filter(i => i.category.startsWith('sugar')),
+    dietary: insights.filter(i => i.category === 'sugar-dietary'),
     energy: insights.filter(i => i.category === 'energy'),
     summary: insights.filter(i => i.category === 'summary')
   };
@@ -661,6 +809,19 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
           <div>
             <h5 className="text-sm font-medium text-gray-700 mb-2 sticky top-0 bg-gray-50 py-1">🍯 Sugar Patterns</h5>
             {insightCategories.sugar.map((insight, index) => (
+              <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+                <span className="flex-shrink-0">{insight.icon}</span>
+                <span>{insight.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Dietary Insights */}
+        {insightCategories.dietary.length > 0 && (
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2 sticky top-0 bg-gray-50 py-1">🎯 Dietary Goals</h5>
+            {insightCategories.dietary.map((insight, index) => (
               <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
                 <span className="flex-shrink-0">{insight.icon}</span>
                 <span>{insight.message}</span>
@@ -1027,7 +1188,7 @@ function AnalyticsModule({
               <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
             </div>
             <div className="p-4 h-full" style={{ height: 'calc(100% - 80px)' }}>
-              <CalorieSugarTrendsView meals={meals} totalMacros={totalMacros} />
+              <CalorieSugarTrendsView meals={meals} totalMacros={totalMacros} profile={profile} />
             </div>
           </div>
         </div>
