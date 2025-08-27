@@ -216,8 +216,7 @@ function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
   );
 }
 
-// Updated CalorieSugarTrendsView component - Replace in your WelcomeScreen.jsx
-
+// Updated CalorieSugarTrendsView component - Removed header and fixed insights positioning
 function CalorieSugarTrendsView({ meals, totalMacros }) {
   // Create line chart data from meals
   const lineData = meals
@@ -289,77 +288,80 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">📈 Calorie vs Sugar Trends</h3>
+    <div className="flex flex-col h-full">
+      {/* Stats Summary - Compact */}
+      <div className="text-center mb-4">
         <p className="text-lg text-gray-600">{lineData.length} meals • {Math.round(totalMacros.calories)} total calories</p>
       </div>
 
       {lineData.length > 0 ? (
         <>
-          {/* Chart and Legend Container - Tight spacing */}
-          <div className="space-y-1">
-            {/* Line Chart */}
-            <div className="h-[50]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 1 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 10 }}
-                    interval={0}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip content={<CustomTooltip />} />
+          {/* Chart Section - Fixed height */}
+          <div className="flex-shrink-0">
+            {/* Chart and Legend Container - Tight spacing */}
+            <div className="space-y-1">
+              {/* Line Chart */}
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 1 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 10 }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip content={<CustomTooltip />} />
 
-                  {/* Calories Line */}
-                  <Line
-                    type="monotone"
-                    dataKey="calories"
-                    stroke="#3B82F6"
-                    strokeWidth={3}
-                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                    name="Calories"
-                  />
+                    {/* Calories Line */}
+                    <Line
+                      type="monotone"
+                      dataKey="calories"
+                      stroke="#3B82F6"
+                      strokeWidth={3}
+                      dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                      name="Calories"
+                    />
 
-                  {/* Sugar Line (x10 scale) */}
-                  <Line
-                    type="monotone"
-                    dataKey="sugarScaled"
-                    stroke="#F97316"
-                    strokeWidth={3}
-                    dot={{ fill: '#F97316', strokeWidth: 2, r: 4 }}
-                    name="Sugar (x10)"
-                    strokeDasharray="5 5"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Legend - Now closer to chart */}
-            <div className="flex justify-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-blue-500 rounded"></div>
-                <span className="text-gray-700">Calories</span>
+                    {/* Sugar Line (x10 scale) */}
+                    <Line
+                      type="monotone"
+                      dataKey="sugarScaled"
+                      stroke="#F97316"
+                      strokeWidth={3}
+                      dot={{ fill: '#F97316', strokeWidth: 2, r: 4 }}
+                      name="Sugar (x10)"
+                      strokeDasharray="5 5"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-1 bg-orange-500 rounded border-dashed border border-orange-500"></div>
-                <span className="text-gray-700">Sugar (x10 scale)</span>
+
+              {/* Legend */}
+              <div className="flex justify-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-1 bg-blue-500 rounded"></div>
+                  <span className="text-gray-700">Calories</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-1 bg-orange-500 rounded border-dashed border border-orange-500"></div>
+                  <span className="text-gray-700">Sugar (x10 scale)</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ENHANCED TREND INSIGHTS - Now directly below legend with minimal gap */}
-          <div className="-mt-6">
+          {/* Insights Section - Sticky to bottom with flex-grow */}
+          <div className="flex-grow flex flex-col justify-end mt-4">
             <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} />
           </div>
 
         </>
       ) : (
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+        <div className="flex-grow flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
           <div className="text-center">
             <div className="text-4xl mb-2">📈</div>
             <p className="text-gray-500 font-medium">Add meals to see trends</p>
@@ -639,8 +641,8 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
     <div className="bg-gray-50 rounded-xl p-4">
       <h4 className="font-semibold text-gray-800 mb-3">🔍 Smart Trend Analysis</h4>
 
-      {/* Scrollable Content Container */}
-      <div className="max-h-[20vh] overflow-y-auto pr-2 space-y-4">
+      {/* Scrollable Content Container - Now with better height management */}
+      <div className="max-h-[240px] overflow-y-auto pr-2 space-y-4">
         {/* Timing Insights */}
         {insightCategories.timing.length > 0 && (
           <div>
@@ -1024,7 +1026,7 @@ function AnalyticsModule({
               <h3 className="text-xl font-bold text-gray-800">📈 Calorie vs Sugar Trends</h3>
               <button onClick={() => setShowTrends(false)} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
             </div>
-            <div className="p-4" style={{ height: 'calc(100% - 80px)' }}>
+            <div className="p-4 h-full" style={{ height: 'calc(100% - 80px)' }}>
               <CalorieSugarTrendsView meals={meals} totalMacros={totalMacros} />
             </div>
           </div>
