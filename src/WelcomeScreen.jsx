@@ -298,7 +298,7 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
       {lineData.length > 0 ? (
         <>
           {/* Chart and Legend Container - Tight spacing */}
-          <div className="space-y-3">
+          <div className="space-y-6">
             {/* Line Chart */}
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
