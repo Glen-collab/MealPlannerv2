@@ -300,7 +300,7 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
           {/* Chart and Legend Container - Tight spacing */}
           <div className="space-y-1">
             {/* Line Chart */}
-            <div className="h-[80vh]">
+            <div className="h-[50]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineData} margin={{ top: 5, right: 30, left: 20, bottom: 1 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -640,7 +640,7 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
       <h4 className="font-semibold text-gray-800 mb-3">🔍 Smart Trend Analysis</h4>
 
       {/* Scrollable Content Container */}
-      <div className="max-h-[70vh] overflow-y-auto">
+      <div className="max-h-64 overflow-n-auto pr-2 space-y-4">
         {/* Timing Insights */}
         {insightCategories.timing.length > 0 && (
           <div>
