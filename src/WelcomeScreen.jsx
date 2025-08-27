@@ -216,7 +216,8 @@ function ClickableBurnAndLearnView({ totalMacros, profile, onItemClick }) {
   );
 }
 
-// New Enhanced Trends Line Chart Component
+// Updated CalorieSugarTrendsView component - Replace in your WelcomeScreen.jsx
+
 function CalorieSugarTrendsView({ meals, totalMacros }) {
   // Create line chart data from meals
   const lineData = meals
@@ -348,34 +349,9 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
             </div>
           </div>
 
-          {/* Trend Insights */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <h4 className="font-semibold text-gray-800 mb-3">📊 Trend Insights</h4>
-            <div className="space-y-2 text-sm text-gray-700">
-              {(() => {
-                const avgCalories = Math.round(lineData.reduce((sum, meal) => sum + meal.calories, 0) / lineData.length);
-                const avgSugar = Math.round(lineData.reduce((sum, meal) => sum + meal.sugar, 0) / lineData.length);
-                const highestCalorieMeal = lineData.reduce((prev, current) => (prev.calories > current.calories) ? prev : current);
-                const highestSugarMeal = lineData.reduce((prev, current) => (prev.sugar > current.sugar) ? prev : current);
-                const totalSugar = lineData.reduce((sum, meal) => sum + meal.sugar, 0);
+          {/* ENHANCED TREND INSIGHTS - This replaces the old basic insights */}
+          <EnhancedTrendInsights lineData={lineData} totalMacros={totalMacros} />
 
-                return (
-                  <>
-                    <div>🍽️ <strong>Average per meal:</strong> {avgCalories} cal, {avgSugar}g sugar</div>
-                    <div>📈 <strong>Highest calories:</strong> {highestCalorieMeal.fullName} ({highestCalorieMeal.calories} cal)</div>
-                    <div>🍭 <strong>Highest sugar:</strong> {highestSugarMeal.fullName} ({highestSugarMeal.sugar}g)</div>
-                    <div>📊 <strong>Total daily sugar:</strong> {Math.round(totalSugar)}g</div>
-                    <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-                      <div className="text-xs text-blue-700">
-                        <strong>💡 Tip:</strong> Look for patterns! High sugar spikes often correspond to calorie spikes.
-                        The dashed orange line shows sugar trends (multiplied by 10 to match calorie scale).
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
         </>
       ) : (
         <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
@@ -389,6 +365,341 @@ function CalorieSugarTrendsView({ meals, totalMacros }) {
     </div>
   );
 }
+
+// Enhanced Trend Insights Component (includes all the smart analysis)
+const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
+
+  // Generate enhanced insights using the analysis functions
+  const generateEnhancedTrendInsights = (lineData, totalMacros) => {
+    if (!lineData || lineData.length === 0) return [];
+
+    const insights = [];
+
+    // Calculate key metrics
+    const avgCalories = Math.round(lineData.reduce((sum, meal) => sum + meal.calories, 0) / lineData.length);
+    const avgSugar = Math.round(lineData.reduce((sum, meal) => sum + meal.sugar, 0) / lineData.length);
+    const totalSugar = lineData.reduce((sum, meal) => sum + meal.sugar, 0);
+    const highestSugarMeal = lineData.reduce((prev, current) => (prev.sugar > current.sugar) ? prev : current);
+
+    // 1. MEAL TIMING ANALYSIS
+    const mealTimings = analyzeMealTimings(lineData);
+    insights.push(...mealTimings);
+
+    // 2. SUGAR PATTERN ANALYSIS  
+    const sugarPatterns = analyzeSugarPatterns(lineData, totalSugar, avgSugar);
+    insights.push(...sugarPatterns);
+
+    // 3. ENERGY BALANCE INSIGHTS
+    const energyInsights = analyzeEnergyBalance(lineData, avgCalories);
+    insights.push(...energyInsights);
+
+    // 4. DAILY SUMMARY MESSAGES
+    const dailySummary = generateDailySummary(lineData, totalSugar, avgSugar);
+    insights.push(...dailySummary);
+
+    return insights;
+  };
+
+  const analyzeMealTimings = (meals) => {
+    const insights = [];
+
+    // Convert times to minutes for analysis
+    const timesInMinutes = meals.map(meal => {
+      const [time, period] = meal.time.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      let totalMinutes = hours * 60 + (minutes || 0);
+      if (period === 'PM' && hours !== 12) totalMinutes += 12 * 60;
+      if (period === 'AM' && hours === 12) totalMinutes -= 12 * 60;
+      return { name: meal.fullName, time: totalMinutes, calories: meal.calories, sugar: meal.sugar };
+    }).sort((a, b) => a.time - b.time);
+
+    if (timesInMinutes.length < 2) return insights;
+
+    // Calculate gaps between meals
+    const gaps = [];
+    for (let i = 1; i < timesInMinutes.length; i++) {
+      const gapMinutes = timesInMinutes[i].time - timesInMinutes[i - 1].time;
+      const gapHours = Math.round(gapMinutes / 60 * 10) / 10;
+      gaps.push({
+        from: timesInMinutes[i - 1].name,
+        to: timesInMinutes[i].name,
+        hours: gapHours,
+        minutes: gapMinutes
+      });
+    }
+
+    // Analyze meal spacing
+    const avgGap = gaps.reduce((sum, gap) => sum + gap.hours, 0) / gaps.length;
+    const longestGap = Math.max(...gaps.map(g => g.hours));
+
+    // Generate timing insights
+    if (avgGap >= 3 && avgGap <= 4.5) {
+      insights.push({
+        type: 'timing-good',
+        icon: '🕐',
+        message: `Perfect meal spacing! Your meals are spaced ${avgGap.toFixed(1)} hours apart on average - ideal for steady energy levels.`,
+        category: 'timing'
+      });
+    } else if (avgGap > 4.5) {
+      insights.push({
+        type: 'timing-warning',
+        icon: '⏰',
+        message: `Consider eating more frequently - your ${avgGap.toFixed(1)} hour average gap between meals might cause energy dips and increased hunger.`,
+        category: 'timing'
+      });
+    } else if (avgGap < 2.5) {
+      insights.push({
+        type: 'timing-info',
+        icon: '🍽️',
+        message: `You're eating frequently with ${avgGap.toFixed(1)} hours between meals. This can help with portion control and steady blood sugar.`,
+        category: 'timing'
+      });
+    }
+
+    // Check for problematic gaps
+    const longGaps = gaps.filter(g => g.hours > 5);
+    if (longGaps.length > 0) {
+      const longestGapDetail = gaps.find(g => g.hours === longestGap);
+      insights.push({
+        type: 'timing-warning',
+        icon: '⚠️',
+        message: `Long gap alert: ${longestGap.toFixed(1)} hours between ${longestGapDetail.from.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} and ${longestGapDetail.to.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)}. Consider adding a snack to prevent overeating later.`,
+        category: 'spacing'
+      });
+    }
+
+    return insights;
+  };
+
+  const analyzeSugarPatterns = (meals, totalSugar, avgSugar) => {
+    const insights = [];
+
+    // Find high sugar meals (>20g)
+    const highSugarMeals = meals.filter(meal => meal.sugar > 20);
+
+    // Sugar timing analysis
+    const morningSugar = meals.filter(meal => meal.time.includes('AM')).reduce((sum, meal) => sum + meal.sugar, 0);
+    const afternoonSugar = meals.filter(meal => {
+      const hour = parseInt(meal.time.split(':')[0]);
+      const isPM = meal.time.includes('PM');
+      return isPM && hour >= 12 && hour < 6;
+    }).reduce((sum, meal) => sum + meal.sugar, 0);
+    const eveningSugar = meals.filter(meal => {
+      const hour = parseInt(meal.time.split(':')[0]);
+      const isPM = meal.time.includes('PM');
+      return isPM && hour >= 6;
+    }).reduce((sum, meal) => sum + meal.sugar, 0);
+
+    // Daily sugar assessment
+    if (totalSugar <= 40) {
+      insights.push({
+        type: 'sugar-excellent',
+        icon: '🌟',
+        message: `Excellent sugar control! Your daily total of ${Math.round(totalSugar)}g is well within healthy limits (under 50g/day).`,
+        category: 'sugar-daily'
+      });
+    } else if (totalSugar <= 60) {
+      insights.push({
+        type: 'sugar-good',
+        icon: '👍',
+        message: `Good sugar intake at ${Math.round(totalSugar)}g daily. Aim to keep it under 50g for optimal health benefits.`,
+        category: 'sugar-daily'
+      });
+    } else {
+      insights.push({
+        type: 'sugar-warning',
+        icon: '🍭',
+        message: `Daily sugar intake of ${Math.round(totalSugar)}g is high. Try to reduce to under 50g by choosing lower-sugar alternatives.`,
+        category: 'sugar-daily'
+      });
+    }
+
+    // High sugar meal alerts
+    if (highSugarMeals.length > 0) {
+      const highestSugar = Math.max(...highSugarMeals.map(m => m.sugar));
+      const highestSugarMeal = highSugarMeals.find(m => m.sugar === highestSugar);
+
+      insights.push({
+        type: 'sugar-spike',
+        icon: '📈',
+        message: `Sugar spike detected: ${highestSugarMeal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} contains ${Math.round(highestSugar)}g sugar. Consider pairing with protein or fiber to slow absorption.`,
+        category: 'sugar-meals'
+      });
+    }
+
+    // Sugar timing insights
+    if (eveningSugar > afternoonSugar && eveningSugar > morningSugar && eveningSugar > 15) {
+      insights.push({
+        type: 'sugar-timing',
+        icon: '🌙',
+        message: `Most of your sugar (${Math.round(eveningSugar)}g) comes in the evening. Consider moving high-sugar foods earlier in the day for better energy utilization.`,
+        category: 'sugar-timing'
+      });
+    } else if (morningSugar > 20) {
+      insights.push({
+        type: 'sugar-timing-good',
+        icon: '🌅',
+        message: `Great timing! You're consuming ${Math.round(morningSugar)}g sugar in the morning when your body can best utilize it for energy.`,
+        category: 'sugar-timing'
+      });
+    }
+
+    // Sugar distribution analysis
+    const sugarMealsCount = meals.filter(m => m.sugar > 5).length;
+    if (sugarMealsCount === meals.length && avgSugar < 15) {
+      insights.push({
+        type: 'sugar-distribution',
+        icon: '⚖️',
+        message: `Well-balanced approach! You're spreading ${Math.round(avgSugar)}g average sugar across all meals instead of having sugar spikes.`,
+        category: 'sugar-balance'
+      });
+    }
+
+    return insights;
+  };
+
+  const analyzeEnergyBalance = (meals, avgCalories) => {
+    const insights = [];
+
+    // Find calorie and sugar correlation
+    const highCalHighSugar = meals.filter(meal => meal.calories > avgCalories && meal.sugar > 15);
+    const lowCalHighSugar = meals.filter(meal => meal.calories < avgCalories && meal.sugar > 15);
+
+    if (highCalHighSugar.length > 0) {
+      insights.push({
+        type: 'energy-correlation',
+        icon: '🔗',
+        message: `Pattern alert: Your highest calorie meals also tend to be highest in sugar. This can cause energy crashes - try balancing with protein and healthy fats.`,
+        category: 'energy'
+      });
+    }
+
+    if (lowCalHighSugar.length > 0) {
+      const meal = lowCalHighSugar[0];
+      insights.push({
+        type: 'empty-calories',
+        icon: '🍬',
+        message: `${meal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is relatively low in calories but high in sugar (${Math.round(meal.sugar)}g). Consider adding protein for better satiety.`,
+        category: 'energy'
+      });
+    }
+
+    return insights;
+  };
+
+  const generateDailySummary = (meals, totalSugar, avgSugar) => {
+    const insights = [];
+
+    // Overall assessment
+    const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+    const sugarPercentage = Math.round((totalSugar * 4 / totalCalories) * 100);
+
+    if (sugarPercentage <= 10) {
+      insights.push({
+        type: 'summary-excellent',
+        icon: '🏆',
+        message: `Outstanding nutrition profile! Sugar makes up only ${sugarPercentage}% of your calories - you're prioritizing nutrient-dense foods.`,
+        category: 'summary'
+      });
+    } else if (sugarPercentage <= 15) {
+      insights.push({
+        type: 'summary-good',
+        icon: '✅',
+        message: `Solid nutrition balance with ${sugarPercentage}% of calories from sugar. You're making mostly healthy choices with room for treats.`,
+        category: 'summary'
+      });
+    } else {
+      insights.push({
+        type: 'summary-improve',
+        icon: '💡',
+        message: `${sugarPercentage}% of your calories come from sugar. Focus on whole foods to improve your nutrition quality and energy stability.`,
+        category: 'summary'
+      });
+    }
+
+    return insights;
+  };
+
+  const insights = generateEnhancedTrendInsights(lineData, totalMacros);
+
+  // Group insights by category for better organization
+  const insightCategories = {
+    timing: insights.filter(i => ['timing', 'spacing'].includes(i.category)),
+    sugar: insights.filter(i => i.category.startsWith('sugar')),
+    energy: insights.filter(i => i.category === 'energy'),
+    summary: insights.filter(i => i.category === 'summary')
+  };
+
+  return (
+    <div className="bg-gray-50 rounded-xl p-4">
+      <h4 className="font-semibold text-gray-800 mb-3">🔍 Smart Trend Analysis</h4>
+
+      {/* Timing Insights */}
+      {insightCategories.timing.length > 0 && (
+        <div className="mb-4">
+          <h5 className="text-sm font-medium text-gray-700 mb-2">⏰ Meal Timing</h5>
+          {insightCategories.timing.map((insight, index) => (
+            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+              <span className="flex-shrink-0">{insight.icon}</span>
+              <span>{insight.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Sugar Insights */}
+      {insightCategories.sugar.length > 0 && (
+        <div className="mb-4">
+          <h5 className="text-sm font-medium text-gray-700 mb-2">🍯 Sugar Patterns</h5>
+          {insightCategories.sugar.map((insight, index) => (
+            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+              <span className="flex-shrink-0">{insight.icon}</span>
+              <span>{insight.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Energy Insights */}
+      {insightCategories.energy.length > 0 && (
+        <div className="mb-4">
+          <h5 className="text-sm font-medium text-gray-700 mb-2">⚡ Energy Balance</h5>
+          {insightCategories.energy.map((insight, index) => (
+            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+              <span className="flex-shrink-0">{insight.icon}</span>
+              <span>{insight.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Summary */}
+      {insightCategories.summary.length > 0 && (
+        <div className="border-t pt-3 mt-3">
+          <h5 className="text-sm font-medium text-gray-700 mb-2">📊 Daily Summary</h5>
+          {insightCategories.summary.map((insight, index) => (
+            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+              <span className="flex-shrink-0">{insight.icon}</span>
+              <span>{insight.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Quick Stats Footer */}
+      <div className="mt-4 pt-3 border-t border-gray-200">
+        <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
+          <div>
+            <span className="font-medium">Meals analyzed:</span> {lineData.length}
+          </div>
+          <div>
+            <span className="font-medium">Insights generated:</span> {insights.length}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Enhanced Trends Component that uses live meal data
 function CustomTrendsView({ meals, totalMacros }) {
