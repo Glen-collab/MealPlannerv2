@@ -389,7 +389,7 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
     const highestSugarMeal = lineData.reduce((prev, current) => (prev.sugar > current.sugar) ? prev : current);
 
     // 1. MEAL TIMING ANALYSIS
-    const mealTimings = analyzeMealTimings(lineData);
+    const mealTimings = analyzeMealTimings(lineData, profile);
     insights.push(...mealTimings);
 
     // 2. SUGAR PATTERN ANALYSIS - Now with profile data
@@ -397,18 +397,21 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
     insights.push(...sugarPatterns);
 
     // 3. ENERGY BALANCE INSIGHTS
-    const energyInsights = analyzeEnergyBalance(lineData, avgCalories);
+    const energyInsights = analyzeEnergyBalance(lineData, avgCalories, profile);
     insights.push(...energyInsights);
 
-    // 4. DAILY SUMMARY MESSAGES
-    const dailySummary = generateDailySummary(lineData, totalSugar, avgSugar);
+    // 4. DAILY SUMMARY MESSAGES - Now with profile data
+    const dailySummary = generateDailySummary(lineData, totalSugar, avgSugar, profile);
     insights.push(...dailySummary);
 
     return insights;
   };
 
-  const analyzeMealTimings = (meals) => {
+  const analyzeMealTimings = (meals, profile) => {
     const insights = [];
+
+    // Get user name for personalized messages
+    const userName = profile?.name || profile?.firstName || 'friend';
 
     // Convert times to minutes for analysis
     const timesInMinutes = meals.map(meal => {
@@ -439,26 +442,26 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
     const avgGap = gaps.reduce((sum, gap) => sum + gap.hours, 0) / gaps.length;
     const longestGap = Math.max(...gaps.map(g => g.hours));
 
-    // Generate timing insights
+    // Generate timing insights with personalized names
     if (avgGap >= 3 && avgGap <= 4.5) {
       insights.push({
         type: 'timing-good',
         icon: '🕐',
-        message: `Perfect meal spacing! Your meals are spaced ${avgGap.toFixed(1)} hours apart on average - ideal for steady energy levels.`,
+        message: `Perfect meal spacing, ${userName}! Your meals are spaced ${avgGap.toFixed(1)} hours apart on average - ideal for steady energy levels.`,
         category: 'timing'
       });
     } else if (avgGap > 4.5) {
       insights.push({
         type: 'timing-warning',
         icon: '⏰',
-        message: `Consider eating more frequently - your ${avgGap.toFixed(1)} hour average gap between meals might cause energy dips and increased hunger.`,
+        message: `${userName}, consider eating more frequently - your ${avgGap.toFixed(1)} hour average gap between meals might cause energy dips and increased hunger.`,
         category: 'timing'
       });
     } else if (avgGap < 2.5) {
       insights.push({
         type: 'timing-info',
         icon: '🍽️',
-        message: `You're eating frequently with ${avgGap.toFixed(1)} hours between meals. This can help with portion control and steady blood sugar.`,
+        message: `${userName}, you're eating frequently with ${avgGap.toFixed(1)} hours between meals. This can help with portion control and steady blood sugar.`,
         category: 'timing'
       });
     }
@@ -470,7 +473,7 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
       insights.push({
         type: 'timing-warning',
         icon: '⚠️',
-        message: `Long gap alert: ${longestGap.toFixed(1)} hours between ${longestGapDetail.from.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} and ${longestGapDetail.to.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)}. Consider adding a snack to prevent overeating later.`,
+        message: `${userName}, long gap alert: ${longestGap.toFixed(1)} hours between ${longestGapDetail.from.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} and ${longestGapDetail.to.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)}. Consider adding a snack to prevent overeating later.`,
         category: 'spacing'
       });
     }
@@ -483,7 +486,7 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
 
     // Get user profile from props (we'll need to pass this down)
     const userGoal = profile?.goal || 'maintain';
-    const userName = profile?.name || 'friend';
+    const userName = profile?.name || profile?.firstName || 'friend';
     const dietaryFilters = profile?.dietaryFilters || [];
 
     // Goal-specific thresholds with 3-tier step-up system
@@ -712,8 +715,11 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
     return insights;
   };
 
-  const analyzeEnergyBalance = (meals, avgCalories) => {
+  const analyzeEnergyBalance = (meals, avgCalories, profile) => {
     const insights = [];
+
+    // Get user name for personalized messages
+    const userName = profile?.name || profile?.firstName || 'friend';
 
     // Find calorie and sugar correlation
     const highCalHighSugar = meals.filter(meal => meal.calories > avgCalories && meal.sugar > 15);
@@ -723,7 +729,7 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
       insights.push({
         type: 'energy-correlation',
         icon: '🔗',
-        message: `Pattern alert: Your highest calorie meals also tend to be highest in sugar. This can cause energy crashes - try balancing with protein and healthy fats.`,
+        message: `Pattern alert, ${userName}: Your highest calorie meals also tend to be highest in sugar. This can cause energy crashes - try balancing with protein and healthy fats.`,
         category: 'energy'
       });
     }
@@ -733,7 +739,7 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
       insights.push({
         type: 'empty-calories',
         icon: '🍬',
-        message: `${meal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is relatively low in calories but high in sugar (${Math.round(meal.sugar)}g). Consider adding protein for better satiety.`,
+        message: `${userName}, ${meal.fullName.replace(/Snack|FirstSnack|SecondSnack/g, match => match === 'FirstSnack' ? 'Morning Snack' : match === 'SecondSnack' ? 'Afternoon Snack' : match)} is relatively low in calories but high in sugar (${Math.round(meal.sugar)}g). Consider adding protein for better satiety.`,
         category: 'energy'
       });
     }
@@ -741,32 +747,57 @@ const EnhancedTrendInsights = ({ lineData, totalMacros, profile }) => {
     return insights;
   };
 
-  const generateDailySummary = (meals, totalSugar, avgSugar) => {
+  const generateDailySummary = (lineData, totalSugar, avgSugar, profile) => {
     const insights = [];
 
-    // Overall assessment
-    const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
-    const sugarPercentage = Math.round((totalSugar * 4 / totalCalories) * 100);
+    // Get user info for personalized messages
+    const userName = profile?.name || profile?.firstName || 'friend';
+    const userGoal = profile?.goal || 'maintain';
 
-    if (sugarPercentage <= 10) {
+    // Overall assessment - but make sure it aligns with sugar analysis
+    const totalCalories = lineData.reduce((sum, meal) => sum + meal.calories, 0);
+    const sugarPercentage = totalCalories > 0 ? Math.round((totalSugar * 4 / totalCalories) * 100) : 0;
+
+    // Get the same thresholds used in sugar analysis for consistency
+    const getGoalThresholds = (goal) => {
+      switch (goal) {
+        case 'lose': return { dailyGood: 25, dailyOk: 30, dailyBad: 50 };
+        case 'maintain': return { dailyGood: 40, dailyOk: 50, dailyBad: 75 };
+        case 'gain-muscle': return { dailyGood: 35, dailyOk: 40, dailyBad: 55 };
+        case 'dirty-bulk': return { dailyGood: 150, dailyOk: 200, dailyBad: 300 };
+        default: return { dailyGood: 40, dailyOk: 50, dailyBad: 75 };
+      }
+    };
+
+    const thresholds = getGoalThresholds(userGoal);
+
+    // Make daily summary consistent with sugar analysis severity
+    if (totalSugar <= thresholds.dailyGood && sugarPercentage <= 10) {
       insights.push({
         type: 'summary-excellent',
         icon: '🏆',
-        message: `Outstanding nutrition profile! Sugar makes up only ${sugarPercentage}% of your calories - you're prioritizing nutrient-dense foods.`,
+        message: `Outstanding nutrition profile, ${userName}! Sugar makes up only ${sugarPercentage}% of your calories and you're keeping it under ${Math.round(totalSugar)}g daily - you're prioritizing nutrient-dense foods perfectly for your ${userGoal} goals.`,
         category: 'summary'
       });
-    } else if (sugarPercentage <= 15) {
+    } else if (totalSugar <= thresholds.dailyOk && sugarPercentage <= 15) {
       insights.push({
         type: 'summary-good',
         icon: '✅',
-        message: `Solid nutrition balance with ${sugarPercentage}% of calories from sugar. You're making mostly healthy choices with room for treats.`,
+        message: `Solid nutrition balance, ${userName}! ${sugarPercentage}% of calories from sugar (${Math.round(totalSugar)}g total) shows you're making mostly healthy choices. Keep refining for your ${userGoal} goals.`,
+        category: 'summary'
+      });
+    } else if (totalSugar > thresholds.dailyBad || sugarPercentage > 20) {
+      insights.push({
+        type: 'summary-needs-work',
+        icon: '📝',
+        message: `${userName}, let's be honest - ${sugarPercentage}% of your calories (${Math.round(totalSugar)}g) come from sugar. For your ${userGoal} goals, focus on whole foods to improve your nutrition quality and energy stability. You've got this!`,
         category: 'summary'
       });
     } else {
       insights.push({
         type: 'summary-improve',
         icon: '💡',
-        message: `${sugarPercentage}% of your calories come from sugar. Focus on whole foods to improve your nutrition quality and energy stability.`,
+        message: `${userName}, you're making progress but ${Math.round(totalSugar)}g of sugar daily could be optimized for your ${userGoal} goals. Small improvements in food quality will yield big results. Focus on nutrient-dense choices.`,
         category: 'summary'
       });
     }
