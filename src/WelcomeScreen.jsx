@@ -634,60 +634,63 @@ const EnhancedTrendInsights = ({ lineData, totalMacros }) => {
     <div className="bg-gray-50 rounded-xl p-4">
       <h4 className="font-semibold text-gray-800 mb-3">🔍 Smart Trend Analysis</h4>
 
-      {/* Timing Insights */}
-      {insightCategories.timing.length > 0 && (
-        <div className="mb-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">⏰ Meal Timing</h5>
-          {insightCategories.timing.map((insight, index) => (
-            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
-              <span className="flex-shrink-0">{insight.icon}</span>
-              <span>{insight.message}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Scrollable Content Container */}
+      <div className="max-h-64 overflow-y-auto pr-2 space-y-4">
+        {/* Timing Insights */}
+        {insightCategories.timing.length > 0 && (
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2 sticky top-0 bg-gray-50 py-1">⏰ Meal Timing</h5>
+            {insightCategories.timing.map((insight, index) => (
+              <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+                <span className="flex-shrink-0">{insight.icon}</span>
+                <span>{insight.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* Sugar Insights */}
-      {insightCategories.sugar.length > 0 && (
-        <div className="mb-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">🍯 Sugar Patterns</h5>
-          {insightCategories.sugar.map((insight, index) => (
-            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
-              <span className="flex-shrink-0">{insight.icon}</span>
-              <span>{insight.message}</span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* Sugar Insights */}
+        {insightCategories.sugar.length > 0 && (
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2 sticky top-0 bg-gray-50 py-1">🍯 Sugar Patterns</h5>
+            {insightCategories.sugar.map((insight, index) => (
+              <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+                <span className="flex-shrink-0">{insight.icon}</span>
+                <span>{insight.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* Energy Insights */}
-      {insightCategories.energy.length > 0 && (
-        <div className="mb-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">⚡ Energy Balance</h5>
-          {insightCategories.energy.map((insight, index) => (
-            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
-              <span className="flex-shrink-0">{insight.icon}</span>
-              <span>{insight.message}</span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* Energy Insights */}
+        {insightCategories.energy.length > 0 && (
+          <div>
+            <h5 className="text-sm font-medium text-gray-700 mb-2 sticky top-0 bg-gray-50 py-1">⚡ Energy Balance</h5>
+            {insightCategories.energy.map((insight, index) => (
+              <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+                <span className="flex-shrink-0">{insight.icon}</span>
+                <span>{insight.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* Summary */}
-      {insightCategories.summary.length > 0 && (
-        <div className="border-t pt-3 mt-3">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">📊 Daily Summary</h5>
-          {insightCategories.summary.map((insight, index) => (
-            <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
-              <span className="flex-shrink-0">{insight.icon}</span>
-              <span>{insight.message}</span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* Summary */}
+        {insightCategories.summary.length > 0 && (
+          <div className="border-t pt-3">
+            <h5 className="text-sm font-medium text-gray-700 mb-2 sticky top-0 bg-gray-50 py-1">📊 Daily Summary</h5>
+            {insightCategories.summary.map((insight, index) => (
+              <div key={index} className="text-sm text-gray-600 mb-2 flex items-start gap-2">
+                <span className="flex-shrink-0">{insight.icon}</span>
+                <span>{insight.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Quick Stats Footer */}
-      <div className="mt-4 pt-3 border-t border-gray-200">
+      {/* Quick Stats Footer - Always visible at bottom */}
+      <div className="mt-4 pt-3 border-t border-gray-200 bg-gray-50">
         <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
           <div>
             <span className="font-medium">Meals analyzed:</span> {lineData.length}
