@@ -16,6 +16,7 @@ const QuickStartEnhancedSystem = () => {
     const [showEnhancedModal, setShowEnhancedModal] = useState(false);
     const [testResults, setTestResults] = useState(null);
     const [systemStatus, setSystemStatus] = useState('Ready to test');
+    const [mealTrackerResults, setMealTrackerResults] = useState([]);
 
     // Sample user profile (customize this to match your user data structure)
     const sampleUserProfile = {
@@ -31,6 +32,25 @@ const QuickStartEnhancedSystem = () => {
         bmr: 1800,
         tdee: 2200,
         targetCalories: 2200
+    };
+
+    // Mock function for testing meal tracker integration
+    const handleAddToMealTracker = (mealData) => {
+        console.log('🍽️ Adding meal to tracker:', mealData);
+
+        // Store the result for display
+        setMealTrackerResults(prev => [...prev, {
+            id: Date.now(),
+            timestamp: new Date().toLocaleTimeString(),
+            mealName: mealData.mealName,
+            calories: mealData.calories,
+            protein: mealData.protein,
+            carbs: mealData.carbs,
+            fat: mealData.fat
+        }]);
+
+        // In your real app, this would integrate with your actual MealTracker
+        alert(`✅ Meal "${mealData.mealName}" added to tracker! (${mealData.calories} cal)`);
     };
 
     // Test the complete system
@@ -71,6 +91,10 @@ const QuickStartEnhancedSystem = () => {
         }
 
         setShowEnhancedModal(false);
+    };
+
+    const clearMealTrackerResults = () => {
+        setMealTrackerResults([]);
     };
 
     return (
@@ -138,6 +162,33 @@ const QuickStartEnhancedSystem = () => {
                     </div>
                 )}
 
+                {/* Meal Tracker Results */}
+                {mealTrackerResults.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="font-semibold text-green-800">Meal Tracker Test Results</h3>
+                            <button
+                                onClick={clearMealTrackerResults}
+                                className="text-sm text-green-600 hover:text-green-800 underline"
+                            >
+                                Clear
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            {mealTrackerResults.map(meal => (
+                                <div key={meal.id} className="bg-white rounded p-3 shadow-sm">
+                                    <div className="font-medium text-green-800">
+                                        {meal.mealName} - {meal.calories} cal
+                                    </div>
+                                    <div className="text-sm text-green-600">
+                                        P: {meal.protein}g | C: {meal.carbs}g | F: {meal.fat}g | Added: {meal.timestamp}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* User Profile Display */}
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                     <h3 className="font-semibold text-yellow-800 mb-2">Test User Profile</h3>
@@ -161,12 +212,13 @@ const QuickStartEnhancedSystem = () => {
                         <li>✅ DietaryFilterSystem.js - Dietary restrictions</li>
                         <li>✅ MealNameCompatibilityLayer.js - Integration bridge</li>
                         <li>✅ EnhancedWeekPlanModal.jsx - 5-option UI</li>
+                        <li>✅ onAddToMealTracker integration - Fixed!</li>
                         <li>✅ Complete system integration</li>
                     </ul>
                 </div>
             </div>
 
-            {/* Practical Integration Component */}
+            {/* Practical Integration Component - NOW WITH REQUIRED PROP */}
             <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">
                     🔧 Advanced Integration Testing
@@ -175,7 +227,9 @@ const QuickStartEnhancedSystem = () => {
                     This uses your PracticalIntegrationComponent.jsx for deeper testing:
                 </p>
 
-                <PracticalIntegrationComponent />
+                <PracticalIntegrationComponent
+                    onAddToMealTracker={handleAddToMealTracker}
+                />
             </div>
 
             {/* Enhanced Week Plan Modal */}
