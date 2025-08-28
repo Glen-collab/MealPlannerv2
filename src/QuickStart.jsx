@@ -9,7 +9,7 @@ import PracticalIntegrationComponent from './mealPlanning/PracticalIntegrationCo
 import { MealNameMapping } from './mealPlanning/MealNameCompatibilityLayer.js';
 
 // Import testing components
-import { runCompleteTest } from './mealPlanning/CompleteSystemTest.js';
+import { runQuickDemo } from './mealPlanning/CompleteSystemTest.js';
 
 const QuickStartEnhancedSystem = () => {
     // State for testing the enhanced modal
@@ -37,7 +37,7 @@ const QuickStartEnhancedSystem = () => {
     const runSystemTest = async () => {
         setSystemStatus('Running tests...');
         try {
-            const results = await runCompleteTest();
+            const results = await runQuickDemo();
             setTestResults(results);
             setSystemStatus('Tests completed - see results below');
         } catch (error) {
