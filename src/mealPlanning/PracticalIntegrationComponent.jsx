@@ -2,7 +2,7 @@
 // Add this to your App.jsx to test the new Enhanced 5-Option system alongside your existing functionality
 
 import React, { useState } from 'react';
-import { MealTrackerCompatibility, Enhanced5OptionIntegration } from './mealPlanning/MealNameCompatibilityLayer.js';
+import { MealTrackerCompatibility, Enhanced5OptionIntegration } from './MealNameCompatibilityLayer.js';
 
 /**
  * 🧪 TESTING COMPONENT
