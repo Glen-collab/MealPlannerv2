@@ -228,7 +228,8 @@ const QuickStartEnhancedSystem = () => {
                 </p>
 
                 <PracticalIntegrationComponent
-                    onAddToMealTracker={handleAddToMealTracker}
+                    onAddMealPlan={handleAddToMealTracker}
+                    onShowMessage={(msg) => alert(msg)}
                 />
             </div>
 
